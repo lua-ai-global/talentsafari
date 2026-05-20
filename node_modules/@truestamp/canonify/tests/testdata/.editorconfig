@@ -1,0 +1,6 @@
+# top-most EditorConfig file
+root = true
+
+# Ignore paths
+[*]
+generated_code = true

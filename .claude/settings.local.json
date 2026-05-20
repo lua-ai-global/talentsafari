@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(lua-agent-builder:lua-architect)",
+      "Bash(lua agents *)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(lua --version)",
+      "Bash(lua init *)",
+      "Bash(lua compile *)",
+      "Bash(lua test *)",
+      "PowerShell(Start-Process \"C:\\\\Users\\\\Elitebook\\\\OneDrive\\\\Documents\\\\PROJECTS\\\\TechSafari x Lua\\\\TechSafari x Lua\\\\index.html\")",
+      "Bash(lua push *)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}

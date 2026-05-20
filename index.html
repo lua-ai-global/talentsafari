@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Human or Agent? — Tech Safari × Lua</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --cream:      #EAE4D5;
+    --cream-2:    #E0DBCC;
+    --paper:      #F7F6F2;
+    --ink:        #141B34;
+    --ink-soft:   #5D6C7B;
+    --forest:     #01261C;
+    --forest-2:   #0A3D2E;
+    --green:      #0ECB7B;
+    --green-deep: #0AA866;
+    --green-soft: #CDEEDC;
+    --line:       #DAD3C1;
+    --lua:        #6C4CF0;
+    --lua-2:      #8E73FF;
+    --lua-soft:   #E7E0FF;
+    --lua-glow:   #B7A6FF;
+    --shadow:    0 18px 48px -20px rgba(1,38,28,.30);
+    --shadow-sm: 0 8px 24px -14px rgba(1,38,28,.28);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background:
+      radial-gradient(900px 600px at 88% -6%, rgba(108,76,240,.10), transparent 60%),
+      radial-gradient(820px 540px at 4% 102%, rgba(14,203,123,.16), transparent 55%),
+      var(--cream);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  .display { font-family: 'Space Grotesk', sans-serif; letter-spacing: -.02em; }
+
+  /* topbar */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px clamp(20px,5vw,64px);
+    position: sticky; top: 0; z-index: 40;
+    backdrop-filter: blur(8px);
+    background: rgba(234,228,213,.82);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+  .brand .mark {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--forest);
+    display: grid; place-items: center; color: var(--green); font-size: 17px; font-weight: 700;
+  }
+  .brand small { display: block; font-weight: 500; font-size: 11px; color: var(--ink-soft); font-family: 'Inter', sans-serif; }
+  .partners { display: flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
+  .pill { padding: 5px 12px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); }
+  .pill.ts { color: var(--forest); }
+  .pill.lua { color: var(--lua); }
+
+  /* progress rail */
+  .rail { display: flex; gap: 6px; justify-content: center; padding: 14px 0 0; }
+  .rail i { width: 38px; height: 5px; border-radius: 999px; background: var(--cream-2); transition: background .35s ease; }
+  .rail i.on  { background: var(--green-deep); }
+  .rail i.lua { background: var(--lua); }
+
+  /* screens */
+  main { padding: clamp(28px,5vw,56px) clamp(20px,5vw,64px) 80px; }
+  .screen { display: none; max-width: 1080px; margin: 0 auto; animation: rise .5s cubic-bezier(.2,.7,.2,1); }
+  .screen.active { display: block; }
+  @keyframes rise { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--green-deep); margin-bottom: 18px;
+  }
+  .eyebrow::before { content:""; width:22px; height:2px; background:var(--green-deep); border-radius:2px; }
+
+  /* hero */
+  .hero { text-align: center; padding-top: 14px; }
+  .hero h1 { font-size: clamp(38px,6.4vw,74px); line-height: 1.03; margin: 6px auto 18px; max-width: 14ch; color: var(--forest); }
+  .hero h1 .swap { background: linear-gradient(110deg,var(--green-deep) 25%,var(--lua) 95%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .hero p.sub { font-size: clamp(15px,1.7vw,18px); color: var(--ink-soft); max-width: 52ch; margin: 0 auto 30px; }
+
+  .dropzone {
+    max-width: 680px; margin: 0 auto; background: var(--paper);
+    border: 1.5px solid var(--line); border-radius: 20px;
+    padding: 22px; box-shadow: var(--shadow); text-align: left;
+  }
+  .dropzone textarea {
+    width: 100%; min-height: 132px; resize: vertical; border: 0; outline: 0;
+    font-family: inherit; font-size: 15px; color: var(--ink); background: transparent; line-height: 1.6;
+  }
+  .dropzone textarea::placeholder { color: #9AA39B; }
+  .dz-sep { height: 1px; background: var(--line); margin: 14px 0; }
+  .dz-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  .dz-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    font-size: 12.5px; font-weight: 600; color: var(--ink-soft);
+    background: var(--cream); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 12px; cursor: pointer; transition: .18s; user-select: none;
+  }
+  .chip:hover { border-color: var(--green-deep); color: var(--green-deep); transform: translateY(-1px); }
+  .chip.active { background: var(--forest); color: var(--green); border-color: var(--forest); }
+
+  /* url mode */
+  .url-wrap { display: none; }
+  .url-wrap input {
+    width: 100%; border: 0; outline: 0; font-family: inherit; font-size: 15px;
+    color: var(--ink); background: transparent; padding: 4px 0; line-height: 1.6;
+  }
+  .url-wrap input::placeholder { color: #9AA39B; }
+  .scrape-err { font-size: 13px; font-weight: 600; color: #d6432f; margin-top: 6px; display: none; }
+  .other-roles {
+    margin-top: 12px; padding: 12px 14px; background: var(--cream);
+    border-radius: 12px; border: 1px solid rgba(14,203,123,.35); display: none;
+  }
+  .other-roles p { font-size: 12px; font-weight: 700; color: var(--forest); margin-bottom: 8px; }
+  .or-chip {
+    display: inline-flex; font-size: 12px; font-weight: 600;
+    padding: 5px 11px; border-radius: 999px; margin: 3px;
+    background: var(--green-soft); color: var(--forest);
+    border: 1px solid rgba(14,203,123,.4); cursor: default;
+  }
+
+  .btn {
+    font-family: inherit; font-weight: 700; font-size: 15px; cursor: pointer;
+    border: 0; border-radius: 12px; padding: 14px 24px; transition: .18s;
+    display: inline-flex; align-items: center; gap: 9px;
+  }
+  .btn-primary { background: var(--forest); color: var(--green); box-shadow: 0 12px 26px -14px rgba(1,38,28,.9); }
+  .btn-primary:hover { transform: translateY(-2px); background: var(--forest-2); }
+  .btn-lua { background: linear-gradient(135deg,var(--lua),var(--lua-2)); color:#fff; box-shadow: 0 12px 26px -14px rgba(108,76,240,.8); }
+  .btn-lua:hover { transform: translateY(-2px); }
+  .btn-ghost { background: var(--paper); color: var(--ink); border: 1.5px solid var(--line); }
+  .btn-ghost:hover { border-color: var(--green-deep); color: var(--green-deep); }
+  .btn-block { width: 100%; justify-content: center; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
+
+  .hero .trust {
+    margin-top: 22px; font-size: 13px; color: var(--ink-soft); font-weight: 500;
+    display: flex; gap: 18px; justify-content: center; flex-wrap: wrap;
+  }
+  .hero .trust span { display: inline-flex; align-items: center; gap: 7px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green-deep); }
+  .dot.lua { background: var(--lua); }
+
+  /* section heads */
+  .s-head { max-width: 620px; margin-bottom: 26px; }
+  .s-head h2 { font-size: clamp(26px,3.4vw,38px); margin-bottom: 8px; color: var(--forest); }
+  .s-head p { color: var(--ink-soft); font-size: 15px; }
+
+  /* clarifying questions */
+  .q-card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px; margin-bottom: 14px; box-shadow: var(--shadow-sm);
+    opacity: 0; transform: translateY(10px); animation: rise .5s forwards;
+  }
+  .q-card:nth-child(2) { animation-delay: .08s; }
+  .q-card:nth-child(3) { animation-delay: .16s; }
+  .q-card .qn { font-size: 12px; font-weight: 700; color: var(--green-deep); letter-spacing: .08em; }
+  .q-card h3 { font-size: 17px; margin: 5px 0 14px; font-family: 'Space Grotesk', sans-serif; }
+  .opts { display: flex; gap: 9px; flex-wrap: wrap; }
+  .opt {
+    font-size: 13.5px; font-weight: 600; padding: 9px 15px; border-radius: 10px;
+    background: var(--cream); border: 1.5px solid var(--line); cursor: pointer; transition: .15s;
+    color: var(--ink-soft);
+  }
+  .opt:hover { border-color: var(--green-deep); }
+  .opt.sel { background: var(--forest); color: var(--green); border-color: var(--forest); }
+
+  /* analysis theater */
+  .analysis { text-align: center; padding-top: 30px; max-width: 560px; margin: 0 auto; }
+  .scanner {
+    width: 120px; height: 120px; margin: 0 auto 28px; border-radius: 50%;
+    background: conic-gradient(var(--green),var(--lua-2),var(--green));
+    display: grid; place-items: center; animation: spin 2.4s linear infinite;
+  }
+  .scanner::before { content:""; width:96px; height:96px; border-radius:50%; background:var(--cream); }
+  .scanner span { position:absolute; font-size:30px; animation:spin 2.4s linear infinite reverse; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .steps { text-align: left; margin-top: 8px; }
+  .step {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+    border-radius: 12px; font-weight: 500; font-size: 14.5px; color: #A6AC9F; transition: .3s;
+  }
+  .step .ic {
+    width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--cream-2);
+    display: grid; place-items: center; font-size: 12px; flex-shrink: 0;
+  }
+  .step.run { color: var(--ink); background: var(--paper); box-shadow: var(--shadow-sm); font-weight: 600; }
+  .step.run .ic { border-color: var(--green-deep); border-top-color: transparent; animation: spin .8s linear infinite; }
+  .step.done { color: var(--ink-soft); }
+  .step.done .ic { background: var(--green-deep); border-color: var(--green-deep); color: #fff; }
+
+  /* result */
+  .verdict-band {
+    background: var(--forest); color: var(--cream);
+    border-radius: 24px; padding: clamp(26px,4vw,42px);
+    display: grid; grid-template-columns: auto 1fr; gap: clamp(22px,4vw,44px);
+    align-items: center; box-shadow: var(--shadow); position: relative; overflow: hidden;
+  }
+  .verdict-band::after {
+    content:""; position:absolute; right:-60px; top:-60px; width:240px; height:240px;
+    background: radial-gradient(circle,rgba(142,115,255,.40),transparent 70%);
+  }
+  .gauge {
+    width: 168px; height: 168px; border-radius: 50%; display: grid; place-items: center;
+    background: conic-gradient(var(--lua-2) 0 var(--p,78%), rgba(255,255,255,.12) 0);
+    position: relative;
+  }
+  .gauge::before { content:""; position:absolute; inset:13px; border-radius:50%; background:var(--forest); }
+  .gauge .num { position: relative; text-align: center; }
+  .gauge .num b { font-family:'Space Grotesk',sans-serif; font-size:52px; line-height:1; color:#fff; }
+  .gauge .num small { display:block; font-size:10px; letter-spacing:.14em; opacity:.65; margin-top:4px; }
+  .verdict-copy .tag {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    background: rgba(142,115,255,.20); color: var(--lua-glow);
+    padding: 6px 12px; border-radius: 999px; margin-bottom: 12px;
+  }
+  .verdict-copy h2 { font-size: clamp(26px,3.6vw,40px); line-height:1.1; color:#fff; font-family:'Space Grotesk',sans-serif; }
+  .verdict-copy p { margin-top:12px; opacity:.8; font-size:15px; max-width:46ch; }
+
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 22px; }
+  .cand { background:var(--paper); border-radius:20px; border:1px solid var(--line); overflow:hidden; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; }
+  .cand.win { border-color:var(--lua); box-shadow:0 22px 50px -22px rgba(108,76,240,.5); }
+  .cand-top { padding:20px 22px; display:flex; align-items:center; gap:14px; border-bottom:1px solid var(--line); }
+  .cand-top.human { background: linear-gradient(180deg,var(--green-soft),transparent); }
+  .cand-top.agent { background: linear-gradient(180deg,var(--lua-soft),transparent); }
+  .avatar { width:54px; height:54px; border-radius:13px; flex-shrink:0; display:grid; place-items:center; font-size:22px; font-weight:700; color:#fff; font-family:'Space Grotesk',sans-serif; overflow:hidden; }
+  .avatar.human { background:var(--forest); color:var(--green); }
+  .avatar.agent { background: linear-gradient(140deg,var(--lua),var(--lua-2)); }
+  .cand-top h3 { font-size:18px; font-family:'Space Grotesk',sans-serif; }
+  .cand-top .role { font-size:13px; color:var(--ink-soft); font-weight:500; }
+  .winflag { margin-left:auto; font-size:10.5px; font-weight:700; letter-spacing:.07em; background:var(--lua); color:#fff; padding:5px 9px; border-radius:7px; }
+  .cand-body { padding:18px 22px; flex:1; }
+  .specs { display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; margin-bottom:16px; }
+  .spec small { font-size:11px; font-weight:700; letter-spacing:.05em; color:#9AA39B; text-transform:uppercase; }
+  .spec b { display:block; font-size:15px; margin-top:2px; }
+  .spec b.cost { font-size:19px; font-family:'Space Grotesk',sans-serif; }
+  .gated { filter:blur(7px); user-select:none; }
+  .lists { font-size:13.5px; }
+  .lists .lh { font-weight:700; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft); margin:12px 0 6px; }
+  .lists li { list-style:none; padding-left:22px; position:relative; margin-bottom:5px; color:var(--ink-soft); }
+  .lists li.good::before { content:"✓"; position:absolute; left:0; color:var(--green-deep); font-weight:800; }
+  .lists li.bad::before  { content:"—"; position:absolute; left:0; color:var(--ink-soft); font-weight:800; }
+  .cand-foot { padding:16px 22px; border-top:1px solid var(--line); background:var(--cream); font-size:13px; color:var(--ink-soft); font-weight:500; }
+  .cand-foot button { margin-top:10px; }
+  .reveal-wrap { position:relative; }
+  .reveal-btn { position:absolute; inset:0; display:grid; place-items:center; background:rgba(231,224,255,.55); border-radius:10px; cursor:pointer; }
+  .reveal-btn span { background:var(--lua); color:#fff; font-size:11px; font-weight:700; padding:6px 11px; border-radius:999px; }
+
+  /* breakdown */
+  .breakdown { margin-top:22px; background:var(--paper); border:1px solid var(--line); border-radius:20px; padding:clamp(20px,3vw,30px); box-shadow:var(--shadow-sm); }
+  .breakdown h3 { font-size:20px; font-family:'Space Grotesk',sans-serif; color:var(--forest); }
+  .breakdown .hint { font-size:13px; color:var(--ink-soft); margin:4px 0 20px; }
+  .dim { margin-bottom:16px; }
+  .dim-top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .dim-top b { font-size:14px; }
+  .dim-top .sc { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; }
+  .track { height:9px; background:var(--cream-2); border-radius:999px; overflow:hidden; }
+  .track i { display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,var(--green-deep),var(--lua-2)); width:0; transition:width 1s cubic-bezier(.2,.7,.2,1); }
+  .axis { display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#9AA39B; margin-top:16px; }
+  .axis .h { color:var(--green-deep); }
+  .axis .a { color:var(--lua); }
+
+  /* final CTA */
+  .final {
+    margin-top:22px; background:linear-gradient(135deg,var(--lua),var(--lua-2));
+    border-radius:22px; padding:clamp(26px,4vw,40px); color:#fff;
+    display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;
+    box-shadow:0 22px 50px -24px rgba(108,76,240,.7);
+  }
+  .final h3 { font-size:clamp(22px,3vw,30px); font-family:'Space Grotesk',sans-serif; }
+  .final p { opacity:.85; font-size:14.5px; margin-top:6px; max-width:44ch; }
+  .final .btn-light { background:#fff; color:var(--lua); }
+  .final .btn-light:hover { transform:translateY(-2px); }
+
+  /* modal */
+  .overlay { display:none; position:fixed; inset:0; z-index:90; background:rgba(1,38,28,.55); backdrop-filter:blur(3px); place-items:center; padding:20px; }
+  .overlay.show { display:grid; }
+  .modal { background:var(--paper); border-radius:20px; max-width:440px; width:100%; padding:30px; box-shadow:var(--shadow); animation:rise .35s ease; }
+  .modal .lua-tab { font-size:12px; font-weight:700; color:var(--lua); letter-spacing:.1em; text-transform:uppercase; }
+  .modal h3 { font-size:23px; margin:8px 0 6px; font-family:'Space Grotesk',sans-serif; color:var(--forest); }
+  .modal p { font-size:14px; color:var(--ink-soft); margin-bottom:18px; }
+  .field { margin-bottom:12px; }
+  .field label { font-size:12px; font-weight:700; color:var(--ink-soft); letter-spacing:.04em; }
+  .field input { width:100%; margin-top:5px; padding:12px 14px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:14px; outline:0; background:var(--cream); }
+  .field input:focus { border-color:var(--lua); }
+  .modal .fine { font-size:11.5px; color:#9AA39B; margin-top:12px; text-align:center; }
+
+  /* slack preview */
+  .slack-note { margin-top:26px; }
+  .slack-note .lbl { font-size:12px; font-weight:700; letter-spacing:.1em; color:var(--ink-soft); text-transform:uppercase; margin-bottom:10px; }
+  .slack { background:#1A1D21; color:#D6D9DD; border-radius:16px; padding:18px 20px; font-size:13.5px; max-width:560px; }
+  .slack .ch { color:#8A8F98; font-weight:700; margin-bottom:10px; }
+  .slack .row { display:flex; gap:10px; }
+  .slack .sq { width:36px; height:36px; border-radius:8px; background:linear-gradient(140deg,var(--green),var(--lua-2)); flex-shrink:0; }
+  .slack b.u { color:#fff; }
+  .slack .meta { color:#8A8F98; }
+  .slack .acts { display:flex; gap:8px; margin-top:10px; }
+  .slack .sbtn { font-size:12px; font-weight:600; padding:7px 12px; border-radius:6px; border:1px solid #3A3D42; background:#222528; color:#D6D9DD; cursor:pointer; }
+  .slack .sbtn.ts { color:#4FE0A3; }
+  .slack .sbtn.lua { color:var(--lua-glow); }
+
+  footer { text-align:center; padding:30px 20px; border-top:1px solid var(--line); font-size:13px; color:var(--ink-soft); }
+  footer b.ts { color:var(--forest); }
+  footer b.lua { color:var(--lua); }
+  .restart { display:block; margin:26px auto 0; background:none; border:0; font-family:inherit; font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer; text-decoration:underline; }
+
+  /* ── Ada floating chat widget ─────────────────────────────────────── */
+  .ada-fab {
+    position: fixed; bottom: 24px; right: 24px; z-index: 50;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--forest); padding: 10px 18px 10px 10px;
+    border-radius: 999px; border: 0; cursor: pointer; font-family: inherit;
+    font-weight: 700; font-size: 14px; color: var(--cream);
+    box-shadow: 0 8px 28px -8px rgba(1,38,28,.7); transition: .18s;
+  }
+  .ada-fab:hover { background: var(--forest-2); transform: translateY(-2px); }
+  .ada-fab-img { width: 28px; height: 28px; border-radius: 50%; background: var(--green); object-fit: cover; }
+  .ada-fab-fallback { width: 28px; height: 28px; border-radius: 50%; background: var(--green); display: grid; place-items: center; font-size: 14px; font-weight: 700; color: var(--forest); }
+  .ada-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: adaPulse 2s infinite; }
+  @keyframes adaPulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.5;transform:scale(1.4);} }
+
+  .ada-panel {
+    position: fixed; bottom: 86px; right: 24px; z-index: 50;
+    width: 320px; height: 430px; border-radius: 20px;
+    background: var(--paper); box-shadow: 0 22px 60px -18px rgba(1,38,28,.4);
+    border: 1px solid rgba(14,203,123,.22);
+    display: none; flex-direction: column; overflow: hidden;
+    animation: rise .3s ease;
+  }
+  .ada-panel.open { display: flex; }
+  .ada-p-head {
+    background: var(--forest); padding: 14px 16px;
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+  .ada-p-head .aph-img { width: 36px; height: 36px; border-radius: 50%; background: var(--green); object-fit: cover; }
+  .ada-p-head .aph-fallback { width: 36px; height: 36px; border-radius: 50%; background: var(--green); display: grid; place-items: center; font-size: 16px; font-weight: 700; color: var(--forest); }
+  .ada-p-head .aph-name { color: var(--cream); font-weight: 700; font-size: 14px; }
+  .ada-p-head .aph-role { color: var(--green); font-size: 11px; }
+  .ada-p-head .aph-close { margin-left: auto; background: none; border: 0; color: #6a9e8e; font-size: 22px; cursor: pointer; line-height: 1; padding: 0 2px; }
+  .ada-msgs { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .ada-msg { display: flex; gap: 7px; }
+  .ada-msg.u { justify-content: flex-end; }
+  .ada-av { width: 22px; height: 22px; border-radius: 50%; background: var(--green); object-fit: cover; flex-shrink: 0; margin-top: 2px; }
+  .ada-av-fb { width: 22px; height: 22px; border-radius: 50%; background: var(--green); display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--forest); flex-shrink: 0; margin-top: 2px; }
+  .ada-bub { max-width: 86%; font-size: 13.5px; line-height: 1.5; padding: 9px 13px; border-radius: 16px; white-space: pre-wrap; }
+  .ada-bub-a { background: white; color: var(--ink); border-radius: 4px 16px 16px 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .ada-bub-u { background: var(--forest); color: var(--cream); border-radius: 16px 4px 16px 16px; }
+  .ada-dots span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green-deep); margin: 0 2px; animation: adaDot .8s infinite; }
+  .ada-dots span:nth-child(2) { animation-delay: .15s; }
+  .ada-dots span:nth-child(3) { animation-delay: .3s; }
+  @keyframes adaDot { 0%,100%{opacity:.3;transform:translateY(0);} 50%{opacity:1;transform:translateY(-3px);} }
+  .ada-input-row { padding: 10px 12px; border-top: 1px solid var(--line); display: flex; gap: 7px; flex-shrink: 0; }
+  .ada-input-row input {
+    flex: 1; border: 1.5px solid var(--line); border-radius: 999px;
+    padding: 8px 14px; font-family: inherit; font-size: 13px; outline: 0; background: var(--cream);
+  }
+  .ada-input-row input:focus { border-color: var(--green); }
+  .ada-input-row button {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--green);
+    color: var(--forest); border: 0; cursor: pointer; font-size: 15px; font-weight: 700;
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .ada-input-row button:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* ── brief wizard ─────────────────────────────────────────────────── */
+  .wizard-wrap {
+    background: var(--paper); border-radius: 20px; max-width: 680px;
+    border: 1px solid rgba(14,203,123,.25); overflow: hidden; box-shadow: var(--shadow-sm);
+  }
+  .wizard-head {
+    background: var(--forest); padding: 18px 22px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .wz-img { width: 40px; height: 40px; border-radius: 50%; background: var(--green); object-fit: cover; flex-shrink: 0; }
+  .wz-fb { width: 40px; height: 40px; border-radius: 50%; background: var(--green); display: grid; place-items: center; font-size: 18px; font-weight: 700; color: var(--forest); flex-shrink: 0; }
+  .wz-info .wz-title { color: var(--cream); font-weight: 700; font-size: 15px; }
+  .wz-info .wz-sub { color: var(--green); font-size: 12px; }
+  .wz-dots { margin-left: auto; display: flex; gap: 6px; }
+  .wz-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(14,203,123,.2); transition: .25s; }
+  .wz-dot.on { background: var(--green); }
+  .wizard-msgs { height: 240px; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .wz-input-row { padding: 14px 18px; border-top: 1px solid var(--line); display: flex; gap: 8px; }
+  .wz-input-row textarea {
+    flex: 1; border: 1.5px solid var(--line); border-radius: 14px;
+    padding: 10px 14px; font-family: inherit; font-size: 14px; outline: 0;
+    background: var(--cream); resize: none;
+  }
+  .wz-input-row textarea:focus { border-color: var(--green); }
+  .wz-input-row button {
+    background: var(--green); color: var(--forest); border: 0;
+    border-radius: 12px; padding: 0 18px; font-weight: 700; font-size: 16px; cursor: pointer;
+    align-self: flex-end; height: 44px; white-space: nowrap;
+  }
+  .wz-input-row button:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* brief card */
+  .brief-pad { padding: 22px; }
+  .bc-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .bc-agent { font-weight: 700; color: var(--forest); font-size: 17px; }
+  .bc-status { font-size: 12px; color: var(--green-deep); font-weight: 600; }
+  .bc-summary { font-size: 13.5px; color: var(--ink-soft); margin-bottom: 16px; }
+  .bc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .bc-box { background: white; border-radius: 14px; padding: 14px; border: 1px solid var(--line); }
+  .bc-lbl { font-size: 11px; font-weight: 700; letter-spacing: .05em; color: #9AA39B; text-transform: uppercase; margin-bottom: 8px; }
+  .bc-item { font-size: 13px; color: var(--ink); display: flex; gap: 7px; margin-bottom: 5px; }
+  .bc-icon-g { color: var(--green-deep); font-weight: 800; }
+  .bc-icon-p { color: var(--lua); }
+  .bc-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+  .bc-stat { background: var(--forest); border-radius: 12px; padding: 14px; text-align: center; }
+  .bc-stat-lbl { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--green); text-transform: uppercase; margin-bottom: 4px; }
+  .bc-stat-val { color: var(--cream); font-weight: 700; font-size: 12px; line-height: 1.3; }
+
+  @media (max-width: 760px) {
+    .verdict-band { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+    .cards { grid-template-columns: 1fr; }
+    .final { text-align: center; justify-content: center; }
+    .bc-grid { grid-template-columns: 1fr; }
+    .bc-stats { grid-template-columns: 1fr 1fr; }
+    .ada-panel { width: calc(100vw - 32px); right: 16px; }
+    .ada-fab { bottom: 16px; right: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="mark">▲</div>
+    <div>Human or Agent?<small>An honest hiring verdict</small></div>
+  </div>
+  <div class="partners">
+    <span class="pill ts">Tech Safari</span>
+    <span style="color:#B7AF9A">×</span>
+    <span class="pill lua">Lua</span>
+  </div>
+</div>
+
+<div class="rail" id="rail">
+  <i class="on"></i><i></i><i></i><i></i>
+</div>
+
+<main>
+
+  <!-- SCREEN 1 — HERO -->
+  <section class="screen active" id="s-hero">
+    <div class="hero">
+      <span class="eyebrow">Free · No signup</span>
+      <h1 class="display">Should your next hire be<br/><span class="swap">human or AI?</span></h1>
+      <p class="sub">Paste a job description. In 15 seconds you'll get an Agent Fit Score and a side-by-side of what hiring a human vs. an agent for that role actually looks like.</p>
+
+      <div class="dropzone">
+        <!-- Text mode -->
+        <div id="textWrap">
+          <textarea id="jd" placeholder="Paste a job description here…"></textarea>
+        </div>
+        <!-- URL mode -->
+        <div class="url-wrap" id="urlWrap">
+          <div class="url-input" style="color:var(--ink-soft);font-size:14px;margin-bottom:6px;">Job posting URL</div>
+          <input id="urlInput" type="url" placeholder="https://www.linkedin.com/jobs/view/… or any job posting" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-family:inherit;font-size:15px;outline:0;background:transparent;color:var(--ink);" onfocus="this.style.borderColor='var(--green-deep)'" onblur="this.style.borderColor='var(--line)'" />
+          <div id="scrapeErr" class="scrape-err"></div>
+        </div>
+
+        <!-- Other roles (shown after successful scrape) -->
+        <div class="other-roles" id="otherRoles">
+          <p id="orTitle"></p>
+          <div id="orChips"></div>
+        </div>
+
+        <div class="dz-sep" id="dzSep"></div>
+
+        <div class="dz-foot">
+          <div class="dz-chips">
+            <span class="chip" onclick="loadSample()">▲ Try a sample JD</span>
+            <span class="chip" id="urlChip" onclick="toggleUrlMode()">🔗 Paste link</span>
+          </div>
+          <button class="btn btn-primary" id="heroBtn" onclick="handleScoreClick()">Score this role →</button>
+        </div>
+      </div>
+
+      <div class="trust">
+        <span><i class="dot"></i> Honest by design — ~40% come back "hire a human"</span>
+        <span><i class="dot lua"></i> Verdict in 15 seconds</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 2 — QUESTIONS -->
+  <section class="screen" id="s-questions">
+    <span class="eyebrow">Step 2 of 4</span>
+    <div class="s-head">
+      <h2 class="display">Three quick things the JD doesn't say.</h2>
+      <p>Thirty seconds. These calibrate the score — they're not stored.</p>
+    </div>
+    <div class="q-card">
+      <div class="qn">QUESTION 1</div>
+      <h3>How much volume does this role handle per week?</h3>
+      <div class="opts">
+        <span class="opt" onclick="pick(this,'volume','low')">A handful of items</span>
+        <span class="opt sel" onclick="pick(this,'volume','medium')">Steady, dozens a day</span>
+        <span class="opt" onclick="pick(this,'volume','high')">High-throughput, hundreds+</span>
+      </div>
+    </div>
+    <div class="q-card">
+      <div class="qn">QUESTION 2</div>
+      <h3>How costly is a wrong decision in this role?</h3>
+      <div class="opts">
+        <span class="opt sel" onclick="pick(this,'stakes','low')">Low — easily corrected</span>
+        <span class="opt" onclick="pick(this,'stakes','moderate')">Moderate</span>
+        <span class="opt" onclick="pick(this,'stakes','high')">High — hard to undo</span>
+      </div>
+    </div>
+    <div class="q-card">
+      <div class="qn">QUESTION 3</div>
+      <h3>Is the work customer-facing, and is the domain regulated?</h3>
+      <div class="opts">
+        <span class="opt sel" onclick="pick(this,'exposure','customer_unregulated')">Customer-facing, unregulated</span>
+        <span class="opt" onclick="pick(this,'exposure','internal')">Internal</span>
+        <span class="opt" onclick="pick(this,'exposure','regulated')">Regulated domain</span>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-block" style="max-width:680px;margin-top:8px" onclick="runAnalysis()">Run the analysis →</button>
+  </section>
+
+  <!-- SCREEN 3 — ANALYSIS -->
+  <section class="screen" id="s-analysis">
+    <div class="analysis">
+      <span class="eyebrow" style="justify-content:center">Analysing</span>
+      <div class="scanner"><span>🔍</span></div>
+      <h2 class="display" style="font-size:26px;margin-bottom:6px;color:var(--forest)">Reading the role like a hiring panel.</h2>
+      <p style="color:var(--ink-soft);font-size:14px;margin-bottom:20px">Seven dimensions, scored and weighted.</p>
+      <div class="steps" id="steps">
+        <div class="step"><span class="ic"></span> Evaluating task structure</div>
+        <div class="step"><span class="ic"></span> Evaluating judgment complexity</div>
+        <div class="step"><span class="ic"></span> Weighing volume &amp; stakes</div>
+        <div class="step"><span class="ic"></span> Measuring empathy &amp; emotional load</div>
+        <div class="step"><span class="ic"></span> Checking system integration patterns</div>
+        <div class="step"><span class="ic"></span> Assessing data sensitivity</div>
+        <div class="step"><span class="ic"></span> Drafting candidate profiles</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 4 — RESULT -->
+  <section class="screen" id="s-result">
+    <span class="eyebrow" id="resultEyebrow">Your verdict</span>
+
+    <div class="verdict-band">
+      <div class="gauge" id="gauge"><div class="num"><b id="scoreNum">0</b><small>AGENT FIT SCORE</small></div></div>
+      <div class="verdict-copy">
+        <span class="tag" id="verdictTag">⚡ Strong agent candidate</span>
+        <h2 class="display" id="verdictHeadline">This role is built for an agent.</h2>
+        <p id="verdictRationale"></p>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="cand">
+        <div class="cand-top human">
+          <div class="avatar human">H</div>
+          <div><h3>Human Hire</h3><div class="role" id="humanRole">Specialist · full-time</div></div>
+        </div>
+        <div class="cand-body">
+          <div class="specs">
+            <div class="spec"><small>Salary, loaded</small><b class="cost" id="hSalary">—</b></div>
+            <div class="spec"><small>Time to productive</small><b id="hRamp">—</b></div>
+            <div class="spec"><small>Scale ceiling</small><b id="hScale">—</b></div>
+            <div class="spec"><small>Coverage</small><b id="hCoverage">—</b></div>
+          </div>
+          <div class="lists">
+            <div class="lh">Great at</div><ul id="hGreat"></ul>
+            <div class="lh">Hard part</div><ul id="hHard"></ul>
+          </div>
+        </div>
+        <div class="cand-foot">
+          Tech Safari can source this candidate from a vetted pool.
+          <button class="btn btn-ghost btn-block" onclick="go('s-brief')">🧭 Brief Tech Safari</button>
+        </div>
+      </div>
+
+      <div class="cand win" id="agentCard">
+        <div class="cand-top agent">
+          <div class="avatar agent" id="adaAvatar">A</div>
+          <div><h3 id="adaName">Ada</h3><div class="role" id="adaRole">Agent</div></div>
+          <span class="winflag" id="bestFitBadge">BEST FIT</span>
+        </div>
+        <div class="cand-body">
+          <div class="specs">
+            <div class="spec">
+              <small>Monthly cost</small>
+              <div class="reveal-wrap">
+                <b class="cost gated" id="adaCost">$1,200/mo</b>
+                <div class="reveal-btn" id="costGate" onclick="openGate()"><span>🔓 Reveal — adds your email</span></div>
+              </div>
+            </div>
+            <div class="spec"><small>Start date</small><b id="adaStart">—</b></div>
+            <div class="spec"><small>Throughput</small><b id="adaThroughput">—</b></div>
+            <div class="spec"><small>Coverage</small><b id="adaCoverage">—</b></div>
+          </div>
+          <div class="lists">
+            <div class="lh">Great at</div><ul id="adaGreat"></ul>
+            <div class="lh">Can't do</div><ul id="adaCant"></ul>
+          </div>
+        </div>
+        <div class="cand-foot">
+          Lua can build &amp; deploy Ada — typically live within a week.
+          <button class="btn btn-lua btn-block" onclick="go('s-connect')">⚡ Connect with Lua</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="breakdown">
+      <h3 class="display">Show your work</h3>
+      <p class="hint">Seven dimensions, each 1–10, weighted into the score. Bars lean green toward human, purple toward agent.</p>
+      <div id="dims"></div>
+      <div class="axis"><span class="h">← Needs a human</span><span class="a">Built for an agent →</span></div>
+    </div>
+
+    <div class="final">
+      <div>
+        <h3 class="display">Ready to put Ada on the team?</h3>
+        <p>Book a 15-minute intro with Lua — they'll scope and deploy the agent for this role.</p>
+      </div>
+      <button class="btn btn-light" onclick="go('s-connect')">⚡ Connect with Lua →</button>
+    </div>
+
+    <div class="slack-note">
+      <div class="lbl">↓ What both partners see the moment you finish</div>
+      <div class="slack">
+        <div class="ch"># leads</div>
+        <div class="row">
+          <div class="sq"></div>
+          <div>
+            <div><b class="u">Agent Fit Bot</b> <span class="meta">· just now</span></div>
+            <div style="margin-top:4px">New evaluation — <b style="color:#fff" id="slackRole">—</b></div>
+            <div class="meta" id="slackMeta">Verdict: — · Score — · [Company]</div>
+            <div class="acts">
+              <button class="sbtn ts">🧭 Tech Safari takes this</button>
+              <button class="sbtn lua">⚡ Lua takes this</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="restart" onclick="restart()">↻ Score another role</button>
+  </section>
+
+  <!-- SCREEN 5 — BRIEF TECH SAFARI -->
+  <section class="screen" id="s-brief">
+    <span class="eyebrow">Human-led path · Tech Safari</span>
+    <div class="s-head">
+      <h2 class="display">Brief Tech Safari on this role.</h2>
+      <p>This becomes the recruiter brief. A specialist replies within one business day.</p>
+    </div>
+    <div class="dropzone" style="max-width:560px;margin:0">
+      <div class="field"><label>Your name</label><input id="tsName" placeholder="Jordan Reyes" /></div>
+      <div class="field"><label>Work email</label><input id="tsEmail" placeholder="jordan@northwind.co" /></div>
+      <div class="field"><label>Company</label><input id="tsCompany" placeholder="Northwind Co." /></div>
+      <div class="field"><label>When do you need this seat filled?</label><input id="tsTimeline" placeholder="Within 6 weeks" /></div>
+      <button class="btn btn-primary btn-block" style="margin-top:8px" onclick="submitCta('tech_safari')">Send brief to Tech Safari →</button>
+    </div>
+    <button class="restart" onclick="go('s-result')">← Back to verdict</button>
+  </section>
+
+  <!-- SCREEN 6 — CONNECT WITH LUA -->
+  <section class="screen" id="s-connect">
+    <span class="eyebrow">Agent-led path · Lua</span>
+
+    <!-- Wizard (score >= 65) -->
+    <div id="wizardSection" style="display:none">
+      <div class="s-head">
+        <h2 class="display">One last thing before I connect you with Lua.</h2>
+        <p>Ada has 5 quick questions to build your agent brief. Takes about 2 minutes — Lua uses it to scope and quote the build.</p>
+      </div>
+      <div class="wizard-wrap">
+        <div class="wizard-head" id="wizardHead">
+          <!-- populated by JS -->
+        </div>
+        <div class="wizard-msgs" id="wizardMsgs"></div>
+        <div class="wz-input-row" id="wizardInputRow">
+          <textarea id="wizardInput" placeholder="Your answer…" rows="2" onkeydown="wizardKeyDown(event)"></textarea>
+          <button onclick="submitWizardAnswer()" id="wizardSendBtn">→</button>
+        </div>
+        <div id="briefCardWrap" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- Static form (score < 65) -->
+    <div id="staticLuaForm">
+      <div class="s-head">
+        <h2 class="display">Connect with Lua.</h2>
+        <p>Book a 15-minute intro — Lua scopes the agent for this role and gives you a build estimate.</p>
+      </div>
+      <div class="dropzone" style="max-width:560px;margin:0">
+        <div class="field"><label>Your name</label><input id="luaName" placeholder="Jordan Reyes" /></div>
+        <div class="field"><label>Work email</label><input id="luaEmail" placeholder="jordan@northwind.co" /></div>
+        <div class="field"><label>Company</label><input id="luaCompany" placeholder="Northwind Co." /></div>
+        <div class="field"><label>What should this agent own first?</label><input id="luaScope" placeholder="Tier 1 inbound support triage" /></div>
+        <button class="btn btn-lua btn-block" style="margin-top:8px" onclick="submitCta('lua')">Book intro with Lua →</button>
+      </div>
+    </div>
+
+    <button class="restart" onclick="go('s-result')">← Back to verdict</button>
+  </section>
+
+</main>
+
+<!-- Ada floating chat widget -->
+<div id="adaWidget" style="display:none">
+  <button class="ada-fab" id="adaFabBtn" onclick="toggleAdaChat()">
+    <div id="adaFabImgWrap"></div>
+    <span>Ask Ada</span>
+    <span class="ada-pulse" id="adaPulse"></span>
+  </button>
+  <div class="ada-panel" id="adaPanel">
+    <div class="ada-p-head" id="adaPHead"></div>
+    <div class="ada-msgs" id="adaMsgList"></div>
+    <div class="ada-input-row">
+      <input id="adaInput" placeholder="Ask Ada anything…" onkeydown="adaKeyDown(event)" />
+      <button onclick="sendToAda()" id="adaSendBtn">↑</button>
+    </div>
+  </div>
+</div>
+
+<!-- Email gate modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="lua-tab">⚡ One step — your lead</div>
+    <h3 class="display">Unlock the full report</h3>
+    <p>Reveal Ada's cost breakdown, the seven-dimension PDF, and a follow-up note written by Ada herself.</p>
+    <div class="field"><label>Work email</label><input id="gateEmail" placeholder="you@company.com" /></div>
+    <div class="field"><label>Company</label><input id="gateCompany" placeholder="Company name" /></div>
+    <button class="btn btn-lua btn-block" onclick="submitGate()">Reveal &amp; download report</button>
+    <div class="fine">Tech Safari &amp; Lua only. No spam. Used to route your lead.</div>
+  </div>
+</div>
+
+<footer>
+  A <b class="ts">Tech Safari</b> × <b class="lua">Lua</b> collaboration · Honest verdicts, warm leads for both sides.
+</footer>
+
+<script>
+// ─── state ────────────────────────────────────────────────────────────────────
+const state = {
+  jdText: '', volume: 'medium', stakes: 'low',
+  exposure: 'customer_unregulated', result: null,
+  urlMode: false, scraping: false,
+};
+
+const railMap = { 's-hero':0,'s-questions':1,'s-analysis':2,'s-result':3,'s-brief':3,'s-connect':3 };
+
+// ─── navigation ───────────────────────────────────────────────────────────────
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top:0, behavior:'smooth' });
+  const n = railMap[id];
+  document.querySelectorAll('#rail i').forEach((bar,i) => {
+    bar.className = i<=n ? (i===3?'on lua':'on') : '';
+  });
+  if (id === 's-result') { drawResult(); initAdaChat(); }
+  if (id !== 's-result') { document.getElementById('adaWidget').style.display = 'none'; }
+  if (id === 's-connect') initConnectScreen();
+}
+
+// ─── URL scraper ──────────────────────────────────────────────────────────────
+function toggleUrlMode() {
+  state.urlMode = !state.urlMode;
+  document.getElementById('textWrap').style.display = state.urlMode ? 'none' : '';
+  document.getElementById('urlWrap').style.display = state.urlMode ? '' : 'none';
+  document.getElementById('dzSep').style.display = state.urlMode ? 'none' : '';
+  document.getElementById('urlChip').classList.toggle('active', state.urlMode);
+  document.getElementById('heroBtn').textContent = state.urlMode ? 'Fetch & score this role →' : 'Score this role →';
+  document.getElementById('scrapeErr').style.display = 'none';
+}
+
+async function fetchJD() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) { showScrapeErr('Please enter a URL.'); return; }
+  state.scraping = true;
+  const btn = document.getElementById('heroBtn');
+  btn.textContent = 'Fetching job description…';
+  btn.disabled = true;
+  document.getElementById('scrapeErr').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/scrape-jd', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ url }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      showScrapeErr(data.error);
+    } else {
+      // Switch to text mode with the extracted JD
+      state.urlMode = false;
+      document.getElementById('textWrap').style.display = '';
+      document.getElementById('urlWrap').style.display = 'none';
+      document.getElementById('dzSep').style.display = '';
+      document.getElementById('urlChip').classList.remove('active');
+      document.getElementById('jd').value = data.jdText;
+      // Show other roles if any
+      if (data.otherRoles && data.otherRoles.length) {
+        const wrap = document.getElementById('otherRoles');
+        document.getElementById('orTitle').textContent =
+          `Found ${data.otherRoles.length} other open role${data.otherRoles.length>1?'s':''} at this company:`;
+        document.getElementById('orChips').innerHTML =
+          data.otherRoles.map(r => `<span class="or-chip">${r}</span>`).join('');
+        wrap.style.display = '';
+      }
+    }
+  } catch {
+    showScrapeErr('Something went wrong. Try pasting the JD text directly.');
+  } finally {
+    state.scraping = false;
+    btn.textContent = 'Score this role →';
+    btn.disabled = false;
+  }
+}
+
+function showScrapeErr(msg) {
+  const el = document.getElementById('scrapeErr');
+  el.textContent = msg;
+  el.style.display = '';
+}
+
+function handleScoreClick() {
+  if (state.urlMode) { fetchJD(); } else { go('s-questions'); }
+}
+
+// ─── sample JD ────────────────────────────────────────────────────────────────
+function loadSample() {
+  if (state.urlMode) toggleUrlMode();
+  document.getElementById('jd').value =
+    "Tier 1 Customer Support Specialist — Northwind Co.\n\n" +
+    "Respond to inbound customer emails and chats, resolve common order, billing and shipping questions, " +
+    "triage and tag tickets, escalate edge cases, and keep the CRM up to date. High ticket volume. " +
+    "Playbook-driven. Customer-facing. Reports to the Support Lead.";
+}
+
+// ─── question selection ───────────────────────────────────────────────────────
+function pick(el, key, value) {
+  el.parentElement.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
+  el.classList.add('sel');
+  state[key] = value;
+}
+
+// ─── analysis theater ─────────────────────────────────────────────────────────
+function runAnalysis() {
+  state.jdText = document.getElementById('jd').value;
+  go('s-analysis');
+  const steps = [...document.querySelectorAll('#steps .step')];
+  steps.forEach(s => s.className = 'step');
+  let i = 0;
+  steps[0].classList.add('run');
+  const apiPromise = callScoreApi();
+  const tick = setInterval(() => {
+    steps[i].className = 'step done';
+    i++;
+    if (i < steps.length) { steps[i].classList.add('run'); }
+    else {
+      clearInterval(tick);
+      apiPromise.then(() => setTimeout(() => go('s-result'), 700));
+    }
+  }, 1300);
+}
+
+// ─── API call ─────────────────────────────────────────────────────────────────
+async function callScoreApi() {
+  try {
+    const res = await fetch('/api/score', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ jdText:state.jdText, volume:state.volume, stakes:state.stakes, exposure:state.exposure }),
+    });
+    if (res.ok) state.result = await res.json();
+  } catch { /* use demo */ }
+}
+
+// ─── demo data ────────────────────────────────────────────────────────────────
+const DEMO = {
+  role_title:'Tier 1 Customer Support Specialist', score:78,
+  verdict:'strong_agent', verdict_line:'Strong agent candidate',
+  rationale:'High-volume, rule-based, customer-facing work with low stakes per decision — the pattern an agent fills cleanly. A human in this seat would spend most of their day on tasks that don\'t need a human.',
+  dimensions:[
+    {key:'task_structure',      label:'Task structure',          score:9,weight:1.8,rationale:'Playbook-driven, highly repeatable'},
+    {key:'judgment_complexity', label:'Judgment complexity',     score:7,weight:2.0,rationale:'Rule-based with rare exceptions'},
+    {key:'volume_scale',        label:'Volume & scale',          score:9,weight:1.5,rationale:'Steady high-throughput inbound'},
+    {key:'stakes_per_decision', label:'Stakes per decision',     score:8,weight:1.5,rationale:'Low — most actions reversible'},
+    {key:'empathy_load',        label:'Empathy & emotional load',score:5,weight:1.3,rationale:'Some, but mostly transactional'},
+    {key:'system_integration',  label:'System integration',      score:8,weight:1.0,rationale:'CRM & ticketing tool-heavy'},
+    {key:'data_sensitivity',    label:'Data sensitivity',        score:7,weight:0.9,rationale:'Light PII, unregulated domain'},
+  ],
+  human_candidate:{
+    salary_range:'$72k/yr', time_to_productive:'4–6 weeks',
+    scale_ceiling:'~40 tickets/day', coverage:'1 shift, 5 days',
+    great_at:['Messy escalations & angry customers','Judgment calls outside the playbook'],
+    hard_at:['Cost & churn at volume','Nights, weekends, language coverage'],
+  },
+  agent_candidate:{
+    name:'Ada', role_title:'Customer Support Specialist', avatar_seed:'ada-support',
+    monthly_cost:'$1,200/mo', start_date:'Today',
+    throughput:'Unmetered', coverage:'24/7 · 47 languages',
+    great_at:['Instant, consistent first-response','Tagging, routing, CRM updates'],
+    cant_do:['Genuinely novel, high-stakes calls','Owning a relationship over months'],
+  },
+  recommended_cta:'lua',
+  flags:{short_jd:false,non_english:false,suspected_fake:false},
+};
+
+const DEMO_BRIEF = {
+  agent_name:'Ada', role_summary:'AI agent handling Tier 1 customer support — inbound tickets, triage, routing, and CRM updates at scale.',
+  core_capabilities:['Instant first-response to inbound tickets','Ticket tagging and routing by category','CRM record updates after each interaction','FAQ resolution from knowledge base'],
+  explicit_limits:['Cannot handle novel or high-stakes complaints without human review','Cannot own long-term customer relationships'],
+  integrations:['Zendesk','Salesforce CRM','Internal knowledge base API'],
+  escalation_rules:'Escalate if sentiment < 0.3, issue unresolved after 2 exchanges, or explicit escalation request.',
+  success_metrics:['First response < 30s','CSAT ≥ 4.2/5','Resolution rate ≥ 70%','Escalation rate < 20%'],
+  monthly_budget:'$1,200/mo', coverage_requirement:'24/7',
+  first_milestone:'Handle 100% of Tier 1 inbound volume within 2 weeks of deployment',
+};
+
+// ─── result rendering ─────────────────────────────────────────────────────────
+let drawn = false;
+function drawResult() {
+  if (drawn) return; drawn = true;
+  const d = state.result || DEMO;
+  document.getElementById('resultEyebrow').textContent = 'Your verdict · ' + d.role_title;
+  let n = 0;
+  const numEl = document.getElementById('scoreNum');
+  const up = setInterval(() => { n++; numEl.textContent = n; if (n >= d.score) clearInterval(up); }, 16);
+  document.getElementById('gauge').style.setProperty('--p', d.score + '%');
+  const tagMap = { needs_human:'🧭 Needs a human', human_led_agent_assist:'🔀 Human-led, agent assist', strong_agent:'⚡ Strong agent candidate' };
+  document.getElementById('verdictTag').textContent = tagMap[d.verdict] || d.verdict_line;
+  document.getElementById('verdictHeadline').textContent = d.verdict_line;
+  document.getElementById('verdictRationale').textContent = d.rationale;
+  const hc = d.human_candidate;
+  document.getElementById('humanRole').textContent = d.role_title + ' · full-time';
+  document.getElementById('hSalary').textContent   = hc.salary_range;
+  document.getElementById('hRamp').textContent     = hc.time_to_productive;
+  document.getElementById('hScale').textContent    = hc.scale_ceiling;
+  document.getElementById('hCoverage').textContent = hc.coverage;
+  document.getElementById('hGreat').innerHTML = hc.great_at.map(t=>`<li class="good">${t}</li>`).join('');
+  document.getElementById('hHard').innerHTML  = hc.hard_at.map(t=>`<li class="bad">${t}</li>`).join('');
+  const ac = d.agent_candidate;
+  document.getElementById('adaName').textContent     = ac.name;
+  document.getElementById('adaRole').textContent     = ac.role_title + ' · agent';
+  document.getElementById('adaCost').textContent     = ac.monthly_cost;
+  document.getElementById('adaStart').textContent    = ac.start_date;
+  document.getElementById('adaThroughput').textContent = ac.throughput;
+  document.getElementById('adaCoverage').textContent = ac.coverage;
+  document.getElementById('adaGreat').innerHTML = ac.great_at.map(t=>`<li class="good">${t}</li>`).join('');
+  document.getElementById('adaCant').innerHTML  = ac.cant_do.map(t=>`<li class="bad">${t}</li>`).join('');
+  const avatarEl = document.getElementById('adaAvatar');
+  const img = document.createElement('img');
+  img.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(ac.avatar_seed)}`;
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+  img.onerror = () => { avatarEl.textContent = 'A'; };
+  avatarEl.textContent = '';
+  avatarEl.appendChild(img);
+  document.getElementById('bestFitBadge').style.display = d.verdict==='strong_agent' ? '' : 'none';
+  const wrap = document.getElementById('dims');
+  wrap.innerHTML = d.dimensions.map(dim=>`
+    <div class="dim">
+      <div class="dim-top"><b>${dim.label}</b><span class="sc">${dim.score}/10</span></div>
+      <div class="track" title="${dim.rationale}"><i data-w="${dim.score*10}"></i></div>
+      <div style="font-size:12.5px;color:var(--ink-soft);margin-top:5px">${dim.rationale}</div>
+    </div>`).join('');
+  setTimeout(()=>{ document.querySelectorAll('#dims .track i').forEach(b=>b.style.width=b.dataset.w+'%'); },200);
+  document.getElementById('slackRole').textContent = d.role_title;
+  document.getElementById('slackMeta').textContent = `Verdict: ${d.verdict_line} · Score ${d.score} · [Company]`;
+}
+
+// ─── email gate ───────────────────────────────────────────────────────────────
+function openGate() { document.getElementById('overlay').classList.add('show'); }
+async function submitGate() {
+  const email   = document.getElementById('gateEmail').value.trim();
+  const company = document.getElementById('gateCompany').value.trim();
+  if (!email || !company) { alert('Please fill in both fields.'); return; }
+  try {
+    await fetch('/api/capture-lead',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email,company,scoringResult:state.result||DEMO})});
+  } catch {}
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('adaCost').classList.remove('gated');
+  const g = document.getElementById('costGate'); if(g) g.remove();
+}
+document.getElementById('overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') e.currentTarget.classList.remove('show'); });
+
+// ─── CTA forms ────────────────────────────────────────────────────────────────
+async function submitCta(path) {
+  const isTs = path==='tech_safari';
+  const name       = document.getElementById(isTs?'tsName':'luaName').value.trim();
+  const email      = document.getElementById(isTs?'tsEmail':'luaEmail').value.trim();
+  const company    = document.getElementById(isTs?'tsCompany':'luaCompany').value.trim();
+  const extraField = document.getElementById(isTs?'tsTimeline':'luaScope').value.trim();
+  if (!name||!email||!company) { alert('Please fill in all required fields.'); return; }
+  try {
+    await fetch('/api/submit-cta',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({path,name,email,company,extraField,scoringResult:state.result||DEMO})});
+  } catch {}
+  go('s-result');
+}
+
+// ─── Ada floating chat ────────────────────────────────────────────────────────
+let adaInitialized = false;
+const adaChat = { msgs: [], streaming: false, panelOpen: false, autoOpened: false };
+
+function avatarHtml(seed, cls, fbCls, fbTxt) {
+  return `<img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}"
+    class="${cls}" onerror="this.outerHTML='<div class=\\'${fbCls}\\'>${fbTxt}</div>'" />`;
+}
+
+function initAdaChat() {
+  if (adaInitialized) return; adaInitialized = true;
+  const d = state.result || DEMO;
+  const ac = d.agent_candidate;
+  const seed = ac.avatar_seed;
+
+  // Build fab
+  document.getElementById('adaFabImgWrap').innerHTML = avatarHtml(seed,'ada-fab-img','ada-fab-fallback','A');
+  // Build panel header
+  document.getElementById('adaPHead').innerHTML = `
+    ${avatarHtml(seed,'aph-img','aph-fallback','A')}
+    <div><div class="aph-name">${ac.name}</div><div class="aph-role">${ac.role_title} · Agent</div></div>
+    <button class="aph-close" onclick="toggleAdaChat()">×</button>`;
+
+  adaChat.msgs = [{ role:'assistant', content:`Hi — I'm Ada, your ${ac.role_title}. I just finished scoring this role. Got questions about the result? I'm happy to walk you through it.` }];
+  renderAdaMsgs(seed);
+
+  document.getElementById('adaWidget').style.display = '';
+  if (!adaChat.autoOpened) {
+    adaChat.autoOpened = true;
+    setTimeout(() => { if (!adaChat.panelOpen) openAdaChat(); }, 4000);
+  }
+}
+
+function openAdaChat() {
+  adaChat.panelOpen = true;
+  document.getElementById('adaPanel').classList.add('open');
+  document.getElementById('adaPulse').style.display = 'none';
+}
+function closeAdaChat() {
+  adaChat.panelOpen = false;
+  document.getElementById('adaPanel').classList.remove('open');
+}
+function toggleAdaChat() { adaChat.panelOpen ? closeAdaChat() : openAdaChat(); }
+
+function renderAdaMsgs(seedOverride) {
+  const d = state.result || DEMO;
+  const seed = seedOverride || d.agent_candidate.avatar_seed;
+  const list = document.getElementById('adaMsgList');
+  list.innerHTML = adaChat.msgs.map((m,i) => `
+    <div class="ada-msg ${m.role==='user'?'u':''}">
+      ${m.role==='assistant'?avatarHtml(seed,'ada-av','ada-av-fb','A'):''}
+      <div class="ada-bub ada-bub-${m.role==='user'?'u':'a'}">${
+        m.content
+          ? m.content.replace(/\n/g,'<br>')
+          : '<span class="ada-dots"><span></span><span></span><span></span></span>'
+      }</div>
+    </div>`).join('');
+  list.scrollTop = list.scrollHeight;
+}
+
+function adaKeyDown(e) { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); sendToAda(); } }
+
+async function sendToAda() {
+  const inp = document.getElementById('adaInput');
+  const txt = inp.value.trim();
+  if (!txt || adaChat.streaming) return;
+  adaChat.msgs.push({ role:'user', content:txt });
+  adaChat.msgs.push({ role:'assistant', content:'' });
+  inp.value = '';
+  adaChat.streaming = true;
+  document.getElementById('adaSendBtn').disabled = true;
+  const d = state.result || DEMO;
+  const seed = d.agent_candidate.avatar_seed;
+  renderAdaMsgs(seed);
+
+  const msgsCopy = adaChat.msgs.slice(0,-1);
+  try {
+    const res = await fetch('/api/ada-chat',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ messages:msgsCopy, evaluation:d }),
+    });
+    if (res.ok && res.body) {
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        adaChat.msgs[adaChat.msgs.length-1].content += dec.decode(value);
+        renderAdaMsgs(seed);
+      }
+    } else { await adaDemoReply(txt, seed); }
+  } catch { await adaDemoReply(txt, seed); }
+
+  adaChat.streaming = false;
+  document.getElementById('adaSendBtn').disabled = false;
+}
+
+const DEMO_REPLIES = {
+  empathy:'The empathy load scored 5/10 because while there\'s customer interaction, most of it\'s transactional — resolving standard order and billing questions. It\'s not the kind of role that requires managing complex emotions over time. That\'s what kept it in the middle.',
+  judgment:'Fair push-back. The judgment complexity at 7/10 reflects that exceptions exist — but the question is frequency. At this volume, I\'d handle the 80% cleanly and flag the 20% with context for a human reviewer. That\'s still a net win.',
+  lua:'To connect with Lua, click "Connect with Lua" on the page — they\'ll scope me specifically for this role and give you a build estimate within a day.',
+  safari:'For the human hire path, click "Brief Tech Safari" — they\'ll connect you with a recruiter specialist within one business day.',
+  higher:'The score would shift toward "needs a human" if the role involves frequent judgment calls with high stakes, sustained emotional relationships, or work in a heavily regulated domain. Any of those would pull the dimensions lower.',
+  default:'Good question. The score reflects the overall pattern of the role more than any single dimension. I\'m happy to dig into a specific one if you\'d like.',
+};
+
+async function adaDemoReply(text, seed) {
+  const t = text.toLowerCase();
+  let r = DEMO_REPLIES.default;
+  if (t.includes('empathy')||t.includes('emotional')) r = DEMO_REPLIES.empathy;
+  else if (t.includes('judgment')||t.includes('disagree')||t.includes('complex')) r = DEMO_REPLIES.judgment;
+  else if (t.includes('lua')||t.includes('book')||t.includes('connect')) r = DEMO_REPLIES.lua;
+  else if (t.includes('tech safari')||t.includes('techsafari')||t.includes('human hire')) r = DEMO_REPLIES.safari;
+  else if (t.includes('higher')||t.includes('increase')||t.includes('human score')) r = DEMO_REPLIES.higher;
+  for (const ch of r) {
+    adaChat.msgs[adaChat.msgs.length-1].content += ch;
+    renderAdaMsgs(seed);
+    await new Promise(ok => setTimeout(ok, 14));
+  }
+}
+
+// ─── Brief wizard ─────────────────────────────────────────────────────────────
+const WIZARD_QS = [
+  'What tools does your team use today to handle this work? (e.g. CRM, helpdesk, email, spreadsheets)',
+  'Walk me through what happens when a request comes in — start to finish, what are the steps?',
+  'Where do things go wrong or slow down most often?',
+  'What would a perfect week look like for this role — what gets handled, what gets escalated?',
+  'Any systems the agent would need to read from or write to? (APIs, databases, internal tools)',
+];
+const WZ_ACKS = ['Got it.','Thanks — helpful context.','Noted — that shapes the build.','Good to know.'];
+
+let wizardState = { initialized:false, msgs:[], answers:[], qIndex:0, phase:'wizard', brief:null };
+
+function initConnectScreen() {
+  const d = state.result || DEMO;
+  const showWizard = d.score >= 65;
+  document.getElementById('wizardSection').style.display = showWizard ? '' : 'none';
+  document.getElementById('staticLuaForm').style.display = showWizard ? 'none' : '';
+  if (showWizard && !wizardState.initialized) initWizard(d);
+}
+
+function initWizard(d) {
+  wizardState = { initialized:true, msgs:[], answers:[], qIndex:0, phase:'wizard', brief:null };
+  const seed = d.agent_candidate.avatar_seed;
+  // Build wizard header
+  document.getElementById('wizardHead').innerHTML = `
+    ${avatarHtml(seed,'wz-img','wz-fb','A')}
+    <div class="wz-info">
+      <div class="wz-title">${d.agent_candidate.name} is building your Lua brief</div>
+      <div class="wz-sub" id="wzSubLabel">Question 1 of 5</div>
+    </div>
+    <div class="wz-dots">${[0,1,2,3,4].map(i=>`<div class="wz-dot${i===0?' on':''}" id="wzDot${i}"></div>`).join('')}</div>`;
+
+  wizardState.msgs.push({
+    role:'assistant',
+    content:`Before I connect you with Lua, I want to make sure they have everything they need to scope this properly. I'll ask you 5 quick questions about how this work happens today.\n\n${WIZARD_QS[0]}`
+  });
+  renderWizard(seed);
+}
+
+function renderWizard(seedOverride) {
+  const d = state.result || DEMO;
+  const seed = seedOverride || d.agent_candidate.avatar_seed;
+  const msgs = document.getElementById('wizardMsgs');
+  msgs.innerHTML = wizardState.msgs.map(m => `
+    <div class="ada-msg ${m.role==='user'?'u':''}">
+      ${m.role==='assistant'?avatarHtml(seed,'ada-av','ada-av-fb','A'):''}
+      <div class="ada-bub ada-bub-${m.role==='user'?'u':'a'}">${
+        m.content
+          ? m.content.replace(/\n/g,'<br>')
+          : '<span class="ada-dots"><span></span><span></span><span></span></span>'
+      }</div>
+    </div>`).join('');
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // Update progress dots and label
+  if (document.getElementById('wzSubLabel')) {
+    const q = Math.min(wizardState.qIndex+1, 5);
+    document.getElementById('wzSubLabel').textContent =
+      wizardState.phase==='generating' ? 'Generating brief…' :
+      wizardState.phase==='done' ? 'Brief ready' :
+      `Question ${q} of 5`;
+    [0,1,2,3,4].forEach(i => {
+      const dot = document.getElementById('wzDot'+i);
+      if (dot) dot.className = `wz-dot${i<=wizardState.qIndex?' on':''}`;
+    });
+  }
+
+  const inputRow = document.getElementById('wizardInputRow');
+  if (inputRow) inputRow.style.display = wizardState.phase!=='wizard' ? 'none' : '';
+}
+
+function wizardKeyDown(e) { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); submitWizardAnswer(); } }
+
+async function submitWizardAnswer() {
+  const ta = document.getElementById('wizardInput');
+  const answer = ta.value.trim();
+  if (!answer) return;
+  const d = state.result || DEMO;
+  const seed = d.agent_candidate.avatar_seed;
+  const btn = document.getElementById('wizardSendBtn');
+
+  wizardState.answers.push(answer);
+  wizardState.msgs.push({ role:'user', content:answer });
+  ta.value = '';
+  btn.disabled = true;
+  renderWizard(seed);
+
+  if (wizardState.answers.length >= 5) {
+    wizardState.msgs.push({ role:'assistant', content:'Perfect — I have everything I need. Generating your Lua build brief now…' });
+    wizardState.phase = 'generating';
+    renderWizard(seed);
+    await generateBrief(d, seed);
+    return;
+  }
+
+  wizardState.qIndex++;
+  wizardState.msgs.push({ role:'assistant', content:'' });
+  renderWizard(seed);
+
+  const updatedMsgs = wizardState.msgs.slice(0,-1);
+  try {
+    const res = await fetch('/api/brief-wizard',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ mode:'chat', messages:updatedMsgs, evaluation:d }),
+    });
+    if (res.ok && res.body) {
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      while(true) {
+        const {done,value} = await reader.read();
+        if(done) break;
+        wizardState.msgs[wizardState.msgs.length-1].content += dec.decode(value);
+        renderWizard(seed);
+      }
+    } else { throw new Error(); }
+  } catch {
+    const ack = WZ_ACKS[(wizardState.qIndex-1)%WZ_ACKS.length];
+    const next = WIZARD_QS[wizardState.qIndex];
+    await typeWizardResponse(`${ack}\n\n${next}`, seed);
+  }
+
+  btn.disabled = false;
+}
+
+async function typeWizardResponse(text, seed) {
+  for (const ch of text) {
+    wizardState.msgs[wizardState.msgs.length-1].content += ch;
+    renderWizard(seed);
+    await new Promise(ok => setTimeout(ok,12));
+  }
+}
+
+async function generateBrief(d, seed) {
+  try {
+    const res = await fetch('/api/brief-wizard',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ mode:'generate', answers:wizardState.answers, evaluation:d }),
+    });
+    if (res.ok) { const data = await res.json(); wizardState.brief = data.brief; }
+    else { wizardState.brief = DEMO_BRIEF; }
+  } catch { wizardState.brief = DEMO_BRIEF; }
+  wizardState.phase = 'done';
+  renderWizard(seed);
+  renderBrief(wizardState.brief, seed);
+}
+
+function renderBrief(brief, seed) {
+  const wrap = document.getElementById('briefCardWrap');
+  wrap.style.display = '';
+  wrap.innerHTML = `
+    <div class="brief-pad">
+      <div class="bc-head">
+        ${avatarHtml(seed,'wz-img','wz-fb','A')}
+        <div><div class="bc-agent">${brief.agent_name}</div><div class="bc-status">Brief sent to Lua · They'll reply within 1 business day</div></div>
+      </div>
+      <div class="bc-summary">${brief.role_summary}</div>
+      <div class="bc-grid">
+        <div class="bc-box">
+          <div class="bc-lbl">Core capabilities</div>
+          ${brief.core_capabilities.map(c=>`<div class="bc-item"><span class="bc-icon-g">✓</span>${c}</div>`).join('')}
+        </div>
+        <div class="bc-box">
+          <div class="bc-lbl">Integrations</div>
+          ${brief.integrations.map(i=>`<div class="bc-item"><span class="bc-icon-p">→</span>${i}</div>`).join('')}
+        </div>
+      </div>
+      <div class="bc-stats">
+        <div class="bc-stat"><div class="bc-stat-lbl">Budget</div><div class="bc-stat-val">${brief.monthly_budget}</div></div>
+        <div class="bc-stat"><div class="bc-stat-lbl">Coverage</div><div class="bc-stat-val">${brief.coverage_requirement}</div></div>
+        <div class="bc-stat"><div class="bc-stat-lbl">First milestone</div><div class="bc-stat-val">${brief.first_milestone}</div></div>
+      </div>
+      <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="go('s-result')">← Back to verdict</button>
+    </div>`;
+  // Scroll brief into view
+  setTimeout(()=> wrap.scrollIntoView({behavior:'smooth',block:'nearest'}), 100);
+}
+
+// ─── restart ──────────────────────────────────────────────────────────────────
+function restart() {
+  drawn = false;
+  adaInitialized = false;
+  adaChat.msgs = [];
+  adaChat.panelOpen = false;
+  adaChat.autoOpened = false;
+  adaChat.streaming = false;
+  wizardState = { initialized:false, msgs:[], answers:[], qIndex:0, phase:'wizard', brief:null };
+  state.result = null;
+  state.urlMode = false;
+  document.getElementById('jd').value = '';
+  document.getElementById('textWrap').style.display = '';
+  document.getElementById('urlWrap').style.display = 'none';
+  document.getElementById('dzSep').style.display = '';
+  document.getElementById('urlChip').classList.remove('active');
+  document.getElementById('heroBtn').textContent = 'Score this role →';
+  document.getElementById('otherRoles').style.display = 'none';
+  document.getElementById('adaWidget').style.display = 'none';
+  document.getElementById('adaPanel').classList.remove('open');
+  // Restore cost gate
+  const costEl = document.getElementById('adaCost');
+  if (costEl) costEl.classList.add('gated');
+  const rw = document.querySelector('.reveal-wrap');
+  if (rw && !document.getElementById('costGate')) {
+    const gate = document.createElement('div');
+    gate.id='costGate'; gate.className='reveal-btn'; gate.onclick=openGate;
+    gate.innerHTML='<span>🔓 Reveal — adds your email</span>';
+    rw.appendChild(gate);
+  }
+  go('s-hero');
+}
+</script>
+</body>
+</html>

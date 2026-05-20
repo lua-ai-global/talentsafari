@@ -1,0 +1,34 @@
+{
+  "messages": [{ "role": "user", "content": "What was my score and why?" }],
+  "evaluation": {
+    "role_title": "Customer Support Agent",
+    "score": 72,
+    "verdict": "strong_agent",
+    "verdict_line": "Ada handles this better.",
+    "rationale": "High-volume, rule-based support work.",
+    "dimensions": [
+      { "key": "task_structure", "label": "Task Structure", "score": 8, "weight": 1.8, "rationale": "Repeatable ticket triage" },
+      { "key": "judgment_complexity", "label": "Judgment Complexity", "score": 7, "weight": 2.0, "rationale": "Mostly rule-based" },
+      { "key": "volume_scale", "label": "Volume Scale", "score": 9, "weight": 1.5, "rationale": "Hundreds per day" },
+      { "key": "stakes_per_decision", "label": "Stakes", "score": 6, "weight": 1.5, "rationale": "Low-stakes errors" },
+      { "key": "empathy_load", "label": "Empathy Load", "score": 5, "weight": 1.3, "rationale": "Transactional" },
+      { "key": "system_integration", "label": "Systems", "score": 8, "weight": 1.0, "rationale": "API-heavy" },
+      { "key": "data_sensitivity", "label": "Data", "score": 6, "weight": 0.9, "rationale": "Non-regulated" }
+    ],
+    "human_candidate": {
+      "salary_range": "$45k-$55k/yr",
+      "time_to_productive": "4-6 weeks",
+      "great_at": ["Edge cases", "Emotional support"],
+      "hard_at": ["Scale", "Consistency"]
+    },
+    "agent_candidate": {
+      "name": "Ada",
+      "role_title": "AI Support Agent",
+      "avatar_seed": "ada-support",
+      "monthly_cost": "$1,200/mo",
+      "throughput": "500+ tickets/day",
+      "great_at": ["Fast triage", "24/7 coverage", "Consistent replies"],
+      "cant_do": ["Novel escalations", "Emotional crises"]
+    }
+  }
+}

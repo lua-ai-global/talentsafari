@@ -1,0 +1,82 @@
+{
+  "lastHash": "49b72105fb3c822d6916a7e6b0f420b0fb6d3caeef3d3260302735b9df78f298",
+  "lastPushedAt": "2026-05-20T04:26:18.972Z",
+  "files": [
+    {
+      "relativePath": "build.md",
+      "hash": "4b80192c6471a386"
+    },
+    {
+      "relativePath": "env.example",
+      "hash": "09350aafdbdb007a"
+    },
+    {
+      "relativePath": "index.html",
+      "hash": "83fedb4d07477522"
+    },
+    {
+      "relativePath": "lua.skill.yaml",
+      "hash": "8279741295fbdaf3"
+    },
+    {
+      "relativePath": "package.json",
+      "hash": "110536777933a2d1"
+    },
+    {
+      "relativePath": "QUICKSTART.md",
+      "hash": "31e631fd64512cd1"
+    },
+    {
+      "relativePath": "README.md",
+      "hash": "2ca2d2b3168e75e5"
+    },
+    {
+      "relativePath": "src/index.ts",
+      "hash": "fbfda5556b24dcf0"
+    },
+    {
+      "relativePath": "src/skills/ada-chat.skill.ts",
+      "hash": "f0cdf71593d52913"
+    },
+    {
+      "relativePath": "src/skills/brief-wizard.skill.ts",
+      "hash": "d9ba1585e7e2edf4"
+    },
+    {
+      "relativePath": "src/skills/capture-lead.skill.ts",
+      "hash": "daec3f5a3e29efd9"
+    },
+    {
+      "relativePath": "src/skills/score-role.skill.ts",
+      "hash": "145813dd33701fe6"
+    },
+    {
+      "relativePath": "src/skills/scrape-jd.skill.ts",
+      "hash": "80adca61b3a23b1e"
+    },
+    {
+      "relativePath": "src/skills/submit-cta.skill.ts",
+      "hash": "48466ec069f46dfb"
+    },
+    {
+      "relativePath": "src/skills/tools/CaptureLead.ts",
+      "hash": "ca4a90094034c3bd"
+    },
+    {
+      "relativePath": "src/skills/tools/ScoreJd.ts",
+      "hash": "d3ba2342b9a6059b"
+    },
+    {
+      "relativePath": "src/skills/tools/SubmitCta.ts",
+      "hash": "de0fd5eab1a5204f"
+    },
+    {
+      "relativePath": "test-ada-chat-input.json",
+      "hash": "d963b4efd19b7a81"
+    },
+    {
+      "relativePath": "tsconfig.json",
+      "hash": "748d6fffca1cc9ce"
+    }
+  ]
+}
