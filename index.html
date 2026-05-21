@@ -312,64 +312,6 @@
   footer b.lua { color:var(--lua); }
   .restart { display:block; margin:26px auto 0; background:none; border:0; font-family:inherit; font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer; text-decoration:underline; }
 
-  /* ── Ada floating chat widget ─────────────────────────────────────── */
-  .ada-fab {
-    position: fixed; bottom: 24px; right: 24px; z-index: 50;
-    display: flex; align-items: center; gap: 10px;
-    background: var(--forest); padding: 10px 18px 10px 10px;
-    border-radius: 999px; border: 0; cursor: pointer; font-family: inherit;
-    font-weight: 700; font-size: 14px; color: var(--cream);
-    box-shadow: 0 8px 28px -8px rgba(1,38,28,.7); transition: .18s;
-  }
-  .ada-fab:hover { background: var(--forest-2); transform: translateY(-2px); }
-  .ada-fab-img { width: 28px; height: 28px; border-radius: 50%; background: var(--green); object-fit: cover; }
-  .ada-fab-fallback { width: 28px; height: 28px; border-radius: 50%; background: var(--green); display: grid; place-items: center; font-size: 14px; font-weight: 700; color: var(--forest); }
-  .ada-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: adaPulse 2s infinite; }
-  @keyframes adaPulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.5;transform:scale(1.4);} }
-
-  .ada-panel {
-    position: fixed; bottom: 86px; right: 24px; z-index: 50;
-    width: 320px; height: 430px; border-radius: 20px;
-    background: var(--paper); box-shadow: 0 22px 60px -18px rgba(1,38,28,.4);
-    border: 1px solid rgba(14,203,123,.22);
-    display: none; flex-direction: column; overflow: hidden;
-    animation: rise .3s ease;
-  }
-  .ada-panel.open { display: flex; }
-  .ada-p-head {
-    background: var(--forest); padding: 14px 16px;
-    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
-  }
-  .ada-p-head .aph-img { width: 36px; height: 36px; border-radius: 50%; background: var(--green); object-fit: cover; }
-  .ada-p-head .aph-fallback { width: 36px; height: 36px; border-radius: 50%; background: var(--green); display: grid; place-items: center; font-size: 16px; font-weight: 700; color: var(--forest); }
-  .ada-p-head .aph-name { color: var(--cream); font-weight: 700; font-size: 14px; }
-  .ada-p-head .aph-role { color: var(--green); font-size: 11px; }
-  .ada-p-head .aph-close { margin-left: auto; background: none; border: 0; color: #6a9e8e; font-size: 22px; cursor: pointer; line-height: 1; padding: 0 2px; }
-  .ada-msgs { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
-  .ada-msg { display: flex; gap: 7px; }
-  .ada-msg.u { justify-content: flex-end; }
-  .ada-av { width: 22px; height: 22px; border-radius: 50%; background: var(--green); object-fit: cover; flex-shrink: 0; margin-top: 2px; }
-  .ada-av-fb { width: 22px; height: 22px; border-radius: 50%; background: var(--green); display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--forest); flex-shrink: 0; margin-top: 2px; }
-  .ada-bub { max-width: 86%; font-size: 13.5px; line-height: 1.5; padding: 9px 13px; border-radius: 16px; white-space: pre-wrap; }
-  .ada-bub-a { background: white; color: var(--ink); border-radius: 4px 16px 16px 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-  .ada-bub-u { background: var(--forest); color: var(--cream); border-radius: 16px 4px 16px 16px; }
-  .ada-dots span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green-deep); margin: 0 2px; animation: adaDot .8s infinite; }
-  .ada-dots span:nth-child(2) { animation-delay: .15s; }
-  .ada-dots span:nth-child(3) { animation-delay: .3s; }
-  @keyframes adaDot { 0%,100%{opacity:.3;transform:translateY(0);} 50%{opacity:1;transform:translateY(-3px);} }
-  .ada-input-row { padding: 10px 12px; border-top: 1px solid var(--line); display: flex; gap: 7px; flex-shrink: 0; }
-  .ada-input-row input {
-    flex: 1; border: 1.5px solid var(--line); border-radius: 999px;
-    padding: 8px 14px; font-family: inherit; font-size: 13px; outline: 0; background: var(--cream);
-  }
-  .ada-input-row input:focus { border-color: var(--green); }
-  .ada-input-row button {
-    width: 34px; height: 34px; border-radius: 50%; background: var(--green);
-    color: var(--forest); border: 0; cursor: pointer; font-size: 15px; font-weight: 700;
-    display: grid; place-items: center; flex-shrink: 0;
-  }
-  .ada-input-row button:disabled { opacity: .4; cursor: not-allowed; }
-
   /* ── brief wizard ─────────────────────────────────────────────────── */
   .wizard-wrap {
     background: var(--paper); border-radius: 20px; max-width: 680px;
@@ -424,8 +366,6 @@
     .final { text-align: center; justify-content: center; }
     .bc-grid { grid-template-columns: 1fr; }
     .bc-stats { grid-template-columns: 1fr 1fr; }
-    .ada-panel { width: calc(100vw - 32px); right: 16px; }
-    .ada-fab { bottom: 16px; right: 16px; }
   }
 </style>
 </head>
@@ -713,23 +653,6 @@
 
 </main>
 
-<!-- Ada floating chat widget -->
-<div id="adaWidget" style="display:none">
-  <button class="ada-fab" id="adaFabBtn" onclick="toggleAdaChat()">
-    <div id="adaFabImgWrap"></div>
-    <span>Ask Ada</span>
-    <span class="ada-pulse" id="adaPulse"></span>
-  </button>
-  <div class="ada-panel" id="adaPanel">
-    <div class="ada-p-head" id="adaPHead"></div>
-    <div class="ada-msgs" id="adaMsgList"></div>
-    <div class="ada-input-row">
-      <input id="adaInput" placeholder="Ask Ada anything…" onkeydown="adaKeyDown(event)" />
-      <button onclick="sendToAda()" id="adaSendBtn">↑</button>
-    </div>
-  </div>
-</div>
-
 <!-- Email gate modal -->
 <div class="overlay" id="overlay">
   <div class="modal">
@@ -766,8 +689,7 @@ function go(id) {
   document.querySelectorAll('#rail i').forEach((bar,i) => {
     bar.className = i<=n ? (i===3?'on lua':'on') : '';
   });
-  if (id === 's-result') { drawResult(); initAdaChat(); }
-  if (id !== 's-result') { document.getElementById('adaWidget').style.display = 'none'; }
+  if (id === 's-result') { drawResult(); }
   if (id === 's-connect') initConnectScreen();
 }
 
@@ -874,13 +796,54 @@ function runAnalysis() {
 }
 
 // ─── API call ─────────────────────────────────────────────────────────────────
+const LUA_AGENT_ID = 'baseAgent_agent_1779215133611_x0svb7j5d';
+const LUA_API_KEY  = 'api_403f64cd0f8b4e3b97c2c98443508e84';
+
 async function callScoreApi() {
+  const prompt = `Score this job description. Call the score_jd tool and return the raw JSON result only — no prose before or after.
+
+JD: ${state.jdText}
+Volume: ${state.volume}
+Stakes: ${state.stakes}
+Exposure: ${state.exposure}`;
+
   try {
-    const res = await fetch('/api/score', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ jdText:state.jdText, volume:state.volume, stakes:state.stakes, exposure:state.exposure }),
-    });
-    if (res.ok) state.result = await res.json();
+    const res = await fetch(
+      `https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${LUA_API_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: [{ type: 'text', text: prompt }],
+          navigate: false,
+        }),
+      }
+    );
+
+    if (!res.ok) return;
+    const data = await res.json();
+
+    // Extract tool result from steps if present
+    const toolResult = data?.steps
+      ?.flatMap(s => s.toolResults || [])
+      ?.find(r => r.toolName?.includes('score_jd') || r.toolName?.includes('score_role'));
+
+    if (toolResult?.result) {
+      state.result = typeof toolResult.result === 'string'
+        ? JSON.parse(toolResult.result)
+        : toolResult.result;
+      return;
+    }
+
+    // Fallback: try to parse JSON block from Ada's text response
+    const text = data?.text || '';
+    const match = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*"score"[\s\S]*\})/);
+    if (match) {
+      try { state.result = JSON.parse(match[1].trim()); } catch {}
+    }
   } catch { /* use demo */ }
 }
 
@@ -1008,125 +971,10 @@ async function submitCta(path) {
   go('s-result');
 }
 
-// ─── Ada floating chat ────────────────────────────────────────────────────────
-let adaInitialized = false;
-const adaChat = { msgs: [], streaming: false, panelOpen: false, autoOpened: false };
-
+// ─── avatar helper ────────────────────────────────────────────────────────────
 function avatarHtml(seed, cls, fbCls, fbTxt) {
   return `<img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}"
     class="${cls}" onerror="this.outerHTML='<div class=\\'${fbCls}\\'>${fbTxt}</div>'" />`;
-}
-
-function initAdaChat() {
-  if (adaInitialized) return; adaInitialized = true;
-  const d = state.result || DEMO;
-  const ac = d.agent_candidate;
-  const seed = ac.avatar_seed;
-
-  // Build fab
-  document.getElementById('adaFabImgWrap').innerHTML = avatarHtml(seed,'ada-fab-img','ada-fab-fallback','A');
-  // Build panel header
-  document.getElementById('adaPHead').innerHTML = `
-    ${avatarHtml(seed,'aph-img','aph-fallback','A')}
-    <div><div class="aph-name">${ac.name}</div><div class="aph-role">${ac.role_title} · Agent</div></div>
-    <button class="aph-close" onclick="toggleAdaChat()">×</button>`;
-
-  adaChat.msgs = [{ role:'assistant', content:`Hi — I'm Ada, your ${ac.role_title}. I just finished scoring this role. Got questions about the result? I'm happy to walk you through it.` }];
-  renderAdaMsgs(seed);
-
-  document.getElementById('adaWidget').style.display = '';
-  if (!adaChat.autoOpened) {
-    adaChat.autoOpened = true;
-    setTimeout(() => { if (!adaChat.panelOpen) openAdaChat(); }, 4000);
-  }
-}
-
-function openAdaChat() {
-  adaChat.panelOpen = true;
-  document.getElementById('adaPanel').classList.add('open');
-  document.getElementById('adaPulse').style.display = 'none';
-}
-function closeAdaChat() {
-  adaChat.panelOpen = false;
-  document.getElementById('adaPanel').classList.remove('open');
-}
-function toggleAdaChat() { adaChat.panelOpen ? closeAdaChat() : openAdaChat(); }
-
-function renderAdaMsgs(seedOverride) {
-  const d = state.result || DEMO;
-  const seed = seedOverride || d.agent_candidate.avatar_seed;
-  const list = document.getElementById('adaMsgList');
-  list.innerHTML = adaChat.msgs.map((m,i) => `
-    <div class="ada-msg ${m.role==='user'?'u':''}">
-      ${m.role==='assistant'?avatarHtml(seed,'ada-av','ada-av-fb','A'):''}
-      <div class="ada-bub ada-bub-${m.role==='user'?'u':'a'}">${
-        m.content
-          ? m.content.replace(/\n/g,'<br>')
-          : '<span class="ada-dots"><span></span><span></span><span></span></span>'
-      }</div>
-    </div>`).join('');
-  list.scrollTop = list.scrollHeight;
-}
-
-function adaKeyDown(e) { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); sendToAda(); } }
-
-async function sendToAda() {
-  const inp = document.getElementById('adaInput');
-  const txt = inp.value.trim();
-  if (!txt || adaChat.streaming) return;
-  adaChat.msgs.push({ role:'user', content:txt });
-  adaChat.msgs.push({ role:'assistant', content:'' });
-  inp.value = '';
-  adaChat.streaming = true;
-  document.getElementById('adaSendBtn').disabled = true;
-  const d = state.result || DEMO;
-  const seed = d.agent_candidate.avatar_seed;
-  renderAdaMsgs(seed);
-
-  const msgsCopy = adaChat.msgs.slice(0,-1);
-  try {
-    const res = await fetch('/api/ada-chat',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ messages:msgsCopy, evaluation:d }),
-    });
-    if (res.ok && res.body) {
-      const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        adaChat.msgs[adaChat.msgs.length-1].content += dec.decode(value);
-        renderAdaMsgs(seed);
-      }
-    } else { await adaDemoReply(txt, seed); }
-  } catch { await adaDemoReply(txt, seed); }
-
-  adaChat.streaming = false;
-  document.getElementById('adaSendBtn').disabled = false;
-}
-
-const DEMO_REPLIES = {
-  empathy:'The empathy load scored 5/10 because while there\'s customer interaction, most of it\'s transactional — resolving standard order and billing questions. It\'s not the kind of role that requires managing complex emotions over time. That\'s what kept it in the middle.',
-  judgment:'Fair push-back. The judgment complexity at 7/10 reflects that exceptions exist — but the question is frequency. At this volume, I\'d handle the 80% cleanly and flag the 20% with context for a human reviewer. That\'s still a net win.',
-  lua:'To connect with Lua, click "Connect with Lua" on the page — they\'ll scope me specifically for this role and give you a build estimate within a day.',
-  safari:'For the human hire path, click "Brief Tech Safari" — they\'ll connect you with a recruiter specialist within one business day.',
-  higher:'The score would shift toward "needs a human" if the role involves frequent judgment calls with high stakes, sustained emotional relationships, or work in a heavily regulated domain. Any of those would pull the dimensions lower.',
-  default:'Good question. The score reflects the overall pattern of the role more than any single dimension. I\'m happy to dig into a specific one if you\'d like.',
-};
-
-async function adaDemoReply(text, seed) {
-  const t = text.toLowerCase();
-  let r = DEMO_REPLIES.default;
-  if (t.includes('empathy')||t.includes('emotional')) r = DEMO_REPLIES.empathy;
-  else if (t.includes('judgment')||t.includes('disagree')||t.includes('complex')) r = DEMO_REPLIES.judgment;
-  else if (t.includes('lua')||t.includes('book')||t.includes('connect')) r = DEMO_REPLIES.lua;
-  else if (t.includes('tech safari')||t.includes('techsafari')||t.includes('human hire')) r = DEMO_REPLIES.safari;
-  else if (t.includes('higher')||t.includes('increase')||t.includes('human score')) r = DEMO_REPLIES.higher;
-  for (const ch of r) {
-    adaChat.msgs[adaChat.msgs.length-1].content += ch;
-    renderAdaMsgs(seed);
-    await new Promise(ok => setTimeout(ok, 14));
-  }
 }
 
 // ─── Brief wizard ─────────────────────────────────────────────────────────────
@@ -1309,11 +1157,6 @@ function renderBrief(brief, seed) {
 // ─── restart ──────────────────────────────────────────────────────────────────
 function restart() {
   drawn = false;
-  adaInitialized = false;
-  adaChat.msgs = [];
-  adaChat.panelOpen = false;
-  adaChat.autoOpened = false;
-  adaChat.streaming = false;
   wizardState = { initialized:false, msgs:[], answers:[], qIndex:0, phase:'wizard', brief:null };
   state.result = null;
   state.urlMode = false;
@@ -1324,8 +1167,6 @@ function restart() {
   document.getElementById('urlChip').classList.remove('active');
   document.getElementById('heroBtn').textContent = 'Score this role →';
   document.getElementById('otherRoles').style.display = 'none';
-  document.getElementById('adaWidget').style.display = 'none';
-  document.getElementById('adaPanel').classList.remove('open');
   // Restore cost gate
   const costEl = document.getElementById('adaCost');
   if (costEl) costEl.classList.add('gated');
