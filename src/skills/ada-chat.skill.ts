@@ -1,4 +1,4 @@
-import { LuaSkill, LuaTool, env } from 'lua-cli';
+import { LuaSkill, LuaTool, AI } from 'lua-cli';
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
@@ -122,37 +122,16 @@ export class adaChatTool implements LuaTool<typeof adaChatInputSchema> {
   async execute(input: AdaChatInput): Promise<unknown> {
     const { messages, evaluation } = input;
 
-    const apiKey = env('ANTHROPIC_API_KEY');
     const systemPrompt = buildSystemPrompt(evaluation);
+    const lastUserMsg = messages.filter((m) => m.role === 'user').pop()?.content ?? '';
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey ?? '',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 400,
-        system: systemPrompt,
-        messages,
-      }),
+    const result = await AI.generate({
+      system: systemPrompt,
+      prompt: lastUserMsg,
+      maxOutputTokens: 400,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Anthropic API error ${response.status}: ${errorText}`);
-    }
-
-    const data = (await response.json()) as {
-      content: Array<{ type: string; text?: string }>;
-    };
-
-    const textBlock = data.content.find((c) => c.type === 'text');
-    const replyText = textBlock?.text ?? '';
-
-    return { response: replyText };
+    return { response: result.text };
   }
 }
 

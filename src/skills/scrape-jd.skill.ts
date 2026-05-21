@@ -1,4 +1,4 @@
-import { LuaSkill, LuaTool, env } from 'lua-cli';
+import { LuaSkill, LuaTool, AI } from 'lua-cli';
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
@@ -15,73 +15,23 @@ type ScrapeJdInput = z.infer<typeof scrapeJdInputSchema>;
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function extractJdFromHtml(html: string, apiKey: string): Promise<string> {
+async function extractJdFromHtml(html: string): Promise<string> {
   const truncated = html.slice(0, 15000);
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2048,
-      messages: [
-        {
-          role: 'user',
-          content: `Extract the job description from this HTML. Return ONLY the job title and full job description text — no HTML tags, no navigation, no headers, no footer. If you cannot find a job description, return the word NOT_FOUND.\n\n${truncated}`,
-        },
-      ],
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Anthropic API error ${response.status}`);
-  }
-
-  const data = (await response.json()) as {
-    content: Array<{ type: string; text?: string }>;
-  };
-
-  return data.content.find((c) => c.type === 'text')?.text?.trim() ?? '';
+  const result = await AI.generate(
+    'Extract the job description from this HTML. Return ONLY the job title and full job description text — no HTML tags, no navigation, no headers, no footer. If you cannot find a job description, return the word NOT_FOUND.',
+    [{ type: 'text', text: truncated }],
+  );
+  return result.trim();
 }
 
-async function extractOtherRoles(html: string, apiKey: string): Promise<string[]> {
+async function extractOtherRoles(html: string): Promise<string[]> {
   const truncated = html.slice(0, 10000);
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
-      messages: [
-        {
-          role: 'user',
-          content: `Extract up to 5 job titles listed on this careers page. Return ONLY a JSON array of strings, e.g. ["Software Engineer", "Product Manager"]. If no job titles are found, return []. No explanation.\n\n${truncated}`,
-        },
-      ],
-    }),
-  });
-
-  if (!response.ok) {
-    return [];
-  }
-
-  const data = (await response.json()) as {
-    content: Array<{ type: string; text?: string }>;
-  };
-
-  const text = data.content.find((c) => c.type === 'text')?.text?.trim() ?? '[]';
-
+  const result = await AI.generate(
+    'Extract up to 5 job titles listed on this careers page. Return ONLY a JSON array of strings, e.g. ["Software Engineer", "Product Manager"]. If no job titles are found, return []. No explanation.',
+    [{ type: 'text', text: truncated }],
+  );
   try {
-    const parsed = JSON.parse(text) as unknown;
+    const parsed = JSON.parse(result.trim()) as unknown;
     if (Array.isArray(parsed)) {
       return parsed.filter((item): item is string => typeof item === 'string').slice(0, 5);
     }
@@ -103,7 +53,6 @@ export class scrapeJdTool implements LuaTool<typeof scrapeJdInputSchema> {
 
   async execute(input: ScrapeJdInput): Promise<unknown> {
     const { url } = input;
-    const apiKey = env('ANTHROPIC_API_KEY') ?? '';
 
     // Step 1: Fetch the job posting page
     let html: string;
@@ -127,7 +76,7 @@ export class scrapeJdTool implements LuaTool<typeof scrapeJdInputSchema> {
     // Step 2: Extract job description via Haiku
     let jdText: string;
     try {
-      jdText = await extractJdFromHtml(html, apiKey);
+      jdText = await extractJdFromHtml(html);
     } catch {
       return { error: 'Could not fetch that URL. Try pasting the JD text directly.' };
     }
@@ -153,7 +102,7 @@ export class scrapeJdTool implements LuaTool<typeof scrapeJdInputSchema> {
 
       if (careersResponse.ok) {
         const careersHtml = await careersResponse.text();
-        otherRoles = await extractOtherRoles(careersHtml, apiKey);
+        otherRoles = await extractOtherRoles(careersHtml);
       }
     } catch {
       // Silently ignore — best-effort only

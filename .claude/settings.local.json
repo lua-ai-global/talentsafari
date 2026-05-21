@@ -12,7 +12,22 @@
       "Bash(lua push *)",
       "Bash(git init *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(lua sync *)",
+      "Bash(lua status *)",
+      "Read(//c/Users/Elitebook/.claude/**)",
+      "Bash(find /usr -name \"confirm-deploy.mjs\")",
+      "Bash(LUA_DEPLOY_CONFIRMED=1 lua deploy *)",
+      "Bash(lua logs *)",
+      "Bash(lua chat *)",
+      "Bash(lua whoami *)",
+      "Bash(curl -s -X POST https://api.heylua.ai/v1/skills/score-role/invoke -H 'Authorization: Bearer api_403f64cd0f8b4e3b97c2c98443508e84' -H 'Content-Type: application/json' -d '{\"agentId\":\"baseAgent_agent_1779215133611_x0svb7j5d\",\"input\":{\"jdText\":\"Head of Sales. Lead a 10-person sales team, own enterprise pipeline from prospecting to close, negotiate seven-figure contracts, represent the company at industry events. 10 plus years B2B sales leadership required.\",\"volume\":\"low\",\"stakes\":\"high\",\"exposure\":\"executive\"}}')",
+      "Bash(curl -s -X POST https://api.heylua.ai/v1/agents/baseAgent_agent_1779215133611_x0svb7j5d/chat -H 'Authorization: Bearer api_403f64cd0f8b4e3b97c2c98443508e84' -H 'Content-Type: application/json' -d '{\"message\":\"Score this JD: Head of Sales. Lead a 10-person sales team, own enterprise pipeline from prospecting to close, negotiate seven-figure contracts. 10 plus years B2B sales leadership required.\"}')",
+      "Bash(curl -s \"https://api.heylua.ai/\")",
+      "Bash(curl -s \"https://api.heylua.ai/v1/\")",
+      "Bash(node -e ' *)",
+      "Bash(curl *)",
+      "Bash(lua env *)"
     ]
   }
 }

@@ -1,4 +1,4 @@
-import { LuaSkill, LuaTool, env } from 'lua-cli';
+import { LuaSkill, LuaTool, AI, env } from 'lua-cli';
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
@@ -108,7 +108,6 @@ const GENERATE_BRIEF_TOOL = {
 async function runChatMode(
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
   evaluation: BriefWizardInput['evaluation'],
-  apiKey: string,
 ): Promise<string> {
   const { role_title, verdict_line, agent_candidate } = evaluation;
 
@@ -129,37 +128,18 @@ Count how many answers have been given so far based on the conversation history.
 
 Be warm and concise. Do not ask multiple questions at once. Do not explain the process — just ask the question naturally.`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
-      system: systemPrompt,
-      messages,
-    }),
+  const lastUserMsg = messages.filter((m) => m.role === 'user').pop()?.content ?? '';
+  const result = await AI.generate({
+    system: systemPrompt,
+    prompt: lastUserMsg,
+    maxOutputTokens: 300,
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Anthropic API error ${response.status}: ${errorText}`);
-  }
-
-  const data = (await response.json()) as {
-    content: Array<{ type: string; text?: string }>;
-  };
-
-  return data.content.find((c) => c.type === 'text')?.text ?? '';
+  return result.text;
 }
 
 async function runGenerateMode(
   answers: string[],
   evaluation: BriefWizardInput['evaluation'],
-  apiKey: string,
 ): Promise<LuaBrief> {
   const { role_title, verdict_line, rationale, agent_candidate } = evaluation;
 
@@ -167,7 +147,7 @@ async function runGenerateMode(
     '\n\n',
   );
 
-  const systemPrompt = `You are an expert AI agent implementation consultant at Lua. Generate a precise, actionable Lua build brief based on the evaluation data and user answers below.
+  const systemPrompt = `You are an expert AI agent implementation consultant at Lua. Generate a precise, actionable Lua build brief based on the evaluation data and user answers below. Return ONLY a JSON object — no prose.
 
 EVALUATION:
   Role: ${role_title}
@@ -186,40 +166,31 @@ PROPOSED AGENT:
 USER ANSWERS:
 ${answersText}
 
-Use the generate_brief tool to return structured output. Be specific and concrete — no generic filler.`;
+JSON SCHEMA to follow exactly:
+{
+  "agent_name": string,
+  "role_summary": string (max 200 chars),
+  "core_capabilities": string[] (max 5),
+  "explicit_limits": string[] (max 3),
+  "integrations": string[],
+  "escalation_rules": string (max 200 chars),
+  "success_metrics": string[] (max 4),
+  "monthly_budget": string,
+  "coverage_requirement": string,
+  "first_milestone": string (max 150 chars)
+}`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2048,
-      system: systemPrompt,
-      tools: [GENERATE_BRIEF_TOOL],
-      tool_choice: { type: 'tool', name: 'generate_brief' },
-      messages: [{ role: 'user', content: 'Generate the Lua build brief now.' }],
-    }),
+  const result = await AI.generate({
+    system: systemPrompt,
+    prompt: 'Generate the Lua build brief now.',
+    maxOutputTokens: 2048,
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Anthropic API error ${response.status}: ${errorText}`);
-  }
+  const text = result.text.trim();
+  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, text];
+  const jsonStr = (jsonMatch[1] ?? text).trim();
 
-  const data = (await response.json()) as {
-    content: Array<{ type: string; name?: string; input?: Record<string, unknown> }>;
-  };
-
-  const toolUse = data.content.find((c) => c.type === 'tool_use' && c.name === 'generate_brief');
-  if (!toolUse || !toolUse.input) {
-    throw new Error('Claude did not return a generate_brief tool call');
-  }
-
-  return toolUse.input as LuaBrief;
+  return JSON.parse(jsonStr) as LuaBrief;
 }
 
 async function postBriefToSlack(
@@ -306,17 +277,16 @@ export class briefWizardTool implements LuaTool<typeof briefWizardInputSchema> {
 
   async execute(input: BriefWizardInput): Promise<unknown> {
     const { mode, messages, evaluation, answers } = input;
-    const apiKey = env('ANTHROPIC_API_KEY') ?? '';
 
     if (mode === 'chat') {
       const safeMessages = messages ?? [];
-      const response = await runChatMode(safeMessages, evaluation, apiKey);
+      const response = await runChatMode(safeMessages, evaluation);
       return { response };
     }
 
     // generate mode
     const safeAnswers = answers ?? [];
-    const brief = await runGenerateMode(safeAnswers, evaluation, apiKey);
+    const brief = await runGenerateMode(safeAnswers, evaluation);
 
     const slackUrl = env('SLACK_LEADS_WEBHOOK_URL') ?? '';
     await postBriefToSlack(slackUrl, brief, evaluation.role_title);

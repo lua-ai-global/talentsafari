@@ -1,4 +1,4 @@
-import { LuaSkill, LuaTool, env } from 'lua-cli';
+import { LuaSkill, LuaTool, AI } from 'lua-cli';
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
@@ -188,8 +188,7 @@ async function callClaudeScoreRole(
   stakes: string,
   exposure: string,
 ): Promise<Record<string, unknown>> {
-  const apiKey = env('ANTHROPIC_API_KEY');
-  const userPrompt = `Score this job description.
+  const userPrompt = `Score this job description. Return ONLY a JSON object matching the score_role schema — no prose before or after.
 
 ADDITIONAL CONTEXT FROM THE HIRING MANAGER:
 - Weekly volume: ${volume}
@@ -197,47 +196,33 @@ ADDITIONAL CONTEXT FROM THE HIRING MANAGER:
 - Customer-facing / regulated: ${exposure}
 
 JOB DESCRIPTION:
-${jdText}`;
+${jdText}
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey ?? '',
-      'anthropic-version': '2023-06-01',
-      'anthropic-beta': 'prompt-caching-2024-07-31',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4096,
-      system: [
-        {
-          type: 'text',
-          text: SYSTEM_PROMPT,
-          cache_control: { type: 'ephemeral' },
-        },
-      ],
-      tools: [SCORE_ROLE_CLAUDE_TOOL],
-      tool_choice: { type: 'tool', name: 'score_role' },
-      messages: [{ role: 'user', content: userPrompt }],
-    }),
+JSON SCHEMA to follow exactly:
+{
+  "role_title": string,
+  "score": integer 10-100,
+  "verdict": "needs_human"|"human_led_agent_assist"|"strong_agent",
+  "verdict_line": string (max 60 chars),
+  "rationale": string (max 240 chars),
+  "dimensions": [7 items: {key, label, score 1-10, weight, rationale max 120 chars}],
+  "human_candidate": {salary_range, time_to_productive, scale_ceiling, coverage, great_at[max3], hard_at[max3]},
+  "agent_candidate": {name:"Ada", role_title, avatar_seed, monthly_cost, start_date, throughput, coverage, great_at[max3], cant_do[max3]},
+  "recommended_cta": "lua"|"tech_safari",
+  "flags": {short_jd: bool, non_english: bool, suspected_fake: bool}
+}`;
+
+  const result = await AI.generate({
+    system: SYSTEM_PROMPT,
+    prompt: userPrompt,
+    maxOutputTokens: 4096,
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Anthropic API error ${response.status}: ${errorText}`);
-  }
+  const text = result.text.trim();
+  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, text];
+  const jsonStr = (jsonMatch[1] ?? text).trim();
 
-  const data = (await response.json()) as {
-    content: Array<{ type: string; name?: string; input?: Record<string, unknown> }>;
-  };
-
-  const toolUse = data.content.find((c) => c.type === 'tool_use' && c.name === 'score_role');
-  if (!toolUse || !toolUse.input) {
-    throw new Error('Claude did not return a score_role tool call');
-  }
-
-  return toolUse.input;
+  return JSON.parse(jsonStr) as Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------

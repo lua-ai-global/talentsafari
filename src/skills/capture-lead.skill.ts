@@ -1,4 +1,4 @@
-import { LuaSkill, LuaTool, Jobs, env } from 'lua-cli';
+import { LuaSkill, LuaTool, Jobs, AI, env } from 'lua-cli';
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
@@ -165,43 +165,18 @@ async function scheduleFollowupEmail(
         rationale: string;
       };
 
-      const apiKey = env('ANTHROPIC_API_KEY');
       const adaFromEmail = env('ADA_FROM_EMAIL');
       const resendKey = env('RESEND_API_KEY');
 
-      const genResponse = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey ?? '',
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 512,
-          system: `You are Ada, an AI agent who just completed a role evaluation for a company.
+      const emailBody = await AI.generate(
+        `You are Ada, an AI agent who just completed a role evaluation for a company.
 Write a short, warm, first-person follow-up email (4–6 sentences) to the person
 who ran the evaluation. Reference the specific role they scored and the verdict.
 Sound like a capable, friendly colleague — not a chatbot.
 Don't oversell. Be honest about what you can and can't do.
 Sign off as: Ada · Built by Lua`,
-          messages: [
-            {
-              role: 'user',
-              content: `The role was: ${meta.role_title}. Verdict: ${meta.verdict_line}. Rationale: ${meta.rationale}. Write the follow-up email.`,
-            },
-          ],
-        }),
-      });
-
-      if (!genResponse.ok) {
-        throw new Error(`Claude API error generating follow-up: ${genResponse.status}`);
-      }
-
-      const genData = (await genResponse.json()) as {
-        content: Array<{ type: string; text?: string }>;
-      };
-      const emailBody = genData.content.find((c) => c.type === 'text')?.text ?? '';
+        [{ type: 'text', text: `The role was: ${meta.role_title}. Verdict: ${meta.verdict_line}. Rationale: ${meta.rationale}. Write the follow-up email.` }],
+      );
 
       const sendResponse = await fetch('https://api.resend.com/emails', {
         method: 'POST',
