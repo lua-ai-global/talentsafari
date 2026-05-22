@@ -27,7 +27,13 @@
       "Bash(curl -s \"https://api.heylua.ai/v1/\")",
       "Bash(node -e ' *)",
       "Bash(curl *)",
-      "Bash(lua env *)"
+      "Bash(lua env *)",
+      "Bash(npx --yes serve . -p 3000)",
+      "PowerShell(Start-Process \"http://localhost:3000\")",
+      "PowerShell(Start-Process powershell -ArgumentList \"-NoExit\", \"-Command\", \"cd 'C:\\\\Users\\\\Elitebook\\\\OneDrive\\\\Documents\\\\PROJECTS\\\\TechSafari x Lua\\\\TechSafari x Lua'; npx serve . -p 3000\" -WindowStyle Minimized)",
+      "PowerShell(node -e \"const lua = require\\('lua-cli'\\); console.log\\(Object.keys\\(lua\\).filter\\(k => k.toLowerCase\\(\\).includes\\('data'\\) || k.toLowerCase\\(\\).includes\\('store'\\) || k.toLowerCase\\(\\).includes\\('db'\\)\\)\\)\" 2>&1)",
+      "PowerShell(node -e \"const { Data } = require\\('lua-cli'\\); console.log\\(Object.getOwnPropertyNames\\(Data\\).join\\('\\\\n'\\)\\); console.log\\('prototype:', Object.getOwnPropertyNames\\(Data.prototype||{}\\).join\\('\\\\n'\\)\\)\" 2>&1)",
+      "Skill(lua-agent-builder:lua-deploy)"
     ]
   }
 }
