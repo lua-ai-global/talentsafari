@@ -749,6 +749,8 @@ function pick(el, key, value) {
 // ─── analysis theater ─────────────────────────────────────────────────────────
 function runAnalysis() {
   state.jdText = document.getElementById('jd').value;
+  drawn = false;
+  state.result = null;
   go('s-analysis');
   const steps = [...document.querySelectorAll('#steps .step')];
   steps.forEach(s => s.className = 'step');
@@ -791,17 +793,23 @@ async function callScoreApi() {
     console.log('[Ada] steps:', data?.steps?.length, '| preview:', (data?.text||'').slice(0,80));
 
     const allToolResults = data?.steps?.flatMap(s => s.toolResults || []) || [];
-    const toolResult = allToolResults.find(r => {
+    // Find the LAST successful score_jd result (first attempt may fail score_mismatch, Ada retries)
+    const scoringMatches = allToolResults.filter(r => {
       const name = r.payload?.toolName || r.toolName || '';
       return name.includes('score_jd') || name.includes('score_role');
     });
-    console.log('[Ada] tool match:', toolResult?.payload?.toolName || 'none');
+    const toolResult = scoringMatches.slice().reverse().find(r => {
+      const res = r.payload?.result ?? r.result;
+      return res && !res.error && typeof res.score === 'number' && res.score >= 10 && res.score <= 100;
+    }) || scoringMatches[scoringMatches.length - 1];
+    console.log('[Ada] tool matches:', scoringMatches.length, '| using:', toolResult?.payload?.toolName || 'none');
 
     if (toolResult) {
       const raw = toolResult.payload?.result ?? toolResult.result;
-      console.log('[Ada] score:', raw?.score);
-      if (raw) {
-        state.result = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      const parsed = typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : raw;
+      console.log('[Ada] score:', parsed?.score, 'verdict:', parsed?.verdict, 'error:', parsed?.error);
+      if (parsed && !parsed.error && typeof parsed.score === 'number' && parsed.score >= 10 && parsed.score <= 100 && parsed.verdict) {
+        state.result = parsed;
         return;
       }
     }
@@ -931,10 +939,11 @@ function drawResult() {
 
   // Score gauge
   document.getElementById('resultEyebrow').textContent = 'Your verdict · ' + d.role_title;
+  const targetScore = Math.min(100, Math.max(10, d.score || 78));
   let n = 0;
   const numEl = document.getElementById('scoreNum');
-  const up = setInterval(() => { n++; numEl.textContent = n; if (n >= d.score) clearInterval(up); }, 16);
-  document.getElementById('gauge').style.setProperty('--p', d.score + '%');
+  const up = setInterval(() => { n++; numEl.textContent = n; if (n >= targetScore) clearInterval(up); }, 16);
+  document.getElementById('gauge').style.setProperty('--p', targetScore + '%');
 
   // Verdict
   const tagMap = { needs_human:'🧭 Needs a human', human_led_agent_assist:'🔀 Human-led, agent assist', strong_agent:'⚡ Strong agent candidate' };
