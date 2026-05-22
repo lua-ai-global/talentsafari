@@ -274,6 +274,17 @@
   .rec-list li:last-child { border-bottom: none; }
   .rec-list li span { font-size: 15px; flex-shrink: 0; }
 
+  /* rec split layout */
+  .rec-col-head { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:10px; margin-top:16px; }
+  .rec-col-head:first-child { margin-top:0; }
+  .rec-split { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .rec-stats { display:flex; gap:10px; margin-bottom:4px; flex-wrap:wrap; }
+  .rec-stat { display:flex; gap:10px; align-items:center; flex:1; min-width:120px; background:var(--cream); border-radius:12px; padding:11px 14px; }
+  .rec-stat .rs-icon { font-size:20px; }
+  .rec-stat b { font-size:11px; color:var(--ink-soft); display:block; }
+  .rec-stat p { font-size:13px; font-weight:600; margin:2px 0 0; }
+  @media(max-width:560px) { .rec-split { grid-template-columns:1fr; } .cta-row { grid-template-columns:1fr; } }
+
   /* dual CTA */
   .cta-row {
     margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
@@ -500,6 +511,7 @@
 
   <!-- SCREEN 4 — RESULT -->
   <section class="screen" id="s-result">
+    <button class="back-link" onclick="goBack()">← Back to questions</button>
     <span class="eyebrow" id="resultEyebrow">Your verdict</span>
 
     <div class="verdict-band">
@@ -528,13 +540,7 @@
           <div class="rec-sub" id="recSub"></div>
         </div>
       </div>
-      <div class="rec-body">
-        <ul class="rec-list" id="recList"></ul>
-        <div id="recCantDo" style="display:none">
-          <div style="font-size:12px;font-weight:700;color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">What it can't do</div>
-          <ul class="rec-list" id="recCantList"></ul>
-        </div>
-      </div>
+      <div class="rec-body" id="recBody"></div>
     </div>
 
     <!-- Dual CTA -->
@@ -548,26 +554,6 @@
         <h4>⚡ Talk to Lua</h4>
         <p>Lua scopes, builds, and deploys the agent for this role. Typically live within a week.</p>
         <button class="btn btn-block" onclick="go('s-connect')">Connect with Lua →</button>
-      </div>
-    </div>
-
-    <!-- Slack preview -->
-    <div class="slack-note" style="margin-top:28px">
-      <div class="lbl">↓ What the Talent Safari × Lua team sees the moment you submit</div>
-      <div class="slack">
-        <div class="ch"># leads</div>
-        <div class="row">
-          <div class="sq"></div>
-          <div>
-            <div><b class="u">Agent Fit Bot</b> <span class="meta">· just now</span></div>
-            <div style="margin-top:4px">New evaluation — <b style="color:#fff" id="slackRole">—</b></div>
-            <div class="meta" id="slackMeta">Verdict: — · Score —</div>
-            <div class="acts">
-              <button class="sbtn ts">🧭 Talent Safari takes this</button>
-              <button class="sbtn lua">⚡ Lua takes this</button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -675,6 +661,9 @@ function go(id) {
     bar.className = i<=n ? (i===3?'on lua':'on') : '';
   });
   if (id === 's-result') {
+    // Remove s-analysis from history — it's a loading state, not a back destination
+    const anaIdx = navHistory.indexOf('s-analysis');
+    if (anaIdx !== -1) navHistory.splice(anaIdx, 1);
     drawResult();
     // Auto-pop lead modal after 1.8s if not yet submitted
     if (!state.leadSubmitted) {
@@ -844,12 +833,6 @@ async function submitLead() {
   state.leadSubmitted = true;
   document.getElementById('overlay').classList.remove('show');
 
-  // Update Slack preview with company
-  const meta = document.getElementById('slackMeta');
-  if (meta && state.result) {
-    meta.textContent = `Verdict: ${state.result.verdict_line} · Score ${state.result.score} · ${company}`;
-  }
-
   // Fire capture_lead to Slack + email
   try {
     await fetch(`https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`, {
@@ -985,45 +968,58 @@ function drawResult() {
   const recIcon   = document.getElementById('recIcon');
   const recTitle  = document.getElementById('recTitle');
   const recSub    = document.getElementById('recSub');
-  const recList   = document.getElementById('recList');
-  const recCantDo = document.getElementById('recCantDo');
-  const recCantList = document.getElementById('recCantList');
+  const recBody   = document.getElementById('recBody');
+
+  const li = (icon, text) => `<li><span>${icon}</span>${text}</li>`;
 
   if (isAgent) {
     recHeader.className = 'rec-header agent';
-    recIcon.className = 'rec-icon agent';
-    recIcon.textContent = '⚡';
+    recIcon.className = 'rec-icon agent'; recIcon.textContent = '⚡';
     recTitle.textContent = `${ac.name} — ${ac.role_title}`;
-    recSub.textContent = `An agent can own this role · ${ac.coverage || '24/7'}`;
-    recList.innerHTML = ac.great_at.map(t=>`<li><span>✓</span>${t}</li>`).join('');
-    recCantDo.style.display = '';
-    recCantList.innerHTML = ac.cant_do.map(t=>`<li><span>—</span>${t}</li>`).join('');
+    recSub.textContent = `Owns this role · ${ac.coverage || '24/7'} · ${ac.throughput || 'Unmetered volume'}`;
+    recBody.innerHTML = `
+      <div class="rec-stats">
+        <div class="rec-stat"><span class="rs-icon">📅</span><div><b>Live in</b><p>${ac.start_date || 'Today'}</p></div></div>
+        <div class="rec-stat"><span class="rs-icon">🌐</span><div><b>Coverage</b><p>${ac.coverage || '24/7'}</p></div></div>
+        <div class="rec-stat"><span class="rs-icon">⚡</span><div><b>Throughput</b><p>${ac.throughput || 'Unmetered'}</p></div></div>
+      </div>
+      <div class="rec-col-head">What ${ac.name} will do for this role</div>
+      <ul class="rec-list">${ac.great_at.map(t=>li('✓',t)).join('')}</ul>
+      <div class="rec-col-head">What still needs a human</div>
+      <ul class="rec-list" style="margin-bottom:0">${ac.cant_do.map(t=>li('—',t)).join('')}</ul>`;
+
   } else if (isHybrid) {
     recHeader.className = 'rec-header human';
-    recIcon.className = 'rec-icon human';
-    recIcon.textContent = '🔀';
-    recTitle.textContent = 'Human-led with agent support';
-    recSub.textContent = 'A human owns the role — an agent handles the repeatable tail';
-    recList.innerHTML = [
-      'Human manages relationships, judgment calls, and edge cases',
-      `${ac.name} handles: ${ac.great_at.slice(0,2).join(', ')}`,
-      'Hybrid setup reduces workload without removing the human',
-    ].map(t=>`<li><span>→</span>${t}</li>`).join('');
-    recCantDo.style.display = 'none';
+    recIcon.className = 'rec-icon human'; recIcon.textContent = '🔀';
+    recTitle.textContent = `${ac.name} supports the ${d.role_title} role`;
+    recSub.textContent = 'Human-led · the agent handles the repeatable tail';
+    // Human-heavy = lowest scoring dims (most human-suited)
+    const humanDims = [...d.dimensions].sort((a,b)=>a.score-b.score).slice(0,3);
+    recBody.innerHTML = `
+      <div class="rec-split">
+        <div>
+          <div class="rec-col-head" style="margin-top:0">Human keeps</div>
+          <ul class="rec-list">${humanDims.map(dim=>li('↓',dim.rationale)).join('')}</ul>
+        </div>
+        <div>
+          <div class="rec-col-head" style="margin-top:0">${ac.name} handles</div>
+          <ul class="rec-list">${ac.great_at.map(t=>li('✓',t)).join('')}</ul>
+        </div>
+      </div>`;
+
   } else {
     recHeader.className = 'rec-header human';
-    recIcon.className = 'rec-icon human';
-    recIcon.textContent = '🧭';
+    recIcon.className = 'rec-icon human'; recIcon.textContent = '🧭';
     recTitle.textContent = 'This role needs a human';
-    recSub.textContent = 'The judgment, relationship, and novelty requirements exceed what an agent can reliably own';
-    const topDims = [...d.dimensions].sort((a,b)=>a.score-b.score).slice(0,3);
-    recList.innerHTML = topDims.map(dim=>`<li><span>↓</span><b>${dim.label}:</b> ${dim.rationale}</li>`).join('');
-    recCantDo.style.display = 'none';
+    recSub.textContent = 'The judgment, relationship, and novelty load pushes this beyond reliable agent territory';
+    const topReasons = [...d.dimensions].sort((a,b)=>a.score-b.score).slice(0,3);
+    recBody.innerHTML = `
+      <div class="rec-col-head" style="margin-top:0">Why this role is human-led</div>
+      <ul class="rec-list">${topReasons.map(dim=>li('↓',`<b>${dim.label}:</b> ${dim.rationale}`)).join('')}</ul>
+      <p style="font-size:13px;color:var(--ink-soft);margin-top:12px;margin-bottom:0">
+        Talent Safari specialises in placing people who thrive in exactly this kind of role.
+      </p>`;
   }
-
-  // Slack preview
-  document.getElementById('slackRole').textContent = d.role_title;
-  document.getElementById('slackMeta').textContent = `Verdict: ${d.verdict_line} · Score ${d.score}`;
 
   // Pre-fill CTA forms
   prefillCtaForms();
