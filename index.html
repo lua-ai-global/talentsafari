@@ -814,10 +814,18 @@ async function callScoreApi() {
       }
     }
 
-    // Fallback: parse JSON from text
+    // Fallback: parse JSON from text — only accept if it has dimensions + verdict
     const text = data?.text || '';
     const match = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*"score"[\s\S]*\})/);
-    if (match) { try { state.result = JSON.parse(match[1].trim()); } catch {} }
+    if (match) {
+      try {
+        const fb = JSON.parse(match[1].trim());
+        if (fb && Array.isArray(fb.dimensions) && fb.dimensions.length === 7 && fb.verdict
+            && typeof fb.score === 'number' && fb.score >= 10 && fb.score <= 100) {
+          state.result = fb;
+        }
+      } catch {}
+    }
   } catch(e) { console.error('[Ada] error:', e); }
 }
 
@@ -933,16 +941,24 @@ const DEMO_BRIEF = {
 
 // ─── result rendering ─────────────────────────────────────────────────────────
 let drawn = false;
+let scoreInterval = null;
 function drawResult() {
   if (drawn) return; drawn = true;
-  const d = state.result || DEMO;
+  // Always clear any previous interval before starting a new one
+  if (scoreInterval) { clearInterval(scoreInterval); scoreInterval = null; }
+
+  // Validate result — must have dimensions, verdict, score in range
+  const raw = state.result;
+  const valid = raw && Array.isArray(raw.dimensions) && raw.dimensions.length === 7
+    && raw.verdict && typeof raw.score === 'number' && raw.score >= 10 && raw.score <= 100;
+  const d = valid ? raw : DEMO;
 
   // Score gauge
   document.getElementById('resultEyebrow').textContent = 'Your verdict · ' + d.role_title;
-  const targetScore = Math.min(100, Math.max(10, d.score || 78));
+  const targetScore = Math.min(100, Math.max(10, d.score));
   let n = 0;
   const numEl = document.getElementById('scoreNum');
-  const up = setInterval(() => { n++; numEl.textContent = n; if (n >= targetScore) clearInterval(up); }, 16);
+  scoreInterval = setInterval(() => { n++; numEl.textContent = n; if (n >= targetScore) { clearInterval(scoreInterval); scoreInterval = null; } }, 16);
   document.getElementById('gauge').style.setProperty('--p', targetScore + '%');
 
   // Verdict
