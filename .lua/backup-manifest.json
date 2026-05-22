@@ -1,6 +1,6 @@
 {
-  "lastHash": "b00e406505b7469b7cbf9537497913373da940a32ecb6b9a1a7a453d2d5ae30f",
-  "lastPushedAt": "2026-05-21T05:53:29.864Z",
+  "lastHash": "52034ecf08462fb41f86b4d2c253198105103ed237d00719f173a85eb32e079a",
+  "lastPushedAt": "2026-05-22T12:29:49.251Z",
   "files": [
     {
       "relativePath": "build.md",
@@ -8,15 +8,15 @@
     },
     {
       "relativePath": "env.example",
-      "hash": "09350aafdbdb007a"
+      "hash": "ead1850d272e4c59"
     },
     {
       "relativePath": "index.html",
-      "hash": "1bce72b8c4ae7f0b"
+      "hash": "0a9b40be74da8455"
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "a9bb408b93aceeca"
+      "hash": "c16e3ab60669e261"
     },
     {
       "relativePath": "package.json",
@@ -36,23 +36,23 @@
     },
     {
       "relativePath": "src/skills/ada-chat.skill.ts",
-      "hash": "e0ed4c7aca9c8956"
+      "hash": "dbd08f2927f26a91"
     },
     {
       "relativePath": "src/skills/brief-wizard.skill.ts",
-      "hash": "8f968ba3136c4d3c"
+      "hash": "4b62f4aff2be7218"
     },
     {
       "relativePath": "src/skills/capture-lead.skill.ts",
-      "hash": "99f7d2d2a61d27ff"
+      "hash": "184225f391c93389"
     },
     {
       "relativePath": "src/skills/score-role.skill.ts",
-      "hash": "98dbb3e8af196632"
+      "hash": "0d8564bd7da82e13"
     },
     {
       "relativePath": "src/skills/scrape-jd.skill.ts",
-      "hash": "c7f9f63d88007d31"
+      "hash": "ae4336460784add0"
     },
     {
       "relativePath": "src/skills/submit-cta.skill.ts",

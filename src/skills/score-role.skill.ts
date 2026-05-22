@@ -1,273 +1,100 @@
-import { LuaSkill, LuaTool, AI } from 'lua-cli';
+import { LuaSkill, LuaTool } from 'lua-cli';
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
-// Input schema
+// Input schema — Ada passes the full scored result; tool validates & returns
 // ---------------------------------------------------------------------------
 
+const dimensionSchema = z.object({
+  key: z.enum([
+    'task_structure',
+    'judgment_complexity',
+    'volume_scale',
+    'stakes_per_decision',
+    'empathy_load',
+    'system_integration',
+    'data_sensitivity',
+  ]),
+  label: z.string(),
+  score: z.number().int().min(1).max(10),
+  weight: z.number(),
+  rationale: z.string().max(120),
+});
+
 const scoreJdInputSchema = z.object({
-  jdText: z.string().describe('The full job description text'),
-  volume: z
-    .enum(['low', 'medium', 'high'])
-    .describe('Weekly task volume: low=handful, medium=dozens/day, high=hundreds+'),
-  stakes: z.enum(['low', 'moderate', 'high']).describe('Cost of a wrong decision'),
-  exposure: z
-    .enum(['customer_unregulated', 'internal', 'regulated'])
-    .describe('Customer-facing and regulatory context'),
+  role_title: z.string(),
+  score: z.number().int().min(10).max(100),
+  verdict: z.enum(['needs_human', 'human_led_agent_assist', 'strong_agent']),
+  verdict_line: z.string().max(60),
+  rationale: z.string().max(240),
+  dimensions: z.array(dimensionSchema).length(7),
+  human_candidate: z.object({
+    salary_range: z.string(),
+    time_to_productive: z.string(),
+    scale_ceiling: z.string(),
+    coverage: z.string(),
+    great_at: z.array(z.string()).max(3),
+    hard_at: z.array(z.string()).max(3),
+  }),
+  agent_candidate: z.object({
+    name: z.string(),
+    role_title: z.string(),
+    avatar_seed: z.string(),
+    monthly_cost: z.string(),
+    start_date: z.string(),
+    throughput: z.string(),
+    coverage: z.string(),
+    great_at: z.array(z.string()).max(3),
+    cant_do: z.array(z.string()).max(3),
+  }),
+  recommended_cta: z.enum(['lua', 'tech_safari']),
+  flags: z.object({
+    short_jd: z.boolean(),
+    non_english: z.boolean(),
+    suspected_fake: z.boolean(),
+  }),
 });
 
 type ScoreJdInput = z.infer<typeof scoreJdInputSchema>;
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const SYSTEM_PROMPT = `You are an honest, expert hiring advisor scoring job descriptions for automation fit.
-
-You evaluate roles across 7 dimensions. Each dimension is scored 1–10:
-  1 = strongly human-suited (novel, relational, high-stakes, regulated)
-  10 = strongly agent-suited (repeatable, rule-based, high-volume, low-stakes)
-
-DIMENSIONS & WEIGHTS:
-  task_structure       — novel ↔ repeatable                     weight: 1.8
-  judgment_complexity  — genuine reasoning ↔ rule-based         weight: 2.0
-  volume_scale         — one-off ↔ high-throughput              weight: 1.5
-  stakes_per_decision  — high-impact errors ↔ low-impact        weight: 1.5
-  empathy_load         — relational ↔ transactional             weight: 1.3
-  system_integration   — people-coordination ↔ tool/API-heavy   weight: 1.0
-  data_sensitivity     — regulated/constrained ↔ open           weight: 0.9
-
-FINAL SCORE = Σ(score × weight), range 10–100.
-
-VERDICT BANDS:
-  10–39  → needs_human           CTA: tech_safari
-  40–64  → human_led_agent_assist  CTA: higher-scoring card
-  65–100 → strong_agent          CTA: lua
-
-CALIBRATION RULES:
-  - A Head of Sales JD MUST score human (30–45 range)
-  - A Tier-1 triage / support JD MUST score agent (70–85 range)
-  - Be honest. ~40% of real JDs should score human.
-
-CANDIDATE CARDS:
-  Human card: Use realistic salary ranges (specify currency if detectable from JD).
-  Agent card: Ada is always the agent. Give her a relevant role title.
-              monthly_cost should reflect realistic AI agent pricing ($800–$3,000/mo range).
-              avatar_seed: derive deterministically from role_title using a short slug (e.g. "ada-support", "ada-ops") — must be stable across calls for the same role.
-
-FLAGS:
-  short_jd: true if JD is fewer than 80 words
-  non_english: true if JD is not in English
-  suspected_fake: true if JD appears to be test/fake/lorem ipsum
-
-Use the score_role tool to return your structured output.`;
-
-const SCORE_ROLE_CLAUDE_TOOL = {
-  name: 'score_role',
-  description: 'Score a job description for automation fit across 7 weighted dimensions',
-  input_schema: {
-    type: 'object',
-    required: [
-      'role_title',
-      'score',
-      'verdict',
-      'verdict_line',
-      'rationale',
-      'dimensions',
-      'human_candidate',
-      'agent_candidate',
-      'recommended_cta',
-      'flags',
-    ],
-    properties: {
-      role_title: { type: 'string' },
-      score: { type: 'integer', minimum: 10, maximum: 100 },
-      verdict: {
-        type: 'string',
-        enum: ['needs_human', 'human_led_agent_assist', 'strong_agent'],
-      },
-      verdict_line: { type: 'string', maxLength: 60 },
-      rationale: { type: 'string', maxLength: 240 },
-      dimensions: {
-        type: 'array',
-        minItems: 7,
-        maxItems: 7,
-        items: {
-          type: 'object',
-          required: ['key', 'label', 'score', 'weight', 'rationale'],
-          properties: {
-            key: {
-              type: 'string',
-              enum: [
-                'task_structure',
-                'judgment_complexity',
-                'volume_scale',
-                'stakes_per_decision',
-                'empathy_load',
-                'system_integration',
-                'data_sensitivity',
-              ],
-            },
-            label: { type: 'string' },
-            score: { type: 'integer', minimum: 1, maximum: 10 },
-            weight: { type: 'number' },
-            rationale: { type: 'string', maxLength: 120 },
-          },
-        },
-      },
-      human_candidate: {
-        type: 'object',
-        required: [
-          'salary_range',
-          'time_to_productive',
-          'scale_ceiling',
-          'coverage',
-          'great_at',
-          'hard_at',
-        ],
-        properties: {
-          salary_range: { type: 'string' },
-          time_to_productive: { type: 'string' },
-          scale_ceiling: { type: 'string' },
-          coverage: { type: 'string' },
-          great_at: { type: 'array', items: { type: 'string' }, maxItems: 3 },
-          hard_at: { type: 'array', items: { type: 'string' }, maxItems: 3 },
-        },
-      },
-      agent_candidate: {
-        type: 'object',
-        required: [
-          'name',
-          'role_title',
-          'avatar_seed',
-          'monthly_cost',
-          'start_date',
-          'throughput',
-          'coverage',
-          'great_at',
-          'cant_do',
-        ],
-        properties: {
-          name: { type: 'string' },
-          role_title: { type: 'string' },
-          avatar_seed: { type: 'string' },
-          monthly_cost: { type: 'string' },
-          start_date: { type: 'string' },
-          throughput: { type: 'string' },
-          coverage: { type: 'string' },
-          great_at: { type: 'array', items: { type: 'string' }, maxItems: 3 },
-          cant_do: { type: 'array', items: { type: 'string' }, maxItems: 3 },
-        },
-      },
-      recommended_cta: { type: 'string', enum: ['lua', 'tech_safari'] },
-      flags: {
-        type: 'object',
-        required: ['short_jd', 'non_english', 'suspected_fake'],
-        properties: {
-          short_jd: { type: 'boolean' },
-          non_english: { type: 'boolean' },
-          suspected_fake: { type: 'boolean' },
-        },
-      },
-    },
-  },
-};
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function computeScore(dimensions: Array<{ score: number; weight: number }>): number {
-  const raw = dimensions.reduce((sum, d) => sum + d.score * d.weight, 0);
-  return Math.round(raw);
-}
-
-async function callClaudeScoreRole(
-  jdText: string,
-  volume: string,
-  stakes: string,
-  exposure: string,
-): Promise<Record<string, unknown>> {
-  const userPrompt = `Score this job description. Return ONLY a JSON object matching the score_role schema — no prose before or after.
-
-ADDITIONAL CONTEXT FROM THE HIRING MANAGER:
-- Weekly volume: ${volume}
-- Stakes per wrong decision: ${stakes}
-- Customer-facing / regulated: ${exposure}
-
-JOB DESCRIPTION:
-${jdText}
-
-JSON SCHEMA to follow exactly:
-{
-  "role_title": string,
-  "score": integer 10-100,
-  "verdict": "needs_human"|"human_led_agent_assist"|"strong_agent",
-  "verdict_line": string (max 60 chars),
-  "rationale": string (max 240 chars),
-  "dimensions": [7 items: {key, label, score 1-10, weight, rationale max 120 chars}],
-  "human_candidate": {salary_range, time_to_productive, scale_ceiling, coverage, great_at[max3], hard_at[max3]},
-  "agent_candidate": {name:"Ada", role_title, avatar_seed, monthly_cost, start_date, throughput, coverage, great_at[max3], cant_do[max3]},
-  "recommended_cta": "lua"|"tech_safari",
-  "flags": {short_jd: bool, non_english: bool, suspected_fake: bool}
-}`;
-
-  const result = await AI.generate({
-    system: SYSTEM_PROMPT,
-    prompt: userPrompt,
-    maxOutputTokens: 4096,
-  });
-
-  const text = result.text.trim();
-  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, text];
-  const jsonStr = (jsonMatch[1] ?? text).trim();
-
-  return JSON.parse(jsonStr) as Record<string, unknown>;
+  return Math.round(dimensions.reduce((sum, d) => sum + d.score * d.weight, 0));
 }
 
 // ---------------------------------------------------------------------------
-// Tool — class-based pattern (required for lua-cli AST scanner detection)
+// Tool — Ada scores the JD herself; this tool validates the weighted sum
 // ---------------------------------------------------------------------------
 
 export class scoreJdTool implements LuaTool<typeof scoreJdInputSchema> {
   name = 'score_jd';
   description =
-    'Evaluate a job description for automation fit. Returns a structured verdict with 7-dimension scores, candidate cards, and routing recommendation.';
+    'Validate and record a completed JD scoring. Call this after you have scored the role across all 7 dimensions. The tool checks your weighted sum is internally consistent and returns the structured result.';
   inputSchema = scoreJdInputSchema;
 
   async execute(input: ScoreJdInput): Promise<unknown> {
-    const { jdText, volume, stakes, exposure } = input;
-
-    // First attempt
-    let result = await callClaudeScoreRole(jdText, volume, stakes, exposure);
+    const { dimensions, score, flags } = input;
 
     // Validate weighted sum (±1 tolerance)
-    const dimensions = result.dimensions as Array<{ score: number; weight: number }>;
     const computed = computeScore(dimensions);
-    const reported = result.score as number;
-
-    if (Math.abs(computed - reported) > 1) {
-      // One retry
-      result = await callClaudeScoreRole(jdText, volume, stakes, exposure);
-      const dimensions2 = result.dimensions as Array<{ score: number; weight: number }>;
-      const computed2 = computeScore(dimensions2);
-      const reported2 = result.score as number;
-      if (Math.abs(computed2 - reported2) > 1) {
-        return { error: 'score_mismatch', status: 422 };
-      }
+    if (Math.abs(computed - score) > 1) {
+      return {
+        error: 'score_mismatch',
+        status: 422,
+        detail: `Reported score ${score} does not match computed weighted sum ${computed}. Recompute: Σ(dimension.score × dimension.weight) = ${computed}.`,
+      };
     }
 
-    // Flag check — return early with flagged: true; no Slack/email side effects here
-    const flags = result.flags as {
-      short_jd: boolean;
-      non_english: boolean;
-      suspected_fake: boolean;
-    };
+    // Flag check — return early; no Slack/email side effects here
     if (flags.short_jd || flags.non_english || flags.suspected_fake) {
-      return { ...result, flagged: true };
+      const reason = Object.keys(flags).find((k) => flags[k as keyof typeof flags]);
+      return { ...input, flagged: true, flagReason: reason };
     }
 
-    return result;
+    return input;
   }
 }
 
@@ -279,10 +106,44 @@ export const scoreRoleSkill = new LuaSkill({
   name: 'score-role',
   description:
     'Evaluates a job description for automation fit across 7 weighted dimensions and returns a structured verdict with candidate cards.',
-  context: `Use the score_jd tool whenever the user provides a job description and wants to know whether this role should be filled by a human or an AI agent.
+  context: `When the user provides a job description (or text scraped from a URL), score it yourself using this rubric, then call score_jd to validate and record the result.
 
-The tool calls the Claude API with a prompt-cached system prompt and forces structured output via tool_choice. It validates the weighted dimension sum against the reported score (±1 tolerance, one retry) and returns the full scoring JSON including role_title, score, verdict, verdict_line, rationale, seven dimension breakdowns, human_candidate and agent_candidate cards, recommended_cta, and flags.
+SCORING RUBRIC — evaluate across 7 dimensions, each scored 1–10:
+  1 = strongly human-suited (novel, relational, high-stakes, regulated)
+  10 = strongly agent-suited (repeatable, rule-based, high-volume, low-stakes)
 
-If any flag is set (short_jd, non_english, suspected_fake) the result comes back with flagged: true — do not proceed to capture_lead in that case. If status 422 is returned (score_mismatch after retry), report the error to the user.`,
+DIMENSIONS & WEIGHTS:
+  task_structure       (weight 1.8) — novel ↔ repeatable
+  judgment_complexity  (weight 2.0) — genuine reasoning ↔ rule-based
+  volume_scale         (weight 1.5) — one-off ↔ high-throughput
+  stakes_per_decision  (weight 1.5) — high-impact errors ↔ low-impact
+  empathy_load         (weight 1.3) — relational ↔ transactional
+  system_integration   (weight 1.0) — people-coordination ↔ tool/API-heavy
+  data_sensitivity     (weight 0.9) — regulated/constrained ↔ open
+
+FINAL SCORE = Σ(score × weight), range 10–100. Round to nearest integer.
+
+VERDICT BANDS:
+  10–39  → needs_human            recommended_cta: tech_safari
+  40–64  → human_led_agent_assist  recommended_cta: tech_safari
+  65–100 → strong_agent            recommended_cta: lua
+
+CALIBRATION (non-negotiable):
+  - Head of Sales JDs MUST score 30–45 (needs_human)
+  - Tier-1 support / triage JDs MUST score 70–85 (strong_agent)
+  - Roughly 40% of real JDs should score human — be honest, not optimistic
+
+CANDIDATE CARDS:
+  human_candidate: realistic salary (specify currency if detectable), scale ceiling, coverage
+  agent_candidate: name is always "Ada", role_title adapts to role, monthly_cost $800–$3,000/mo,
+                   avatar_seed is a short slug derived from role_title (e.g. "ada-support", "ada-ops"),
+                   start_date is "Today", throughput and coverage reflect agent advantages
+
+FLAGS (check before scoring):
+  short_jd: fewer than 80 words → call score_jd with flagged:true, skip deep scoring
+  non_english: not in English → flag and return
+  suspected_fake: test/lorem ipsum content → flag and return
+
+If score_jd returns a score_mismatch error (status 422), recompute your dimension scores and retry once.`,
   tools: [new scoreJdTool()],
 });

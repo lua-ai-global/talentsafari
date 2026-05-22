@@ -426,7 +426,6 @@
       </div>
 
       <div class="trust">
-        <span><i class="dot"></i> Honest by design — ~40% come back "hire a human"</span>
         <span><i class="dot lua"></i> Verdict in 15 seconds</span>
       </div>
     </div>
@@ -471,19 +470,31 @@
 
   <!-- SCREEN 3 — ANALYSIS -->
   <section class="screen" id="s-analysis">
-    <div class="analysis">
-      <span class="eyebrow" style="justify-content:center">Analysing</span>
-      <div class="scanner"><span>🔍</span></div>
-      <h2 class="display" style="font-size:26px;margin-bottom:6px;color:var(--forest)">Reading the role like a hiring panel.</h2>
-      <p style="color:var(--ink-soft);font-size:14px;margin-bottom:20px">Seven dimensions, scored and weighted.</p>
-      <div class="steps" id="steps">
-        <div class="step"><span class="ic"></span> Evaluating task structure</div>
-        <div class="step"><span class="ic"></span> Evaluating judgment complexity</div>
-        <div class="step"><span class="ic"></span> Weighing volume &amp; stakes</div>
-        <div class="step"><span class="ic"></span> Measuring empathy &amp; emotional load</div>
-        <div class="step"><span class="ic"></span> Checking system integration patterns</div>
-        <div class="step"><span class="ic"></span> Assessing data sensitivity</div>
-        <div class="step"><span class="ic"></span> Drafting candidate profiles</div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap;justify-content:center;max-width:820px;margin:0 auto">
+      <div class="analysis" style="flex:0 0 280px">
+        <span class="eyebrow" style="justify-content:center">Analysing</span>
+        <div class="scanner"><span>🔍</span></div>
+        <h2 class="display" style="font-size:22px;margin-bottom:6px;color:var(--forest)">Reading the role like a hiring panel.</h2>
+        <p style="color:var(--ink-soft);font-size:13px;margin-bottom:16px">Seven dimensions, scored and weighted.</p>
+        <div class="steps" id="steps">
+          <div class="step"><span class="ic"></span> Evaluating task structure</div>
+          <div class="step"><span class="ic"></span> Evaluating judgment complexity</div>
+          <div class="step"><span class="ic"></span> Weighing volume &amp; stakes</div>
+          <div class="step"><span class="ic"></span> Measuring empathy &amp; emotional load</div>
+          <div class="step"><span class="ic"></span> Checking system integration patterns</div>
+          <div class="step"><span class="ic"></span> Assessing data sensitivity</div>
+          <div class="step"><span class="ic"></span> Drafting candidate profiles</div>
+        </div>
+      </div>
+      <div class="dropzone" style="flex:1;min-width:260px;max-width:380px">
+        <h3 class="display" style="font-size:20px;margin-bottom:4px">Where should we send your report?</h3>
+        <p style="color:var(--ink-soft);font-size:13px;margin-bottom:16px">Fill in while Ada scores. Results unlock instantly.</p>
+        <div class="field"><label>Full name</label><input id="leadName" placeholder="Jordan Reyes" /></div>
+        <div class="field"><label>Job title</label><input id="leadTitle" placeholder="Head of People" /></div>
+        <div class="field"><label>Company</label><input id="leadCompany" placeholder="Northwind Co." /></div>
+        <div class="field"><label>Work email</label><input id="leadEmail" placeholder="jordan@northwind.co" /></div>
+        <p id="leadFormErr" style="color:#c0392b;font-size:12px;margin-top:4px;display:none">Please fill in all fields to see your results.</p>
+        <button id="leadContinueBtn" class="btn btn-primary btn-block" onclick="submitLeadForm()" style="margin-top:12px;display:none">See my results →</button>
       </div>
     </div>
   </section>
@@ -667,7 +678,7 @@
 </div>
 
 <footer>
-  A <b class="ts">Tech Safari</b> × <b class="lua">Lua</b> collaboration · Honest verdicts, warm leads for both sides.
+  A <b class="ts">Tech Safari</b> × <b class="lua">Lua</b> collaboration.
 </footer>
 
 <script>
@@ -676,6 +687,7 @@ const state = {
   jdText: '', volume: 'medium', stakes: 'low',
   exposure: 'customer_unregulated', result: null,
   urlMode: false, scraping: false,
+  leadName: '', leadTitle: '', leadCompany: '', leadEmail: '',
 };
 
 const railMap = { 's-hero':0,'s-questions':1,'s-analysis':2,'s-result':3,'s-brief':3,'s-connect':3 };
@@ -707,45 +719,17 @@ function toggleUrlMode() {
 async function fetchJD() {
   const url = document.getElementById('urlInput').value.trim();
   if (!url) { showScrapeErr('Please enter a URL.'); return; }
-  state.scraping = true;
-  const btn = document.getElementById('heroBtn');
-  btn.textContent = 'Fetching job description…';
-  btn.disabled = true;
-  document.getElementById('scrapeErr').style.display = 'none';
 
-  try {
-    const res = await fetch('/api/scrape-jd', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ url }),
-    });
-    const data = await res.json();
-    if (data.error) {
-      showScrapeErr(data.error);
-    } else {
-      // Switch to text mode with the extracted JD
-      state.urlMode = false;
-      document.getElementById('textWrap').style.display = '';
-      document.getElementById('urlWrap').style.display = 'none';
-      document.getElementById('dzSep').style.display = '';
-      document.getElementById('urlChip').classList.remove('active');
-      document.getElementById('jd').value = data.jdText;
-      // Show other roles if any
-      if (data.otherRoles && data.otherRoles.length) {
-        const wrap = document.getElementById('otherRoles');
-        document.getElementById('orTitle').textContent =
-          `Found ${data.otherRoles.length} other open role${data.otherRoles.length>1?'s':''} at this company:`;
-        document.getElementById('orChips').innerHTML =
-          data.otherRoles.map(r => `<span class="or-chip">${r}</span>`).join('');
-        wrap.style.display = '';
-      }
-    }
-  } catch {
-    showScrapeErr('Something went wrong. Try pasting the JD text directly.');
-  } finally {
-    state.scraping = false;
-    btn.textContent = 'Score this role →';
-    btn.disabled = false;
-  }
+  // Pass URL directly to Ada — scrape_jd tool handles fetching server-side.
+  // No /api/scrape-jd backend needed.
+  state.urlMode = false;
+  state.jdText = url;
+  document.getElementById('textWrap').style.display = '';
+  document.getElementById('urlWrap').style.display = 'none';
+  document.getElementById('dzSep').style.display = '';
+  document.getElementById('urlChip').classList.remove('active');
+  document.getElementById('jd').value = url;
+  go('s-questions');
 }
 
 function showScrapeErr(msg) {
@@ -779,6 +763,7 @@ function pick(el, key, value) {
 function runAnalysis() {
   state.jdText = document.getElementById('jd').value;
   go('s-analysis');
+  document.getElementById('leadFormErr').style.display = 'none';
   const steps = [...document.querySelectorAll('#steps .step')];
   steps.forEach(s => s.className = 'step');
   let i = 0;
@@ -790,9 +775,38 @@ function runAnalysis() {
     if (i < steps.length) { steps[i].classList.add('run'); }
     else {
       clearInterval(tick);
-      apiPromise.then(() => setTimeout(() => go('s-result'), 700));
+      apiPromise.then(() => {
+        const name  = document.getElementById('leadName').value.trim();
+        const title = document.getElementById('leadTitle').value.trim();
+        const company = document.getElementById('leadCompany').value.trim();
+        const email = document.getElementById('leadEmail').value.trim();
+        if (!name || !title || !company || !email) {
+          document.getElementById('leadFormErr').style.display = 'block';
+          // Wait for form submit button click
+          document.getElementById('leadContinueBtn').style.display = '';
+          return;
+        }
+        state.leadName = name; state.leadTitle = title;
+        state.leadCompany = company; state.leadEmail = email;
+        setTimeout(() => go('s-result'), 700);
+      });
     }
   }, 1300);
+}
+
+function submitLeadForm() {
+  const name  = document.getElementById('leadName').value.trim();
+  const title = document.getElementById('leadTitle').value.trim();
+  const company = document.getElementById('leadCompany').value.trim();
+  const email = document.getElementById('leadEmail').value.trim();
+  if (!name || !title || !company || !email) {
+    document.getElementById('leadFormErr').style.display = 'block';
+    return;
+  }
+  document.getElementById('leadFormErr').style.display = 'none';
+  state.leadName = name; state.leadTitle = title;
+  state.leadCompany = company; state.leadEmail = email;
+  go('s-result');
 }
 
 // ─── API call ─────────────────────────────────────────────────────────────────
@@ -800,7 +814,10 @@ const LUA_AGENT_ID = 'baseAgent_agent_1779215133611_x0svb7j5d';
 const LUA_API_KEY  = 'api_403f64cd0f8b4e3b97c2c98443508e84';
 
 async function callScoreApi() {
-  const prompt = `Score this job description. Call the score_jd tool and return the raw JSON result only — no prose before or after.
+  const isUrl = /^https?:\/\//i.test(state.jdText.trim());
+  const prompt = isUrl
+    ? `Score this job posting: ${state.jdText.trim()}`
+    : `Score this job description. Call the score_jd tool and return the raw JSON result only — no prose before or after.
 
 JD: ${state.jdText}
 Volume: ${state.volume}
@@ -823,19 +840,26 @@ Exposure: ${state.exposure}`;
       }
     );
 
-    if (!res.ok) return;
+    console.log('[Ada] response status:', res.status);
+    if (!res.ok) { console.error('[Ada] non-OK response', res.status); return; }
     const data = await res.json();
+    console.log('[Ada] steps count:', data?.steps?.length, '| text preview:', (data?.text||'').slice(0,80));
 
-    // Extract tool result from steps if present
-    const toolResult = data?.steps
-      ?.flatMap(s => s.toolResults || [])
-      ?.find(r => r.toolName?.includes('score_jd') || r.toolName?.includes('score_role'));
+    // Extract tool result from steps — toolName/result live under payload
+    const allToolResults = data?.steps?.flatMap(s => s.toolResults || []) || [];
+    const toolResult = allToolResults.find(r => {
+      const name = r.payload?.toolName || r.toolName || '';
+      return name.includes('score_jd') || name.includes('score_role');
+    });
 
-    if (toolResult?.result) {
-      state.result = typeof toolResult.result === 'string'
-        ? JSON.parse(toolResult.result)
-        : toolResult.result;
-      return;
+    console.log('[Ada] toolResults found:', allToolResults.length, '| match:', toolResult?.payload?.toolName || toolResult?.toolName || 'none');
+    if (toolResult) {
+      const raw = toolResult.payload?.result ?? toolResult.result;
+      console.log('[Ada] raw result score:', raw?.score);
+      if (raw) {
+        state.result = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        return;
+      }
     }
 
     // Fallback: try to parse JSON block from Ada's text response
@@ -844,7 +868,7 @@ Exposure: ${state.exposure}`;
     if (match) {
       try { state.result = JSON.parse(match[1].trim()); } catch {}
     }
-  } catch { /* use demo */ }
+  } catch(e) { console.error('[Ada] callScoreApi error:', e); }
 }
 
 // ─── demo data ────────────────────────────────────────────────────────────────
@@ -941,14 +965,22 @@ function drawResult() {
 }
 
 // ─── email gate ───────────────────────────────────────────────────────────────
-function openGate() { document.getElementById('overlay').classList.add('show'); }
+function openGate() {
+  // Pre-fill gate form with already-collected lead data
+  if (state.leadEmail) document.getElementById('gateEmail').value = state.leadEmail;
+  if (state.leadCompany) document.getElementById('gateCompany').value = state.leadCompany;
+  document.getElementById('overlay').classList.add('show');
+}
 async function submitGate() {
-  const email   = document.getElementById('gateEmail').value.trim();
-  const company = document.getElementById('gateCompany').value.trim();
+  const email   = (document.getElementById('gateEmail').value.trim() || state.leadEmail);
+  const company = (document.getElementById('gateCompany').value.trim() || state.leadCompany);
   if (!email || !company) { alert('Please fill in both fields.'); return; }
   try {
-    await fetch('/api/capture-lead',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email,company,scoringResult:state.result||DEMO})});
+    const msg = `capture_lead: ${JSON.stringify({ email, name: state.leadName, title: state.leadTitle, company, scoringResult: state.result || DEMO })}`;
+    await fetch(`https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`, {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${LUA_API_KEY}`},
+      body: JSON.stringify({ messages:[{type:'text',text:`Call the capture_lead tool with: email="${email}", name="${state.leadName}", title="${state.leadTitle}", company="${company}". Use the scoring result already on record.`}], navigate:false }),
+    });
   } catch {}
   document.getElementById('overlay').classList.remove('show');
   document.getElementById('adaCost').classList.remove('gated');
@@ -959,14 +991,16 @@ document.getElementById('overlay').addEventListener('click',e=>{ if(e.target.id=
 // ─── CTA forms ────────────────────────────────────────────────────────────────
 async function submitCta(path) {
   const isTs = path==='tech_safari';
-  const name       = document.getElementById(isTs?'tsName':'luaName').value.trim();
-  const email      = document.getElementById(isTs?'tsEmail':'luaEmail').value.trim();
-  const company    = document.getElementById(isTs?'tsCompany':'luaCompany').value.trim();
+  const name       = document.getElementById(isTs?'tsName':'luaName').value.trim() || state.leadName;
+  const email      = document.getElementById(isTs?'tsEmail':'luaEmail').value.trim() || state.leadEmail;
+  const company    = document.getElementById(isTs?'tsCompany':'luaCompany').value.trim() || state.leadCompany;
   const extraField = document.getElementById(isTs?'tsTimeline':'luaScope').value.trim();
   if (!name||!email||!company) { alert('Please fill in all required fields.'); return; }
   try {
-    await fetch('/api/submit-cta',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({path,name,email,company,extraField,scoringResult:state.result||DEMO})});
+    await fetch(`https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`, {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${LUA_API_KEY}`},
+      body: JSON.stringify({ messages:[{type:'text',text:`Call the submit_cta tool with: path="${path}", name="${name}", email="${email}", company="${company}", extraField="${extraField}". Use the scoring result already on record.`}], navigate:false }),
+    });
   } catch {}
   go('s-result');
 }
@@ -1160,6 +1194,10 @@ function restart() {
   wizardState = { initialized:false, msgs:[], answers:[], qIndex:0, phase:'wizard', brief:null };
   state.result = null;
   state.urlMode = false;
+  state.leadName = ''; state.leadTitle = ''; state.leadCompany = ''; state.leadEmail = '';
+  ['leadName','leadTitle','leadCompany','leadEmail'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('leadContinueBtn').style.display = 'none';
+  document.getElementById('leadFormErr').style.display = 'none';
   document.getElementById('jd').value = '';
   document.getElementById('textWrap').style.display = '';
   document.getElementById('urlWrap').style.display = 'none';

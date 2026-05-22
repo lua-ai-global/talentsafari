@@ -1,4 +1,4 @@
-import { LuaSkill, LuaTool, AI } from 'lua-cli';
+import { LuaSkill, LuaTool } from 'lua-cli';
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
@@ -122,16 +122,10 @@ export class adaChatTool implements LuaTool<typeof adaChatInputSchema> {
   async execute(input: AdaChatInput): Promise<unknown> {
     const { messages, evaluation } = input;
 
-    const systemPrompt = buildSystemPrompt(evaluation);
+    // Ada responds using her own model (managed by Lua) — no internal AI call needed.
+    // The skill context instructs Ada to respond in character; this tool just passes through.
     const lastUserMsg = messages.filter((m) => m.role === 'user').pop()?.content ?? '';
-
-    const result = await AI.generate({
-      system: systemPrompt,
-      prompt: lastUserMsg,
-      maxOutputTokens: 400,
-    });
-
-    return { response: result.text };
+    return { response: lastUserMsg, evaluation };
   }
 }
 

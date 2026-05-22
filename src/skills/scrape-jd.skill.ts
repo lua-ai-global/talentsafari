@@ -1,4 +1,4 @@
-import { LuaSkill, LuaTool, AI } from 'lua-cli';
+import { LuaSkill, LuaTool } from 'lua-cli';
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
@@ -15,30 +15,29 @@ type ScrapeJdInput = z.infer<typeof scrapeJdInputSchema>;
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function extractJdFromHtml(html: string): Promise<string> {
-  const truncated = html.slice(0, 15000);
-  const result = await AI.generate(
-    'Extract the job description from this HTML. Return ONLY the job title and full job description text — no HTML tags, no navigation, no headers, no footer. If you cannot find a job description, return the word NOT_FOUND.',
-    [{ type: 'text', text: truncated }],
-  );
-  return result.trim();
+function extractJdFromHtml(html: string): string {
+  // Strip scripts, styles, nav, header, footer
+  const stripped = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+    .replace(/<header[\s\S]*?<\/header>/gi, '')
+    .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  // Return up to 6000 chars — enough for any JD
+  return stripped.slice(0, 6000);
 }
 
-async function extractOtherRoles(html: string): Promise<string[]> {
-  const truncated = html.slice(0, 10000);
-  const result = await AI.generate(
-    'Extract up to 5 job titles listed on this careers page. Return ONLY a JSON array of strings, e.g. ["Software Engineer", "Product Manager"]. If no job titles are found, return []. No explanation.',
-    [{ type: 'text', text: truncated }],
-  );
-  try {
-    const parsed = JSON.parse(result.trim()) as unknown;
-    if (Array.isArray(parsed)) {
-      return parsed.filter((item): item is string => typeof item === 'string').slice(0, 5);
-    }
-    return [];
-  } catch {
-    return [];
-  }
+function extractOtherRoles(html: string): string[] {
+  // Look for job title patterns in anchor text
+  const matches = [...html.matchAll(/<a[^>]*>([^<]{10,80})<\/a>/gi)]
+    .map((m) => m[1].trim())
+    .filter((t) => /\b(engineer|manager|director|analyst|designer|developer|lead|head of|specialist|coordinator|officer)\b/i.test(t))
+    .slice(0, 5);
+  return [...new Set(matches)];
 }
 
 // ---------------------------------------------------------------------------

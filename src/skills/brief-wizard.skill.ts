@@ -1,4 +1,4 @@
-import { LuaSkill, LuaTool, AI, env } from 'lua-cli';
+import { LuaSkill, LuaTool, env } from 'lua-cli';
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
@@ -105,92 +105,18 @@ const GENERATE_BRIEF_TOOL = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function runChatMode(
+// Chat mode: Ada handles the conversation; tool just returns next question index
+function runChatMode(
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-  evaluation: BriefWizardInput['evaluation'],
-): Promise<string> {
-  const { role_title, verdict_line, agent_candidate } = evaluation;
-
-  const systemPrompt = `You are Ada — an AI agent built by Lua. You are interviewing a user to build a precise Lua build brief for the role: "${role_title}" (${verdict_line}).
-
-The proposed agent is: ${agent_candidate.name} (${agent_candidate.role_title}) at ${agent_candidate.monthly_cost}/mo.
-
-Your job is to ask ONE question at a time from this list, in order:
-1. ${WIZARD_QUESTIONS[0]}
-2. ${WIZARD_QUESTIONS[1]}
-3. ${WIZARD_QUESTIONS[2]}
-4. ${WIZARD_QUESTIONS[3]}
-5. ${WIZARD_QUESTIONS[4]}
-
-Count how many answers have been given so far based on the conversation history.
-- If fewer than 5 answers have been given, ask the next unanswered question.
-- After all 5 answers have been given, reply exactly: "Perfect — I have everything I need. Generating your Lua build brief now."
-
-Be warm and concise. Do not ask multiple questions at once. Do not explain the process — just ask the question naturally.`;
-
-  const lastUserMsg = messages.filter((m) => m.role === 'user').pop()?.content ?? '';
-  const result = await AI.generate({
-    system: systemPrompt,
-    prompt: lastUserMsg,
-    maxOutputTokens: 300,
-  });
-  return result.text;
+): { nextQuestionIndex: number; done: boolean } {
+  const userMsgs = messages.filter((m) => m.role === 'user').length;
+  const done = userMsgs >= 5;
+  return { nextQuestionIndex: Math.min(userMsgs, 4), done };
 }
 
-async function runGenerateMode(
-  answers: string[],
-  evaluation: BriefWizardInput['evaluation'],
-): Promise<LuaBrief> {
-  const { role_title, verdict_line, rationale, agent_candidate } = evaluation;
-
-  const answersText = WIZARD_QUESTIONS.map((q, i) => `Q${i + 1}: ${q}\nA: ${answers[i] ?? '(not provided)'}`).join(
-    '\n\n',
-  );
-
-  const systemPrompt = `You are an expert AI agent implementation consultant at Lua. Generate a precise, actionable Lua build brief based on the evaluation data and user answers below. Return ONLY a JSON object — no prose.
-
-EVALUATION:
-  Role: ${role_title}
-  Verdict: ${verdict_line}
-  Rationale: ${rationale}
-
-PROPOSED AGENT:
-  Name: ${agent_candidate.name}
-  Role: ${agent_candidate.role_title}
-  Budget: ${agent_candidate.monthly_cost}/mo
-  Throughput: ${agent_candidate.throughput}
-  Coverage: ${agent_candidate.coverage}
-  Great at: ${agent_candidate.great_at.join(', ')}
-  Can't do: ${agent_candidate.cant_do.join(', ')}
-
-USER ANSWERS:
-${answersText}
-
-JSON SCHEMA to follow exactly:
-{
-  "agent_name": string,
-  "role_summary": string (max 200 chars),
-  "core_capabilities": string[] (max 5),
-  "explicit_limits": string[] (max 3),
-  "integrations": string[],
-  "escalation_rules": string (max 200 chars),
-  "success_metrics": string[] (max 4),
-  "monthly_budget": string,
-  "coverage_requirement": string,
-  "first_milestone": string (max 150 chars)
-}`;
-
-  const result = await AI.generate({
-    system: systemPrompt,
-    prompt: 'Generate the Lua build brief now.',
-    maxOutputTokens: 2048,
-  });
-
-  const text = result.text.trim();
-  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, text];
-  const jsonStr = (jsonMatch[1] ?? text).trim();
-
-  return JSON.parse(jsonStr) as LuaBrief;
+// Generate mode: accepts the brief JSON that Ada has already composed
+function runGenerateMode(brief: LuaBrief): LuaBrief {
+  return brief;
 }
 
 async function postBriefToSlack(
@@ -280,16 +206,22 @@ export class briefWizardTool implements LuaTool<typeof briefWizardInputSchema> {
 
     if (mode === 'chat') {
       const safeMessages = messages ?? [];
-      const response = await runChatMode(safeMessages, evaluation);
-      return { response };
+      const { nextQuestionIndex, done } = runChatMode(safeMessages);
+      return {
+        nextQuestion: done ? null : WIZARD_QUESTIONS[nextQuestionIndex],
+        questionIndex: nextQuestionIndex,
+        done,
+      };
     }
 
-    // generate mode
-    const safeAnswers = answers ?? [];
-    const brief = await runGenerateMode(safeAnswers, evaluation);
+    // generate mode — Ada passes the completed brief she composed
+    const briefInput = answers as unknown as LuaBrief;
+    const brief = runGenerateMode(briefInput);
 
     const slackUrl = env('SLACK_LEADS_WEBHOOK_URL') ?? '';
-    await postBriefToSlack(slackUrl, brief, evaluation.role_title);
+    if (slackUrl) {
+      try { await postBriefToSlack(slackUrl, brief, evaluation.role_title); } catch {}
+    }
 
     return { brief };
   }

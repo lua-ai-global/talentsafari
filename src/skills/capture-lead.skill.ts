@@ -1,4 +1,4 @@
-import { LuaSkill, LuaTool, Jobs, AI, env } from 'lua-cli';
+import { LuaSkill, LuaTool, Jobs, Data, env } from 'lua-cli';
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
@@ -7,6 +7,8 @@ import { z } from 'zod';
 
 const captureLeadInputSchema = z.object({
   email: z.string().email().describe("Lead's work email address"),
+  name: z.string().optional().describe("Lead's full name"),
+  title: z.string().optional().describe("Lead's job title"),
   company: z.string().min(1).describe("Lead's company name"),
   scoringResult: z
     .object({
@@ -168,15 +170,15 @@ async function scheduleFollowupEmail(
       const adaFromEmail = env('ADA_FROM_EMAIL');
       const resendKey = env('RESEND_API_KEY');
 
-      const emailBody = await AI.generate(
-        `You are Ada, an AI agent who just completed a role evaluation for a company.
-Write a short, warm, first-person follow-up email (4–6 sentences) to the person
-who ran the evaluation. Reference the specific role they scored and the verdict.
-Sound like a capable, friendly colleague — not a chatbot.
-Don't oversell. Be honest about what you can and can't do.
-Sign off as: Ada · Built by Lua`,
-        [{ type: 'text', text: `The role was: ${meta.role_title}. Verdict: ${meta.verdict_line}. Rationale: ${meta.rationale}. Write the follow-up email.` }],
-      );
+      const emailBody = `Hi,
+
+I just finished evaluating the ${meta.role_title} role — verdict: ${meta.verdict_line}.
+
+${meta.rationale}
+
+If you have any questions about the result or want to explore next steps, just reply to this email.
+
+Ada · Built by Lua`;
 
       const sendResponse = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -214,8 +216,26 @@ export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
   inputSchema = captureLeadInputSchema;
 
   async execute(input: CaptureLeadInput): Promise<unknown> {
-    const { email, company, scoringResult } = input;
+    const { email, name, title, company, scoringResult } = input;
     const { flags } = scoringResult;
+
+    // Always store to Data regardless of flags
+    try {
+      await Data.create({
+        name: `eval_${Date.now()}`,
+        metadata: {
+          email,
+          name: name ?? '',
+          title: title ?? '',
+          company,
+          role_title: scoringResult.role_title,
+          score: scoringResult.score,
+          verdict: scoringResult.verdict,
+          recommended_cta: scoringResult.recommended_cta,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch { /* non-fatal */ }
 
     // Flag short-circuit — no Slack, no email
     if (flags.short_jd || flags.non_english || flags.suspected_fake) {
