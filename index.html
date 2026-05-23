@@ -833,13 +833,14 @@ async function submitLead() {
   state.leadSubmitted = true;
   document.getElementById('overlay').classList.remove('show');
 
-  // Fire capture_lead to Slack + email
+  // Fire capture_lead — pass full scoringResult so capture_lead has flags/agent_candidate/etc.
   try {
+    const scoringJson = JSON.stringify(state.result || {});
     await fetch(`https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${LUA_API_KEY}`},
       body: JSON.stringify({
-        messages:[{type:'text',text:`Call the capture_lead tool with: email="${email}", name="${name}", title="${title}", company="${company}". The scoring result for ${state.result?.role_title || 'this role'} (score: ${state.result?.score || '—'}, verdict: ${state.result?.verdict || '—'}) should be passed as the scoringResult.`}],
+        messages:[{type:'text',text:`Call the capture_lead tool now with these exact values:\nemail: "${email}"\nname: "${name}"\ntitle: "${title}"\ncompany: "${company}"\nscoringResult: ${scoringJson}`}],
         navigate:false
       }),
     });
