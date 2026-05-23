@@ -902,7 +902,7 @@ const DEMO = {
     hard_at:['Cost & churn at volume','Nights, weekends, language coverage'],
   },
   agent_candidate:{
-    name:'Ada', role_title:'AI Customer Support Agent', avatar_seed:'ada-support',
+    name:'Lua', role_title:'AI Customer Support Agent', avatar_seed:'ada-support',
     throughput:'Unmetered', coverage:'24/7 · 47 languages',
     great_at:['Instant, consistent first-response','Ticket tagging, routing, CRM updates','Knowledge base lookups at scale'],
     cant_do:['Novel high-stakes escalations','Owning long-term customer relationships'],
@@ -975,7 +975,7 @@ function drawResult() {
   if (isAgent) {
     recHeader.className = 'rec-header agent';
     recIcon.className = 'rec-icon agent'; recIcon.textContent = '⚡';
-    recTitle.textContent = `${ac.name} — ${ac.role_title}`;
+    recTitle.textContent = `Lua — ${ac.role_title}`;
     recSub.textContent = `Owns this role · ${ac.coverage || '24/7'} · ${ac.throughput || 'Unmetered volume'}`;
     recBody.innerHTML = `
       <div class="rec-stats">
@@ -983,7 +983,7 @@ function drawResult() {
         <div class="rec-stat"><span class="rs-icon">🌐</span><div><b>Coverage</b><p>${ac.coverage || '24/7'}</p></div></div>
         <div class="rec-stat"><span class="rs-icon">⚡</span><div><b>Throughput</b><p>${ac.throughput || 'Unmetered'}</p></div></div>
       </div>
-      <div class="rec-col-head">What ${ac.name} will do for this role</div>
+      <div class="rec-col-head">What Lua will do for this role</div>
       <ul class="rec-list">${ac.great_at.map(t=>li('✓',t)).join('')}</ul>
       <div class="rec-col-head">What still needs a human</div>
       <ul class="rec-list" style="margin-bottom:0">${ac.cant_do.map(t=>li('—',t)).join('')}</ul>`;
@@ -991,7 +991,7 @@ function drawResult() {
   } else if (isHybrid) {
     recHeader.className = 'rec-header human';
     recIcon.className = 'rec-icon human'; recIcon.textContent = '🔀';
-    recTitle.textContent = `${ac.name} supports the ${d.role_title} role`;
+    recTitle.textContent = `Lua supports the ${d.role_title} role`;
     recSub.textContent = 'Human-led · the agent handles the repeatable tail';
     // Human-heavy = lowest scoring dims (most human-suited)
     const humanDims = [...d.dimensions].sort((a,b)=>a.score-b.score).slice(0,3);
@@ -1002,7 +1002,7 @@ function drawResult() {
           <ul class="rec-list">${humanDims.map(dim=>li('↓',dim.rationale)).join('')}</ul>
         </div>
         <div>
-          <div class="rec-col-head" style="margin-top:0">${ac.name} handles</div>
+          <div class="rec-col-head" style="margin-top:0">Lua handles</div>
           <ul class="rec-list">${ac.great_at.map(t=>li('✓',t)).join('')}</ul>
         </div>
       </div>`;

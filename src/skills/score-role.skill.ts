@@ -135,8 +135,8 @@ CALIBRATION (non-negotiable):
 
 CANDIDATE CARDS:
   human_candidate: realistic salary (specify currency if detectable), scale ceiling, coverage
-  agent_candidate: name is always "Ada", role_title adapts to role, monthly_cost $800–$3,000/mo,
-                   avatar_seed is a short slug derived from role_title (e.g. "ada-support", "ada-ops"),
+  agent_candidate: name is always "Lua", role_title adapts to role, monthly_cost $800–$3,000/mo,
+                   avatar_seed is a short slug derived from role_title (e.g. "lua-support", "lua-ops"),
                    start_date is "Today", throughput and coverage reflect agent advantages
 
 FLAGS (check before scoring):
