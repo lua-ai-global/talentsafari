@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
     --cream:      #EAE4D5;
@@ -275,6 +276,10 @@
   .rec-list li span { font-size: 15px; flex-shrink: 0; }
 
   /* rec split layout */
+  .brand-logo { height:34px; width:34px; border-radius:8px; object-fit:cover; flex-shrink:0; }
+  .waiting-note { margin-top:18px; font-size:13px; color:var(--ink-soft); display:none; animation:pulse 1.8s ease-in-out infinite; text-align:center; }
+  @keyframes pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
+  .chip.pdf-chip { display:inline-flex; align-items:center; gap:5px; }
   .rec-col-head { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:10px; margin-top:16px; }
   .rec-col-head:first-child { margin-top:0; }
   .rec-split { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
@@ -399,7 +404,7 @@
 
 <div class="topbar">
   <div class="brand" onclick="restart()">
-    <div class="mark">▲</div>
+    <img src="public/talentsafari_logo.jpg" class="brand-logo" alt="Talent Safari" />
     <div>Human or Agent?<small>An honest hiring verdict</small></div>
   </div>
   <div class="partners">
@@ -437,8 +442,10 @@
         </div>
         <div class="dz-sep" id="dzSep"></div>
         <div class="dz-foot">
+          <input type="file" id="pdfInput" accept=".pdf" style="display:none" onchange="handlePdfUpload(event)" />
           <div class="dz-chips">
             <span class="chip" onclick="loadSample()">▲ Try a sample JD</span>
+            <span class="chip pdf-chip" onclick="document.getElementById('pdfInput').click()">📄 Upload PDF</span>
             <span class="chip" id="urlChip" onclick="toggleUrlMode()">🔗 Paste link</span>
           </div>
           <button class="btn btn-primary" id="heroBtn" onclick="handleScoreClick()">Score this role →</button>
@@ -506,6 +513,7 @@
         <div class="step"><span class="ic"></span> Assessing data sensitivity</div>
         <div class="step"><span class="ic"></span> Drafting verdict</div>
       </div>
+      <div class="waiting-note" id="waitingNote">⏳ Ada is drafting your verdict — this takes 20–40 seconds…</div>
     </div>
   </section>
 
@@ -687,6 +695,35 @@ function goBack() {
   });
 }
 
+// ─── PDF upload ───────────────────────────────────────────────────────────────
+if (window.pdfjsLib) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+async function handlePdfUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const jdEl = document.getElementById('jd');
+  jdEl.value = 'Extracting text from PDF…';
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let text = '';
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      text += content.items.map(s => s.str).join(' ') + '\n';
+    }
+    jdEl.value = text.trim();
+    // Switch out of URL mode if active
+    if (state.urlMode) toggleUrlMode();
+    document.getElementById('pdfInput').value = '';
+  } catch (e) {
+    jdEl.value = '';
+    alert('Could not read PDF. Please paste the JD text directly.');
+  }
+}
+
 // ─── URL mode ─────────────────────────────────────────────────────────────────
 function toggleUrlMode() {
   state.urlMode = !state.urlMode;
@@ -743,16 +780,29 @@ function runAnalysis() {
   go('s-analysis');
   const steps = [...document.querySelectorAll('#steps .step')];
   steps.forEach(s => s.className = 'step');
+  document.getElementById('waitingNote').style.display = 'none';
   let i = 0;
   steps[0].classList.add('run');
   const apiPromise = callScoreApi();
   const tick = setInterval(() => {
     steps[i].className = 'step done';
     i++;
-    if (i < steps.length) { steps[i].classList.add('run'); }
-    else {
+    if (i < steps.length - 1) {
+      steps[i].classList.add('run');
+    } else if (i === steps.length - 1) {
+      // Last step — keep it "running" until API responds
+      steps[i].classList.add('run');
       clearInterval(tick);
-      apiPromise.then(() => setTimeout(() => go('s-result'), 500));
+      // Show waiting note after a brief delay if API still pending
+      const waitTimer = setTimeout(() => {
+        document.getElementById('waitingNote').style.display = 'block';
+      }, 2000);
+      apiPromise.then(() => {
+        clearTimeout(waitTimer);
+        document.getElementById('waitingNote').style.display = 'none';
+        steps[i].className = 'step done';
+        setTimeout(() => go('s-result'), 500);
+      });
     }
   }, 1300);
 }
