@@ -87,7 +87,7 @@ async function postToSlack(
         elements: [
           {
             type: 'button',
-            text: { type: 'plain_text', text: '🧭 Tech Safari takes this' },
+            text: { type: 'plain_text', text: '🧭 Talent Safari takes this' },
             style: 'primary',
             value: `tech_safari_${roleSlug}`,
           },
