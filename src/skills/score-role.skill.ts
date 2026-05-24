@@ -53,6 +53,11 @@ const scoreJdInputSchema = z.object({
     non_english: z.boolean(),
     suspected_fake: z.boolean(),
   }),
+  adjacent_agents: z.array(z.object({
+    icon: z.string().describe('Single emoji for this agent type'),
+    name: z.string().describe('Short agent name e.g. "Lua Scheduler"'),
+    value_prop: z.string().max(120).describe('One sentence on what this agent does for this specific company/role context'),
+  })).min(2).max(3).describe('2–3 complementary Lua agents that could help this company regardless of the main verdict'),
 });
 
 type ScoreJdInput = z.infer<typeof scoreJdInputSchema>;
@@ -144,6 +149,13 @@ FLAGS (check before scoring):
   non_english: not in English → flag and return
   suspected_fake: test/lorem ipsum content → flag and return
 
-If score_jd returns a score_mismatch error (status 422), recompute your dimension scores and retry once.`,
+If score_jd returns a score_mismatch error (status 422), recompute your dimension scores and retry once.
+
+ADJACENT AGENTS (always include — ignore verdict, every company benefits from more automation):
+  Generate 2–3 Lua agent suggestions for OTHER roles/tasks at this company beyond the evaluated role.
+  Base suggestions on the company type, industry, and function visible in the JD.
+  Each should be distinct and realistic. Format: icon (emoji), name ("Lua [Role]"), value_prop (one sentence, specific to context).
+  Examples: Lua Scheduler (calendar/coordination), Lua Prospector (lead research), Lua Onboarder (HR/new hire),
+  Lua Analyst (reporting/metrics), Lua QA Agent (quality auditing), Lua Invoice Agent (finance ops).`,
   tools: [new scoreJdTool()],
 });

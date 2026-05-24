@@ -400,6 +400,56 @@
     .bc-stats { grid-template-columns: 1fr 1fr; }
     .modal-grid { grid-template-columns: 1fr; }
   }
+
+  /* analysis split layout */
+  .ana-split { display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:start; max-width:960px; margin:0 auto; }
+  .ana-left { text-align:center; }
+  .ana-right {
+    background:var(--paper); border:1px solid var(--line); border-radius:20px;
+    padding:24px; box-shadow:var(--shadow-sm); position:sticky; top:100px;
+  }
+  .ana-right .qn { font-size:12px; font-weight:700; color:var(--green-deep); letter-spacing:.08em; margin-bottom:6px; }
+  .ana-right h3 { font-size:17px; font-family:'Space Grotesk',sans-serif; color:var(--forest); margin-bottom:16px; }
+  .form-success-msg { text-align:center; padding:24px 16px; }
+  .form-success-msg .fs-icon { font-size:36px; margin-bottom:8px; }
+  .form-success-msg p { font-size:14px; color:var(--ink-soft); }
+  .form-success-msg strong { color:var(--forest); display:block; font-size:16px; margin-bottom:6px; }
+
+  /* fun facts */
+  .facts-ticker {
+    margin-top:18px; padding:13px 16px; background:var(--paper);
+    border-radius:12px; border:1px solid var(--line);
+    font-size:13px; color:var(--ink-soft); min-height:46px;
+    text-align:left; transition:opacity .4s;
+  }
+  .facts-ticker strong { color:var(--forest); font-weight:700; }
+
+  /* adjacent agents section */
+  .adjacent-section {
+    margin-top:22px; border-radius:20px; border:1px solid var(--lua-soft);
+    background:linear-gradient(135deg,rgba(108,76,240,.04),var(--paper));
+    overflow:hidden; box-shadow:var(--shadow-sm);
+  }
+  .adjacent-header { padding:18px 24px; background:linear-gradient(135deg,var(--lua-soft),#fff); border-bottom:1px solid var(--line); }
+  .adjacent-header h3 { font-family:'Space Grotesk',sans-serif; font-size:18px; color:var(--ink); }
+  .adjacent-header p { font-size:13px; color:var(--ink-soft); margin-top:3px; }
+  .adjacent-agents { padding:18px 20px; display:flex; flex-direction:column; gap:12px; }
+  .agent-sug {
+    padding:14px 16px; background:var(--paper); border:1px solid var(--line);
+    border-radius:14px; display:flex; gap:14px; align-items:flex-start;
+  }
+  .agent-sug-icon {
+    width:42px; height:42px; border-radius:11px; flex-shrink:0;
+    background:linear-gradient(140deg,var(--lua),var(--lua-2));
+    display:grid; place-items:center; font-size:20px;
+  }
+  .agent-sug-body h4 { font-size:14px; font-weight:700; color:var(--ink); margin-bottom:3px; }
+  .agent-sug-body p { font-size:13px; color:var(--ink-soft); line-height:1.5; }
+
+  @media (max-width: 760px) {
+    .ana-split { grid-template-columns:1fr; }
+    .ana-right { position:static; }
+  }
 </style>
 </head>
 <body>
@@ -480,11 +530,11 @@
     </div>
     <div class="q-card">
       <div class="qn">QUESTION 2</div>
-      <h3>What happens when something goes wrong in this role?</h3>
+      <h3>How much volume does this role generate?</h3>
       <div class="opts">
-        <span class="opt" onclick="pick(this,'stakes','high')">Serious consequences — revenue, relationships, or compliance at risk</span>
-        <span class="opt" onclick="pick(this,'stakes','moderate')">Moderate impact — usually fixable</span>
-        <span class="opt sel" onclick="pick(this,'stakes','low')">Low stakes — easy to catch and correct</span>
+        <span class="opt" onclick="pick(this,'taskFreq','low')">Low — one or two key decisions or outputs per day</span>
+        <span class="opt sel" onclick="pick(this,'taskFreq','medium')">Moderate — tens of tasks or interactions daily</span>
+        <span class="opt" onclick="pick(this,'taskFreq','high')">High — hundreds of tickets, messages, or touchpoints per day</span>
       </div>
     </div>
     <div class="q-card">
@@ -496,38 +546,50 @@
         <span class="opt" onclick="pick(this,'exposure','internal')">Primarily internal tools, systems, or data</span>
       </div>
     </div>
-    <div class="q-card" style="border:1.5px solid var(--green-deep)">
-      <div class="qn">YOUR DETAILS</div>
-      <h3>Where should we send your report?</h3>
-      <div class="modal-grid" style="margin-top:14px">
-        <div class="field"><label>Full name *</label><input id="leadName" placeholder="Jordan Reyes" /></div>
-        <div class="field"><label>Job title *</label><input id="leadTitle" placeholder="Head of People" /></div>
-      </div>
-      <div class="field"><label>Company *</label><input id="leadCompany" placeholder="Northwind Co." /></div>
-      <div class="field"><label>Work email *</label><input id="leadEmail" type="email" placeholder="jordan@northwind.co" /></div>
-      <p id="leadFormErr" style="color:#c0392b;font-size:12px;margin-top:4px;display:none">Please fill in all fields with a valid email address.</p>
-      <div class="fine" style="margin-top:8px;font-size:12px;color:var(--ink-soft)">Shared with Talent Safari &amp; Lua only. No spam.</div>
-    </div>
     <button class="btn btn-primary btn-block" style="max-width:680px;margin-top:8px" onclick="runAnalysis()">Run the analysis →</button>
   </section>
 
   <!-- SCREEN 3 — ANALYSIS -->
   <section class="screen" id="s-analysis">
-    <div class="analysis">
-      <span class="eyebrow" style="justify-content:center">Analysing</span>
-      <div class="scanner"><span>🔍</span></div>
-      <h2 class="display" style="font-size:26px;margin-bottom:6px;color:var(--forest)">Reading the role like a hiring panel.</h2>
-      <p style="color:var(--ink-soft);font-size:14px;margin-bottom:20px">Seven dimensions, scored and weighted.</p>
-      <div class="steps" id="steps">
-        <div class="step"><span class="ic"></span> Evaluating task structure</div>
-        <div class="step"><span class="ic"></span> Evaluating judgment complexity</div>
-        <div class="step"><span class="ic"></span> Weighing volume &amp; stakes</div>
-        <div class="step"><span class="ic"></span> Measuring empathy &amp; emotional load</div>
-        <div class="step"><span class="ic"></span> Checking system integration patterns</div>
-        <div class="step"><span class="ic"></span> Assessing data sensitivity</div>
-        <div class="step"><span class="ic"></span> Drafting verdict</div>
+    <div class="ana-split">
+      <!-- Left: steps -->
+      <div class="ana-left">
+        <span class="eyebrow" style="justify-content:center">Analysing</span>
+        <div class="scanner"><span>🔍</span></div>
+        <h2 class="display" style="font-size:26px;margin-bottom:6px;color:var(--forest)">Reading the role like a hiring panel.</h2>
+        <p style="color:var(--ink-soft);font-size:14px;margin-bottom:20px">Seven dimensions, scored and weighted.</p>
+        <div class="steps" id="steps">
+          <div class="step"><span class="ic"></span> Evaluating task structure</div>
+          <div class="step"><span class="ic"></span> Evaluating judgment complexity</div>
+          <div class="step"><span class="ic"></span> Weighing volume &amp; stakes</div>
+          <div class="step"><span class="ic"></span> Measuring empathy &amp; emotional load</div>
+          <div class="step"><span class="ic"></span> Checking system integration patterns</div>
+          <div class="step"><span class="ic"></span> Assessing data sensitivity</div>
+          <div class="step"><span class="ic"></span> Drafting verdict</div>
+        </div>
+        <div class="waiting-note" id="waitingNote">⏳ Almost there — finalising the verdict…</div>
+        <div class="facts-ticker" id="factsTicker" style="display:none"></div>
       </div>
-      <div class="waiting-note" id="waitingNote">⏳ Ada is drafting your verdict — this takes 20–40 seconds…</div>
+      <!-- Right: lead form -->
+      <div class="ana-right" id="anaFormWrap">
+        <div class="qn">YOUR DETAILS</div>
+        <h3>Where should we send your results?</h3>
+        <div class="modal-grid" style="margin-top:14px">
+          <div class="field"><label>Full name *</label><input id="leadName" placeholder="Jordan Reyes" /></div>
+          <div class="field"><label>Job title *</label><input id="leadTitle" placeholder="Head of People" /></div>
+        </div>
+        <div class="field"><label>Company *</label><input id="leadCompany" placeholder="Northwind Co." /></div>
+        <div class="field"><label>Work email *</label><input id="leadEmail" type="email" placeholder="jordan@northwind.co" /></div>
+        <p id="leadFormErr" style="color:#c0392b;font-size:12px;margin-top:4px;display:none">Please fill in all fields with a valid email address.</p>
+        <div class="fine" style="margin-top:8px;font-size:12px;color:var(--ink-soft)">Shared with Talent Safari &amp; Lua only. No spam.</div>
+        <button class="btn btn-primary btn-block" style="margin-top:14px" onclick="submitAnalysisForm()">Submit to see results →</button>
+      </div>
+      <!-- Right: success state (shown after form submitted) -->
+      <div class="ana-right form-success-msg" id="anaSuccessWrap" style="display:none">
+        <div class="fs-icon">✓</div>
+        <strong>Got it — results incoming</strong>
+        <p>Your verdict is being finalised. This usually takes 20–40 seconds.</p>
+      </div>
     </div>
   </section>
 
@@ -563,6 +625,15 @@
         </div>
       </div>
       <div class="rec-body" id="recBody"></div>
+    </div>
+
+    <!-- Adjacent agents -->
+    <div class="adjacent-section">
+      <div class="adjacent-header">
+        <h3>⚡ How else agents could help</h3>
+        <p>Other areas where Lua could add immediate value at your company</p>
+      </div>
+      <div class="adjacent-agents" id="adjacentAgents"></div>
     </div>
 
     <!-- Dual CTA -->
@@ -644,11 +715,11 @@
 <script>
 // ─── state ────────────────────────────────────────────────────────────────────
 const state = {
-  jdText: '', volume: 'medium', stakes: 'low',
+  jdText: '', volume: 'medium', stakes: 'low', taskFreq: 'medium',
   exposure: 'customer_unregulated', result: null,
   urlMode: false,
   leadName: '', leadTitle: '', leadCompany: '', leadEmail: '',
-  leadSubmitted: false,
+  leadSubmitted: false, apiDone: false, formDone: false,
 };
 
 const railMap = { 's-hero':0,'s-questions':1,'s-analysis':2,'s-result':3,'s-brief':3,'s-connect':3 };
@@ -744,7 +815,15 @@ function showScrapeErr(msg) {
 }
 
 function handleScoreClick() {
-  if (state.urlMode) { fetchJD(); } else { go('s-questions'); }
+  if (state.urlMode) { fetchJD(); return; }
+  const btn = document.getElementById('heroBtn');
+  btn.disabled = true;
+  btn.textContent = 'Preparing your questions…';
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = 'Score this role →';
+    go('s-questions');
+  }, 700);
 }
 
 function loadSample() {
@@ -766,31 +845,24 @@ function pick(el, key, value) {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function runAnalysis() {
-  // Collect + validate lead data from questions page
-  const name    = document.getElementById('leadName').value.trim();
-  const title   = document.getElementById('leadTitle').value.trim();
-  const company = document.getElementById('leadCompany').value.trim();
-  const email   = document.getElementById('leadEmail').value.trim();
-  const errEl   = document.getElementById('leadFormErr');
-  if (!name || !title || !company || !email || !EMAIL_RE.test(email)) {
-    errEl.style.display = 'block';
-    document.getElementById('leadName').scrollIntoView({ behavior:'smooth', block:'center' });
-    return;
-  }
-  errEl.style.display = 'none';
-  state.leadName = name; state.leadTitle = title;
-  state.leadCompany = company; state.leadEmail = email;
-  state.leadSubmitted = true;
-
-  notifyLeadSubmit(name, title, company, email);
-
-  state.jdText = document.getElementById('jd').value;
+  state.jdText = document.getElementById('jd').value.trim();
+  state.apiDone = false;
+  state.formDone = false;
   drawn = false;
   state.result = null;
+
+  // Reset analysis screen
+  document.getElementById('anaFormWrap').style.display = '';
+  document.getElementById('anaSuccessWrap').style.display = 'none';
+  document.getElementById('leadFormErr').style.display = 'none';
+
   go('s-analysis');
+
   const steps = [...document.querySelectorAll('#steps .step')];
   steps.forEach(s => s.className = 'step');
   document.getElementById('waitingNote').style.display = 'none';
+  startFactsTicker();
+
   let i = 0;
   steps[0].classList.add('run');
   const apiPromise = callScoreApi();
@@ -800,10 +872,8 @@ function runAnalysis() {
     if (i < steps.length - 1) {
       steps[i].classList.add('run');
     } else if (i === steps.length - 1) {
-      // Last step — keep it "running" until API responds
       steps[i].classList.add('run');
       clearInterval(tick);
-      // Show waiting note after a brief delay if API still pending
       const waitTimer = setTimeout(() => {
         document.getElementById('waitingNote').style.display = 'block';
       }, 2000);
@@ -811,10 +881,72 @@ function runAnalysis() {
         clearTimeout(waitTimer);
         document.getElementById('waitingNote').style.display = 'none';
         steps[i].className = 'step done';
-        setTimeout(() => go('s-result'), 500);
+        stopFactsTicker();
+        state.apiDone = true;
+        if (state.formDone) {
+          setTimeout(() => go('s-result'), 600);
+        }
       });
     }
   }, 1300);
+}
+
+function submitAnalysisForm() {
+  const name    = document.getElementById('leadName').value.trim();
+  const title   = document.getElementById('leadTitle').value.trim();
+  const company = document.getElementById('leadCompany').value.trim();
+  const email   = document.getElementById('leadEmail').value.trim();
+  const errEl   = document.getElementById('leadFormErr');
+  if (!name || !title || !company || !email || !EMAIL_RE.test(email)) {
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  state.leadName = name; state.leadTitle = title;
+  state.leadCompany = company; state.leadEmail = email;
+  state.leadSubmitted = true;
+  state.formDone = true;
+
+  notifyLeadSubmit(name, title, company, email);
+
+  // Swap form → success state
+  document.getElementById('anaFormWrap').style.display = 'none';
+  document.getElementById('anaSuccessWrap').style.display = '';
+
+  if (state.apiDone) {
+    setTimeout(() => go('s-result'), 800);
+  }
+}
+
+// ─── fun facts ────────────────────────────────────────────────────────────────
+const FACTS = [
+  '<strong>Lua</strong> agents work 24/7 with no sick days, leave, or ramp time.',
+  '<strong>Talent Safari</strong> places top talent in an average of 2 weeks.',
+  'The average Lua agent handles 3× the volume of a human hire.',
+  '<strong>40%</strong> of roles scored on this tool recommend a human — honest by design.',
+  '<strong>Lua</strong> integrates with Salesforce, Zendesk, Slack, and 200+ tools.',
+  '<strong>Talent Safari</strong> specialises in high-judgment, relationship-driven roles.',
+  'Lua agents typically go live within a week of scoping.',
+  'Every evaluation scores across 7 weighted dimensions for precision.',
+];
+let factsInterval = null;
+let factIdx = 0;
+function startFactsTicker() {
+  const el = document.getElementById('factsTicker');
+  if (!el) return;
+  el.style.display = '';
+  el.innerHTML = FACTS[0];
+  factIdx = 0;
+  factsInterval = setInterval(() => {
+    factIdx = (factIdx + 1) % FACTS.length;
+    el.style.opacity = '0';
+    setTimeout(() => { el.innerHTML = FACTS[factIdx]; el.style.opacity = '1'; }, 400);
+  }, 3500);
+}
+function stopFactsTicker() {
+  if (factsInterval) { clearInterval(factsInterval); factsInterval = null; }
+  const el = document.getElementById('factsTicker');
+  if (el) el.style.display = 'none';
 }
 
 // ─── API call ─────────────────────────────────────────────────────────────────
@@ -836,7 +968,7 @@ async function callScoreApi() {
   const isUrl = /^https?:\/\//i.test(state.jdText.trim());
   const prompt = isUrl
     ? `Score this job posting: ${state.jdText.trim()}`
-    : `Score this job description:\n\n${state.jdText}\n\nContext: Volume level is ${state.volume}, decision stakes are ${state.stakes}, exposure type is ${state.exposure}.`;
+    : `Score this job description:\n\n${state.jdText}\n\nContext: Task structure is ${state.volume}, task frequency is ${state.taskFreq} (low/medium/high volume per day), decision stakes are ${state.stakes}, exposure type is ${state.exposure}.`;
 
   try {
     const res = await fetch(
@@ -992,6 +1124,11 @@ const DEMO = {
   },
   recommended_cta:'lua',
   flags:{short_jd:false,non_english:false,suspected_fake:false},
+  adjacent_agents:[
+    {icon:'📅',name:'Lua Scheduler',value_prop:'Handles meeting booking, follow-up reminders, and calendar coordination across the team — no back-and-forth.'},
+    {icon:'📊',name:'Lua Analyst',value_prop:'Pulls weekly support metrics, generates CSAT reports, and flags trend anomalies automatically.'},
+    {icon:'🔍',name:'Lua QA Agent',value_prop:'Audits a daily sample of tickets and scores quality automatically — no manual review needed.'},
+  ],
 };
 
 const DEMO_BRIEF = {
@@ -1103,6 +1240,18 @@ function drawResult() {
         Talent Safari specialises in placing people who thrive in exactly this kind of role.
       </p>`;
   }
+
+  // Adjacent agents
+  const adjEl = document.getElementById('adjacentAgents');
+  const adjAgents = (d.adjacent_agents && d.adjacent_agents.length >= 2) ? d.adjacent_agents : DEMO.adjacent_agents;
+  adjEl.innerHTML = adjAgents.map(a => `
+    <div class="agent-sug">
+      <div class="agent-sug-icon">${a.icon}</div>
+      <div class="agent-sug-body">
+        <h4>${a.name}</h4>
+        <p>${a.value_prop}</p>
+      </div>
+    </div>`).join('');
 
   // Pre-fill CTA forms
   prefillCtaForms();
