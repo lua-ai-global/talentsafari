@@ -1,6 +1,6 @@
 {
-  "lastHash": "dcd151f802d2095224756cffbe612ca7fee61058bb33df18f1d3845cc3f8582a",
-  "lastPushedAt": "2026-05-24T07:29:17.347Z",
+  "lastHash": "ec3b55d25c4727a6e48405c6d45c424f40819d94969eb074cacac714ba7ae3dc",
+  "lastPushedAt": "2026-05-24T10:57:07.188Z",
   "files": [
     {
       "relativePath": "build.md",
@@ -12,11 +12,11 @@
     },
     {
       "relativePath": "index.html",
-      "hash": "731fd9c3746a8f69"
+      "hash": "6c1836fd14db07b8"
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "8a93293c10ee2462"
+      "hash": "b7cc16355adbb5c2"
     },
     {
       "relativePath": "netlify.toml",
@@ -56,7 +56,7 @@
     },
     {
       "relativePath": "src/skills/score-role.skill.ts",
-      "hash": "a390ff56b8380446"
+      "hash": "7f7cbb75ad51ae8e"
     },
     {
       "relativePath": "src/skills/scrape-jd.skill.ts",
