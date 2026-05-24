@@ -1,6 +1,6 @@
 {
-  "lastHash": "9bad681f6ec894deda3b902ed43892c6707b602da2df949c3563f8495be99212",
-  "lastPushedAt": "2026-05-22T15:22:53.909Z",
+  "lastHash": "2a2211d24b8b7035ec2fcb03c28708a96141145165d6127da0de0ee742ef79c6",
+  "lastPushedAt": "2026-05-24T06:51:53.844Z",
   "files": [
     {
       "relativePath": "build.md",
@@ -12,15 +12,23 @@
     },
     {
       "relativePath": "index.html",
-      "hash": "0a9b40be74da8455"
+      "hash": "b91f99907ab85ae5"
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "d83ad7158a9bf8c9"
+      "hash": "b01e81eb0cdaea06"
+    },
+    {
+      "relativePath": "netlify.toml",
+      "hash": "2bc5bc6e341c5e81"
     },
     {
       "relativePath": "package.json",
       "hash": "110536777933a2d1"
+    },
+    {
+      "relativePath": "public/talentsafari_logo.jpg",
+      "hash": "69247c0277b5bc33"
     },
     {
       "relativePath": "QUICKSTART.md",
@@ -44,11 +52,11 @@
     },
     {
       "relativePath": "src/skills/capture-lead.skill.ts",
-      "hash": "184225f391c93389"
+      "hash": "ff2618343c204648"
     },
     {
       "relativePath": "src/skills/score-role.skill.ts",
-      "hash": "0d8564bd7da82e13"
+      "hash": "05a7d41e9cdf5b0d"
     },
     {
       "relativePath": "src/skills/scrape-jd.skill.ts",
