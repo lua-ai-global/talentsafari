@@ -134,7 +134,7 @@ CALIBRATION (non-negotiable):
   - Roughly 40% of real JDs should score human — be honest, not optimistic
 
 CANDIDATE CARDS:
-  human_candidate: realistic salary (specify currency if detectable), scale ceiling, coverage
+  human_candidate: salary_range = exact salary/budget from JD if explicitly stated (keep original wording); set to "" if JD does not mention salary or budget. scale ceiling, coverage.
   agent_candidate: name is always "Lua", role_title adapts to role, monthly_cost $800–$3,000/mo,
                    avatar_seed is a short slug derived from role_title (e.g. "lua-support", "lua-ops"),
                    start_date is "Today", throughput and coverage reflect agent advantages

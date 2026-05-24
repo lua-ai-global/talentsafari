@@ -782,6 +782,8 @@ function runAnalysis() {
   state.leadCompany = company; state.leadEmail = email;
   state.leadSubmitted = true;
 
+  notifyLeadSubmit(name, title, company, email);
+
   state.jdText = document.getElementById('jd').value;
   drawn = false;
   state.result = null;
@@ -816,8 +818,19 @@ function runAnalysis() {
 }
 
 // ─── API call ─────────────────────────────────────────────────────────────────
-const LUA_AGENT_ID = 'baseAgent_agent_1779215133611_x0svb7j5d';
-const LUA_API_KEY  = 'api_403f64cd0f8b4e3b97c2c98443508e84';
+const LUA_AGENT_ID   = 'baseAgent_agent_1779215133611_x0svb7j5d';
+const LUA_API_KEY    = 'api_403f64cd0f8b4e3b97c2c98443508e84';
+const SLACK_WEBHOOK  = 'https://hooks.slack.com/services/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';
+
+async function notifyLeadSubmit(name, title, company, email) {
+  try {
+    await fetch(SLACK_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: `*New JD submitted — evaluation starting*\nLead: ${name} · ${title} · ${company}\nEmail: ${email}` }),
+    });
+  } catch {}
+}
 
 async function callScoreApi() {
   const isUrl = /^https?:\/\//i.test(state.jdText.trim());
@@ -919,9 +932,10 @@ async function submitCta(path) {
   // Use already-collected lead data — no re-entry needed
   const { leadName: name, leadEmail: email, leadCompany: company, leadTitle: title } = state;
   try {
+    const scoringJson = JSON.stringify(state.result || {});
     await fetch(`https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`, {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${LUA_API_KEY}`},
-      body: JSON.stringify({ messages:[{type:'text',text:`Call the submit_cta tool with: path="${path}", name="${name}", title="${title}", email="${email}", company="${company}", extraField="${extraField}". Use the scoring result on record.`}], navigate:false }),
+      body: JSON.stringify({ messages:[{type:'text',text:`Call the submit_cta tool now with these exact values:\npath: "${path}"\nname: "${name}"\ntitle: "${title}"\nemail: "${email}"\ncompany: "${company}"\nextraField: "${extraField}"\nscoringResult: ${scoringJson}`}], navigate:false }),
     });
   } catch {}
   if (successEl) {

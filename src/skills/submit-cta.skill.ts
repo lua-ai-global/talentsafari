@@ -43,12 +43,12 @@ async function postCtaToSlack(webhookUrl: string, input: SubmitCtaInput): Promis
   const { path, name, email, company, extraField, scoringResult } = input;
   const { role_title, score, verdict_line, agent_candidate, human_candidate } = scoringResult;
 
-  const pathLabel = path === 'tech_safari' ? '🧭 Tech Safari' : '⚡ Lua';
+  const pathLabel = path === 'tech_safari' ? '🧭 Talent Safari' : '⚡ Lua';
   const extraLabel = path === 'tech_safari' ? 'Timeline' : 'Scope';
   const financialLine =
-    path === 'tech_safari'
+    path === 'tech_safari' && human_candidate.salary_range
       ? `Human option: ${human_candidate.salary_range}`
-      : `Ada option: ${agent_candidate.monthly_cost}/mo · Live ${agent_candidate.start_date}`;
+      : '';
 
   const text = [
     `*CTA submitted — ${pathLabel} path*`,
@@ -82,9 +82,9 @@ async function sendConfirmationEmail(
   let html: string;
 
   if (path === 'tech_safari') {
-    subject = 'Your Tech Safari brief has been sent';
+    subject = 'Your Talent Safari brief has been sent';
     html = `<p>Hi ${name},</p>
-<p>Your brief for the <strong>${scoringResult.role_title}</strong> evaluation has been sent to TechSafari.</p>
+<p>Your brief for the <strong>${scoringResult.role_title}</strong> evaluation has been sent to Talent Safari.</p>
 <p>A recruiter will review the role scorecard and reply within one business day.</p>
 <p>— Ada · Built by Lua</p>`;
   } else {
@@ -122,7 +122,7 @@ async function sendConfirmationEmail(
 export class submitCtaTool implements LuaTool<typeof submitCtaInputSchema> {
   name = 'submit_cta';
   description =
-    'Handle a CTA form submission for either the Tech Safari (human recruiting) or Lua (AI agent) path. Posts to Slack and sends a confirmation email to the contact.';
+    'Handle a CTA form submission for either the Talent Safari (human recruiting) or Lua (AI agent) path. Posts to Slack and sends a confirmation email to the contact.';
   inputSchema = submitCtaInputSchema;
 
   async execute(input: SubmitCtaInput): Promise<unknown> {
@@ -147,11 +147,11 @@ export class submitCtaTool implements LuaTool<typeof submitCtaInputSchema> {
 export const submitCtaSkill = new LuaSkill({
   name: 'submit-cta',
   description:
-    'Handles CTA form submissions — routes the contact to Tech Safari (human recruiting) or Lua (AI agent build), posts to Slack, and sends a confirmation email.',
+    'Handles CTA form submissions — routes the contact to Talent Safari (human recruiting) or Lua (AI agent build), posts to Slack, and sends a confirmation email.',
   context: `Use the submit_cta tool when a user completes a CTA form after reviewing their evaluation results.
 
 Two paths are supported:
-- tech_safari: The user wants a human hire sourced by TechSafari. Collect name, email, company, and optionally "When do you need this seat filled?".
+- tech_safari: The user wants a human hire sourced by Talent Safari. Collect name, email, company, and optionally "When do you need this seat filled?".
 - lua: The user wants an AI agent built by Lua. Collect name, email, company, and optionally "What should this agent own first?".
 
 Always pass the scoringResult from the earlier score_jd call so Slack gets the full role context.

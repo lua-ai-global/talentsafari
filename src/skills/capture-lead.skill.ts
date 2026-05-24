@@ -26,6 +26,7 @@ const captureLeadInputSchema = z.object({
         role_title: z.string(),
         monthly_cost: z.string(),
         start_date: z.string(),
+        throughput: z.string().optional(),
       }),
       recommended_cta: z.enum(['lua', 'tech_safari']),
       flags: z.object({
@@ -74,11 +75,13 @@ async function postToSlack(
         fields: [
           {
             type: 'mrkdwn',
-            text: `*Human option:* ${human_candidate.salary_range} · ${human_candidate.time_to_productive} ramp`,
+            text: human_candidate.salary_range
+              ? `*Human option:* ${human_candidate.salary_range} · ${human_candidate.time_to_productive} ramp`
+              : `*Human option:* ${human_candidate.time_to_productive} ramp`,
           },
           {
             type: 'mrkdwn',
-            text: `*Ada option:* ${agent_candidate.monthly_cost}/mo · Live ${agent_candidate.start_date}`,
+            text: `*Lua option:* Live ${agent_candidate.start_date} · ${agent_candidate.throughput || 'Unmetered'} throughput`,
           },
         ],
       },
@@ -131,7 +134,7 @@ async function sendEmail1(
       from: fromEmail,
       to: [toEmail],
       subject: `Your Human or Agent? report — ${roleTitle}`,
-      html: `<p>Here's your full evaluation for <strong>${roleTitle}</strong>.</p><p>Verdict: ${verdictLine} (Score: ${score}/100)</p><p>The full seven-dimension breakdown is attached. Use it to brief TechSafari or Lua.</p><p>— Ada · Built by Lua</p>`,
+      html: `<p>Here's your full evaluation for <strong>${roleTitle}</strong>.</p><p>Verdict: ${verdictLine} (Score: ${score}/100)</p><p>The full seven-dimension breakdown is attached. Use it to brief Talent Safari or Lua.</p><p>— Ada · Built by Lua</p>`,
     }),
   });
 
