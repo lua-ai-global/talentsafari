@@ -7,7 +7,7 @@ skills:
     version: 1.0.10
   - name: capture-lead
     skillId: 86c230de-eb61-4b97-8111-70602454c2bc
-    version: 1.0.10
+    version: 1.0.11
   - name: submit-cta
     skillId: 278ee16a-780a-464f-8022-c04a88b9e1fc
     version: 1.0.9
@@ -26,6 +26,6 @@ preprocessors: []
 postprocessors: []
 mcpServers: []
 backup:
-  activeVersion: 11
-  lastHash: 2a2211d24b8b7035ec2fcb03c28708a96141145165d6127da0de0ee742ef79c6
-  lastPushedAt: '2026-05-24T06:51:53.840Z'
+  activeVersion: 12
+  lastHash: 36541c513427bb0284eb9ebd41c791f171464181fcde17a73a41ff69d98acf88
+  lastPushedAt: '2026-05-24T06:59:45.253Z'
