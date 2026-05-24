@@ -4,13 +4,13 @@ agent:
 skills:
   - name: score-role
     skillId: bf212f12-d2fd-417a-bb30-a9fa71ad1afc
-    version: 1.0.10
+    version: 1.0.11
   - name: capture-lead
     skillId: 86c230de-eb61-4b97-8111-70602454c2bc
-    version: 1.0.12
+    version: 1.0.13
   - name: submit-cta
     skillId: 278ee16a-780a-464f-8022-c04a88b9e1fc
-    version: 1.0.9
+    version: 1.0.11
   - name: ada-chat
     skillId: c489ffca-735c-46fc-abfc-68644f269f18
     version: 1.0.9
@@ -26,6 +26,6 @@ preprocessors: []
 postprocessors: []
 mcpServers: []
 backup:
-  activeVersion: 13
-  lastHash: 5c21265841f46d4716672b6496c8c28420b7e8b5a51ecb0016edf6db2c9a650b
-  lastPushedAt: '2026-05-24T07:11:31.420Z'
+  activeVersion: 16
+  lastHash: dcd151f802d2095224756cffbe612ca7fee61058bb33df18f1d3845cc3f8582a
+  lastPushedAt: '2026-05-24T07:29:17.343Z'
