@@ -277,6 +277,8 @@
 
   /* rec split layout */
   .brand-logo { height:34px; width:34px; border-radius:8px; object-fit:cover; flex-shrink:0; }
+  .confirm-who { background:var(--cream); border-radius:12px; padding:14px 16px; margin-bottom:14px; font-size:13.5px; color:var(--ink-soft); }
+  .confirm-who strong { color:var(--ink); display:block; margin-bottom:2px; }
   .waiting-note { margin-top:18px; font-size:13px; color:var(--ink-soft); display:none; animation:pulse 1.8s ease-in-out infinite; text-align:center; }
   @keyframes pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
   .chip.pdf-chip { display:inline-flex; align-items:center; gap:5px; }
@@ -494,6 +496,18 @@
         <span class="opt" onclick="pick(this,'exposure','internal')">Primarily internal tools, systems, or data</span>
       </div>
     </div>
+    <div class="q-card" style="border:1.5px solid var(--green-deep)">
+      <div class="qn">YOUR DETAILS</div>
+      <h3>Where should we send your report?</h3>
+      <div class="modal-grid" style="margin-top:14px">
+        <div class="field"><label>Full name *</label><input id="leadName" placeholder="Jordan Reyes" /></div>
+        <div class="field"><label>Job title *</label><input id="leadTitle" placeholder="Head of People" /></div>
+      </div>
+      <div class="field"><label>Company *</label><input id="leadCompany" placeholder="Northwind Co." /></div>
+      <div class="field"><label>Work email *</label><input id="leadEmail" type="email" placeholder="jordan@northwind.co" /></div>
+      <p id="leadFormErr" style="color:#c0392b;font-size:12px;margin-top:4px;display:none">Please fill in all fields with a valid email address.</p>
+      <div class="fine" style="margin-top:8px;font-size:12px;color:var(--ink-soft)">Shared with Talent Safari &amp; Lua only. No spam.</div>
+    </div>
     <button class="btn btn-primary btn-block" style="max-width:680px;margin-top:8px" onclick="runAnalysis()">Run the analysis →</button>
   </section>
 
@@ -574,14 +588,13 @@
     <span class="eyebrow">Human-led path · Talent Safari</span>
     <div class="s-head">
       <h2 class="display">Brief Talent Safari on this role.</h2>
-      <p>This becomes the recruiter brief. A specialist replies within one business day.</p>
+      <p>A specialist replies within one business day.</p>
     </div>
-    <div class="dropzone" style="max-width:560px;margin:0">
-      <div class="field"><label>Your name</label><input id="tsName" placeholder="Jordan Reyes" /></div>
-      <div class="field"><label>Work email</label><input id="tsEmail" placeholder="jordan@northwind.co" /></div>
-      <div class="field"><label>Company</label><input id="tsCompany" placeholder="Northwind Co." /></div>
+    <div class="dropzone" style="max-width:560px;margin:0" id="tsBriefBody">
+      <div class="confirm-who" id="tsConfirmWho"></div>
       <div class="field"><label>When do you need this seat filled?</label><input id="tsTimeline" placeholder="Within 6 weeks" /></div>
       <button class="btn btn-ts btn-block" style="margin-top:8px" onclick="submitCta('tech_safari')">Send brief to Talent Safari →</button>
+      <div id="tsSuccess" style="display:none;text-align:center;padding:16px 0;color:var(--forest);font-weight:600">✓ Brief sent. Talent Safari will reply within 1 business day.</div>
     </div>
   </section>
 
@@ -609,14 +622,13 @@
     <div id="staticLuaForm">
       <div class="s-head">
         <h2 class="display">Connect with Lua.</h2>
-        <p>Book a 15-minute intro — Lua scopes the agent for this role and gives you a build estimate.</p>
+        <p>Lua scopes the agent for this role and gives you a build estimate — usually within a day.</p>
       </div>
       <div class="dropzone" style="max-width:560px;margin:0">
-        <div class="field"><label>Your name</label><input id="luaName" placeholder="Jordan Reyes" /></div>
-        <div class="field"><label>Work email</label><input id="luaEmail" placeholder="jordan@northwind.co" /></div>
-        <div class="field"><label>Company</label><input id="luaCompany" placeholder="Northwind Co." /></div>
+        <div class="confirm-who" id="luaConfirmWho"></div>
         <div class="field"><label>What should this agent own first?</label><input id="luaScope" placeholder="Tier 1 inbound support triage" /></div>
-        <button class="btn btn-lua btn-block" style="margin-top:8px" onclick="submitCta('lua')">Book intro with Lua →</button>
+        <button class="btn btn-lua btn-block" style="margin-top:8px" onclick="submitCta('lua')">Connect with Lua →</button>
+        <div id="luaSuccess" style="display:none;text-align:center;padding:16px 0;color:var(--lua);font-weight:600">✓ Sent. Lua will be in touch within 24 hours.</div>
       </div>
     </div>
   </section>
@@ -624,22 +636,6 @@
 </main>
 
 <!-- Lead capture modal (auto-pops after result) -->
-<div class="overlay" id="overlay">
-  <div class="modal">
-    <div class="m-eyebrow">Your report is ready</div>
-    <h3 class="display">Where should we send it?</h3>
-    <p>Enter your details to get the full breakdown and have the results shared with the Talent Safari × Lua team.</p>
-    <div class="modal-grid">
-      <div class="field"><label>Full name</label><input id="leadName" placeholder="Jordan Reyes" /></div>
-      <div class="field"><label>Job title</label><input id="leadTitle" placeholder="Head of People" /></div>
-    </div>
-    <div class="field"><label>Company</label><input id="leadCompany" placeholder="Northwind Co." /></div>
-    <div class="field"><label>Work email</label><input id="leadEmail" placeholder="jordan@northwind.co" /></div>
-    <p id="leadFormErr" style="color:#c0392b;font-size:12px;margin-top:-4px;margin-bottom:8px;display:none">Please fill in all fields.</p>
-    <button class="btn btn-lua btn-block" onclick="submitLead()">Get my full report →</button>
-    <div class="fine">Shared with Talent Safari &amp; Lua only. No spam.</div>
-  </div>
-</div>
 
 <footer>
   A <b class="ts">Talent Safari</b> × <b class="lua">Lua</b> collaboration.
@@ -669,18 +665,12 @@ function go(id) {
     bar.className = i<=n ? (i===3?'on lua':'on') : '';
   });
   if (id === 's-result') {
-    // Remove s-analysis from history — it's a loading state, not a back destination
     const anaIdx = navHistory.indexOf('s-analysis');
     if (anaIdx !== -1) navHistory.splice(anaIdx, 1);
     drawResult();
-    // Auto-pop lead modal after 1.8s if not yet submitted
-    if (!state.leadSubmitted) {
-      setTimeout(() => {
-        if (!state.leadSubmitted) document.getElementById('overlay').classList.add('show');
-      }, 1800);
-    }
   }
-  if (id === 's-connect') initConnectScreen();
+  if (id === 's-brief') initCtaScreen('ts');
+  if (id === 's-connect') { initCtaScreen('lua'); initConnectScreen(); }
 }
 
 function goBack() {
@@ -773,7 +763,25 @@ function pick(el, key, value) {
 }
 
 // ─── analysis theater ─────────────────────────────────────────────────────────
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function runAnalysis() {
+  // Collect + validate lead data from questions page
+  const name    = document.getElementById('leadName').value.trim();
+  const title   = document.getElementById('leadTitle').value.trim();
+  const company = document.getElementById('leadCompany').value.trim();
+  const email   = document.getElementById('leadEmail').value.trim();
+  const errEl   = document.getElementById('leadFormErr');
+  if (!name || !title || !company || !email || !EMAIL_RE.test(email)) {
+    errEl.style.display = 'block';
+    document.getElementById('leadName').scrollIntoView({ behavior:'smooth', block:'center' });
+    return;
+  }
+  errEl.style.display = 'none';
+  state.leadName = name; state.leadTitle = title;
+  state.leadCompany = company; state.leadEmail = email;
+  state.leadSubmitted = true;
+
   state.jdText = document.getElementById('jd').value;
   drawn = false;
   state.result = null;
@@ -881,7 +889,6 @@ async function submitLead() {
   state.leadName = name; state.leadTitle = title;
   state.leadCompany = company; state.leadEmail = email;
   state.leadSubmitted = true;
-  document.getElementById('overlay').classList.remove('show');
 
   // Fire capture_lead — pass full scoringResult so capture_lead has flags/agent_candidate/etc.
   try {
@@ -898,20 +905,31 @@ async function submitLead() {
 }
 
 // ─── CTA forms ────────────────────────────────────────────────────────────────
+function initCtaScreen(prefix) {
+  const el = document.getElementById(prefix === 'ts' ? 'tsConfirmWho' : 'luaConfirmWho');
+  if (el) {
+    el.innerHTML = `<strong>${state.leadName} · ${state.leadCompany}</strong>${state.leadEmail}`;
+  }
+}
+
 async function submitCta(path) {
   const isTs = path === 'tech_safari';
-  const name       = (document.getElementById(isTs?'tsName':'luaName').value.trim() || state.leadName);
-  const email      = (document.getElementById(isTs?'tsEmail':'luaEmail').value.trim() || state.leadEmail);
-  const company    = (document.getElementById(isTs?'tsCompany':'luaCompany').value.trim() || state.leadCompany);
-  const extraField = document.getElementById(isTs?'tsTimeline':'luaScope').value.trim();
-  if (!name||!email||!company) { alert('Please fill in all required fields.'); return; }
+  const extraField = document.getElementById(isTs ? 'tsTimeline' : 'luaScope').value.trim();
+  const successEl  = document.getElementById(isTs ? 'tsSuccess' : 'luaSuccess');
+  // Use already-collected lead data — no re-entry needed
+  const { leadName: name, leadEmail: email, leadCompany: company, leadTitle: title } = state;
   try {
     await fetch(`https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`, {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${LUA_API_KEY}`},
-      body: JSON.stringify({ messages:[{type:'text',text:`Call the submit_cta tool with: path="${path}", name="${name}", email="${email}", company="${company}", extraField="${extraField}". Use the scoring result on record.`}], navigate:false }),
+      body: JSON.stringify({ messages:[{type:'text',text:`Call the submit_cta tool with: path="${path}", name="${name}", title="${title}", email="${email}", company="${company}", extraField="${extraField}". Use the scoring result on record.`}], navigate:false }),
     });
   } catch {}
-  go('s-result');
+  if (successEl) {
+    successEl.style.display = 'block';
+    // Hide form elements
+    const btn = successEl.previousElementSibling;
+    if (btn) btn.style.display = 'none';
+  }
 }
 
 // ─── pre-fill CTA forms ───────────────────────────────────────────────────────
