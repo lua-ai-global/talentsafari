@@ -253,20 +253,25 @@ export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
     const resendKey = env('RESEND_API_KEY') ?? '';
     const fromEmail = env('FROM_EMAIL') ?? '';
 
+    // Slack — primary signal, must succeed
     await postToSlack(slackUrl, scoringResult, email, company);
-    await sendEmail1(
-      resendKey,
-      fromEmail,
-      email,
-      scoringResult.role_title,
-      scoringResult.verdict_line,
-      scoringResult.score,
-    );
-    const email2ScheduledAt = await scheduleFollowupEmail(scoringResult, email);
+
+    // Email — non-fatal if Resend key not configured
+    let email1Sent = false;
+    let email2ScheduledAt = '';
+    if (resendKey && fromEmail) {
+      try {
+        await sendEmail1(resendKey, fromEmail, email, scoringResult.role_title, scoringResult.verdict_line, scoringResult.score);
+        email1Sent = true;
+      } catch { /* non-fatal */ }
+      try {
+        email2ScheduledAt = await scheduleFollowupEmail(scoringResult, email);
+      } catch { /* non-fatal */ }
+    }
 
     return {
       posted: true,
-      email1Sent: true,
+      email1Sent,
       email2ScheduledAt,
     };
   }
