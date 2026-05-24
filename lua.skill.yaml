@@ -4,7 +4,7 @@ agent:
 skills:
   - name: score-role
     skillId: bf212f12-d2fd-417a-bb30-a9fa71ad1afc
-    version: 1.0.12
+    version: 1.0.11
   - name: capture-lead
     skillId: 86c230de-eb61-4b97-8111-70602454c2bc
     version: 1.0.13
