@@ -10,7 +10,7 @@ skills:
     version: 1.0.13
   - name: submit-cta
     skillId: 278ee16a-780a-464f-8022-c04a88b9e1fc
-    version: 1.0.11
+    version: 1.0.12
   - name: ada-chat
     skillId: c489ffca-735c-46fc-abfc-68644f269f18
     version: 1.0.9
@@ -26,6 +26,6 @@ preprocessors: []
 postprocessors: []
 mcpServers: []
 backup:
-  activeVersion: 18
-  lastHash: 8bcf26efde5632fc320d02b9f3908d490b9c5506f96e713c51ec339fe8673161
-  lastPushedAt: '2026-05-25T12:02:16.324Z'
+  activeVersion: 20
+  lastHash: 6b17f995587599fede9cedf5e83d2a931cb2d84acb9e4f899e379fd9fac35b44
+  lastPushedAt: '2026-05-25T13:21:21.821Z'
