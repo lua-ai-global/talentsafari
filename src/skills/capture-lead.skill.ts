@@ -10,6 +10,7 @@ const captureLeadInputSchema = z.object({
   name: z.string().optional().describe("Lead's full name"),
   title: z.string().optional().describe("Lead's job title"),
   company: z.string().min(1).describe("Lead's company name"),
+  jdText: z.string().optional().describe('The full job description text submitted by the lead'),
   scoringResult: z
     .object({
       role_title: z.string(),
@@ -57,9 +58,16 @@ async function postToSlack(
   scoringResult: ScoringResult,
   email: string,
   company: string,
+  jdText?: string,
 ): Promise<void> {
   const { role_title, verdict_line, score, human_candidate, agent_candidate } = scoringResult;
   const roleSlug = slugify(role_title);
+
+  const jdSnippet = jdText
+    ? jdText.length > 600
+      ? jdText.slice(0, 600) + '…'
+      : jdText
+    : null;
 
   const payload = {
     blocks: [
@@ -85,6 +93,10 @@ async function postToSlack(
           },
         ],
       },
+      ...(jdSnippet ? [{
+        type: 'section',
+        text: { type: 'mrkdwn', text: `*Job description:*\n${jdSnippet}` },
+      }] : []),
       {
         type: 'actions',
         elements: [
@@ -219,7 +231,7 @@ export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
   inputSchema = captureLeadInputSchema;
 
   async execute(input: CaptureLeadInput): Promise<unknown> {
-    const { email, name, title, company, scoringResult } = input;
+    const { email, name, title, company, jdText, scoringResult } = input;
     const { flags } = scoringResult;
 
     // Always store to Data regardless of flags
@@ -235,6 +247,7 @@ export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
           score: scoringResult.score,
           verdict: scoringResult.verdict,
           recommended_cta: scoringResult.recommended_cta,
+          jd_text: jdText ?? '',
           timestamp: new Date().toISOString(),
         },
       });
@@ -257,7 +270,7 @@ export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
     const fromEmail = env('FROM_EMAIL') ?? '';
 
     // Slack — primary signal, must succeed
-    await postToSlack(slackUrl, scoringResult, email, company);
+    await postToSlack(slackUrl, scoringResult, email, company, jdText);
 
     // Email — non-fatal if Resend key not configured
     let email1Sent = false;

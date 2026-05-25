@@ -16,6 +16,7 @@ const submitCtaInputSchema = z.object({
     .describe(
       "'When do you need this seat filled?' for tech_safari, or 'What should this agent own first?' for lua",
     ),
+  jdText: z.string().optional().describe('The original job description text'),
   scoringResult: z
     .object({
       role_title: z.string(),
@@ -40,7 +41,7 @@ type SubmitCtaInput = z.infer<typeof submitCtaInputSchema>;
 // ---------------------------------------------------------------------------
 
 async function postCtaToSlack(webhookUrl: string, input: SubmitCtaInput): Promise<void> {
-  const { path, name, email, company, extraField, scoringResult } = input;
+  const { path, name, email, company, extraField, jdText, scoringResult } = input;
   const { role_title, score, verdict_line, agent_candidate, human_candidate } = scoringResult;
 
   const pathLabel = path === 'tech_safari' ? '🧭 Talent Safari' : '⚡ Lua';
@@ -50,12 +51,17 @@ async function postCtaToSlack(webhookUrl: string, input: SubmitCtaInput): Promis
       ? `Human option: ${human_candidate.salary_range}`
       : '';
 
+  const jdSnippet = jdText
+    ? jdText.length > 600 ? jdText.slice(0, 600) + '…' : jdText
+    : null;
+
   const text = [
     `*CTA submitted — ${pathLabel} path*`,
     `Role: ${role_title} · Score ${score} · ${verdict_line}`,
     `Contact: ${name} · ${email} · ${company}`,
     extraField ? `${extraLabel}: ${extraField}` : '',
     financialLine,
+    jdSnippet ? `\n*Job description:*\n${jdSnippet}` : '',
   ]
     .filter(Boolean)
     .join('\n');

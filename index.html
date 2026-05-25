@@ -1035,14 +1035,15 @@ async function submitLead() {
   state.leadCompany = company; state.leadEmail = email;
   state.leadSubmitted = true;
 
-  // Fire capture_lead — pass full scoringResult so capture_lead has flags/agent_candidate/etc.
+  // Fire capture_lead — pass full scoringResult + JD text
   try {
     const scoringJson = JSON.stringify(state.result || {});
+    const jdJson = JSON.stringify((state.jdText || '').slice(0, 3000));
     await fetch(`https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${LUA_API_KEY}`},
       body: JSON.stringify({
-        messages:[{type:'text',text:`Call the capture_lead tool now with these exact values:\nemail: "${email}"\nname: "${name}"\ntitle: "${title}"\ncompany: "${company}"\nscoringResult: ${scoringJson}`}],
+        messages:[{type:'text',text:`Call the capture_lead tool now with these exact values:\nemail: "${email}"\nname: "${name}"\ntitle: "${title}"\ncompany: "${company}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}`}],
         navigate:false
       }),
     });
@@ -1070,9 +1071,10 @@ function submitCta(path) {
   // Fire API in background (fire-and-forget)
   const { leadName: name, leadEmail: email, leadCompany: company, leadTitle: title } = state;
   const scoringJson = JSON.stringify(state.result || {});
+  const jdJson = JSON.stringify((state.jdText || '').slice(0, 3000));
   fetch(`https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`, {
     method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${LUA_API_KEY}`},
-    body: JSON.stringify({ messages:[{type:'text',text:`Call the submit_cta tool now with these exact values:\npath: "${path}"\nname: "${name}"\ntitle: "${title}"\nemail: "${email}"\ncompany: "${company}"\nextraField: "${extraField}"\nscoringResult: ${scoringJson}`}], navigate:false }),
+    body: JSON.stringify({ messages:[{type:'text',text:`Call the submit_cta tool now with these exact values:\npath: "${path}"\nname: "${name}"\ntitle: "${title}"\nemail: "${email}"\ncompany: "${company}"\nextraField: "${extraField}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}`}], navigate:false }),
   }).catch(() => {});
 }
 
