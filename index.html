@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Human or Agent? — Talent Safari × Lua</title>
+<title>Recruit or Automate? — Talent Safari × Lua</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -476,7 +476,7 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
 <div class="topbar">
   <div class="brand" onclick="restart()">
     <img src="/public/talentsafari_logo.jpg" class="brand-logo" alt="Talent Safari" onerror="this.style.display='none'" />
-    <div>Human or Agent?<small>An honest hiring verdict</small></div>
+    <div>Recruit or Automate?<small>An honest hiring verdict</small></div>
   </div>
   <div class="partners">
     <span class="pill ts">Talent Safari</span>
@@ -495,7 +495,7 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
   <section class="screen active" id="s-hero">
     <div class="hero">
       <span class="eyebrow">Free · No signup</span>
-      <h1 class="display">Should your next hire be<br/><span class="swap">human or AI?</span></h1>
+      <h1 class="display">Should this role be hired<br/><span class="swap">or automated?</span></h1>
       <p class="sub">Paste a job description or drop a link. In 15 seconds you'll get an Agent Fit Score across 7 dimensions — and a clear verdict on what this role actually needs.</p>
 
       <div class="dropzone">
@@ -629,9 +629,9 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
     <!-- Dimension breakdown -->
     <div class="breakdown">
       <h3 class="display">Here is the analysis</h3>
-      <p class="hint">Seven dimensions, each 1–10, weighted into the final score. Bars lean green toward human, purple toward agent.</p>
+      <p class="hint">Seven dimensions, each 1–10, weighted into the final score. Bars lean green toward a human hire, purple toward an automation-ready role.</p>
       <div id="dims"></div>
-      <div class="axis"><span class="h">← Needs a human</span><span class="a">Built for an agent →</span></div>
+      <div class="axis"><span class="h">← Best filled by a person</span><span class="a">Well-suited to automation →</span></div>
     </div>
 
     <!-- Agent recommendation -->
@@ -865,6 +865,24 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function runAnalysis() {
   state.jdText = document.getElementById('jd').value.trim();
+
+  // Gate: require at least 80 words before calling the API
+  const wordCount = state.jdText.split(/\s+/).filter(Boolean).length;
+  if (wordCount < 80) {
+    let errEl = document.getElementById('jdWordErr');
+    if (!errEl) {
+      errEl = document.createElement('div');
+      errEl.id = 'jdWordErr';
+      errEl.style.cssText = 'color:#c0392b;font-size:13.5px;margin-top:10px;font-weight:600;';
+      document.querySelector('.dropzone').appendChild(errEl);
+    }
+    errEl.textContent = `A bit more detail helps us give you a precise verdict — can you add a few more lines about the role? (${wordCount} words so far, we need at least 80.)`;
+    document.getElementById('jd').focus();
+    return;
+  }
+  const errEl = document.getElementById('jdWordErr');
+  if (errEl) errEl.remove();
+
   state.apiDone = false;
   state.formDone = false;
   drawn = false;
@@ -941,7 +959,7 @@ function submitAnalysisForm() {
 const FACTS = [
   '<strong>Lua</strong> agents work 24/7 with no sick days, leave, or ramp time.',
   '<strong>Talent Safari</strong> places top talent in an average of 2 weeks.',
-  'The average Lua agent handles 3× the volume of a human hire.',
+  'For high-volume repetitive roles, Lua agents typically handle 3× the throughput.',
   '<strong>40%</strong> of roles scored on this tool recommend a human — honest by design.',
   '<strong>Lua</strong> integrates with Salesforce, Zendesk, Slack, and 200+ tools.',
   '<strong>Talent Safari</strong> specialises in high-judgment, relationship-driven roles.',
@@ -1184,7 +1202,7 @@ function drawResult() {
   document.getElementById('gauge').style.setProperty('--p', targetScore + '%');
 
   // Verdict
-  const tagMap = { needs_human:'🧭 Needs a human', human_led_agent_assist:'🔀 Human-led, agent assist', strong_agent:'⚡ Strong agent candidate' };
+  const tagMap = { needs_human:'🧭 Best filled by a person', human_led_agent_assist:'🔀 Hire with agent support', strong_agent:'⚡ Strong fit for automation' };
   document.getElementById('verdictTag').textContent = tagMap[d.verdict] || d.verdict_line;
   document.getElementById('verdictHeadline').textContent = d.verdict_line;
   document.getElementById('verdictRationale').textContent = d.rationale;
