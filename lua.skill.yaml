@@ -4,7 +4,7 @@ agent:
 skills:
   - name: score-role
     skillId: bf212f12-d2fd-417a-bb30-a9fa71ad1afc
-    version: 1.0.11
+    version: 1.0.13
   - name: capture-lead
     skillId: 86c230de-eb61-4b97-8111-70602454c2bc
     version: 1.0.13
@@ -26,6 +26,6 @@ preprocessors: []
 postprocessors: []
 mcpServers: []
 backup:
-  activeVersion: 17
-  lastHash: ec3b55d25c4727a6e48405c6d45c424f40819d94969eb074cacac714ba7ae3dc
-  lastPushedAt: '2026-05-24T10:57:07.184Z'
+  activeVersion: 18
+  lastHash: 8bcf26efde5632fc320d02b9f3908d490b9c5506f96e713c51ec339fe8673161
+  lastPushedAt: '2026-05-25T12:02:16.324Z'
