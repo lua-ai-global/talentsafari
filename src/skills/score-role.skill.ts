@@ -10,8 +10,8 @@ const dimensionSchema = z.object({
     'task_structure',
     'judgment_complexity',
     'volume_scale',
-    'stakes_per_decision',
-    'empathy_load',
+    'regulatory_burden',
+    'relationship_depth',
     'system_integration',
     'data_sensitivity',
   ]),
@@ -114,17 +114,28 @@ export const scoreRoleSkill = new LuaSkill({
   context: `When the user provides a job description (or text scraped from a URL), score it yourself using this rubric, then call score_jd to validate and record the result.
 
 SCORING RUBRIC — evaluate across 7 dimensions, each scored 1–10:
-  1 = strongly human-suited (novel, relational, high-stakes, regulated)
-  10 = strongly agent-suited (repeatable, rule-based, high-volume, low-stakes)
+  1 = strongly human-suited
+  10 = strongly agent-suited
+
+Modern AI agents (built on models like Claude) are NOT simple if/then workflow tools. They reason,
+handle nuance, manage emotional conversations well, and operate autonomously in complex environments.
+Score based on whether the STRUCTURE of the role suits an agent — not outdated assumptions about AI limits.
 
 DIMENSIONS & WEIGHTS:
-  task_structure       (weight 1.8) — novel ↔ repeatable
-  judgment_complexity  (weight 2.0) — genuine reasoning ↔ rule-based
-  volume_scale         (weight 1.5) — one-off ↔ high-throughput
-  stakes_per_decision  (weight 1.5) — high-impact errors ↔ low-impact
-  empathy_load         (weight 1.3) — relational ↔ transactional
-  system_integration   (weight 1.0) — people-coordination ↔ tool/API-heavy
-  data_sensitivity     (weight 0.9) — regulated/constrained ↔ open
+  task_structure      (weight 1.8) — highly novel/ambiguous ↔ structured/repeatable
+  judgment_complexity (weight 2.0) — requires genuine human expertise & judgment ↔ rule-based/learnable pattern
+  volume_scale        (weight 1.5) — one-off strategic ↔ high-throughput repeated
+  regulatory_burden   (weight 1.5) — legally requires human sign-off (healthcare, legal, finance) ↔ unregulated / agent can act autonomously
+  relationship_depth  (weight 1.3) — long-term strategic relationship ownership (C-suite, key accounts) ↔ episodic or transactional interactions
+  system_integration  (weight 1.0) — heavy cross-functional human coordination ↔ tool/API-heavy, automatable
+  data_sensitivity    (weight 0.9) — highly regulated PII / constrained ↔ open / standard business data
+
+NOTE on relationship_depth: modern agents handle emotional, frustrated, and distressed customers extremely well.
+Score LOW (human) only when the role requires SUSTAINED RELATIONSHIP OWNERSHIP — e.g. managing a key account for 12 months,
+not just handling an emotional support ticket. Emotional + episodic = agent-suited.
+
+NOTE on regulatory_burden: high stakes alone does NOT mean human-required. Score based on REGULATORY SIGN-OFF requirements,
+not perceived risk. A $10M contract agent assistant is fine; a licensed financial advisor signing off on advice is not.
 
 FINAL SCORE = Σ(score × weight), range 10–100. Round to nearest integer.
 
@@ -134,8 +145,8 @@ VERDICT BANDS:
   65–100 → strong_agent            recommended_cta: lua
 
 CALIBRATION (non-negotiable):
-  - Head of Sales JDs MUST score 30–45 (needs_human)
-  - Tier-1 support / triage JDs MUST score 70–85 (strong_agent)
+  - Head of Sales JDs MUST score 30–45 (needs_human) — strategic relationship ownership
+  - Tier-1 support / triage JDs MUST score 82–92 (strong_agent) — high volume, episodic, no regulatory burden
   - Roughly 40% of real JDs should score human — be honest, not optimistic
 
 CANDIDATE CARDS:
