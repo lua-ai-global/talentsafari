@@ -36,7 +36,8 @@
       "Skill(lua-agent-builder:lua-deploy)",
       "Bash(python3 -c ' *)",
       "Bash(git push *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(node *)"
     ]
   }
 }
