@@ -665,8 +665,8 @@
       <div class="confirm-who" id="tsConfirmWho"></div>
       <div class="field"><label>When do you need this seat filled?</label><input id="tsTimeline" placeholder="Within 6 weeks" /></div>
       <button class="btn btn-ts btn-block" style="margin-top:8px" onclick="submitCta('tech_safari')">Send brief to Talent Safari →</button>
-      <div id="tsSuccess" style="display:none;text-align:center;padding:16px 0;color:var(--forest);font-weight:600">✓ Brief sent. Talent Safari will reply within 1 business day.</div>
     </div>
+    <div id="tsSuccess" style="display:none;text-align:center;padding:32px 0;color:var(--forest);font-weight:600;font-size:17px;max-width:560px">✓ Brief sent. Talent Safari will reply within 1 business day.</div>
   </section>
 
   <!-- SCREEN 6 — CONNECT WITH LUA -->
@@ -699,9 +699,9 @@
         <div class="confirm-who" id="luaConfirmWho"></div>
         <div class="field"><label>What should this agent own first?</label><input id="luaScope" placeholder="Tier 1 inbound support triage" /></div>
         <button class="btn btn-lua btn-block" style="margin-top:8px" onclick="submitCta('lua')">Connect with Lua →</button>
-        <div id="luaSuccess" style="display:none;text-align:center;padding:16px 0;color:var(--lua);font-weight:600">✓ Sent. Lua will be in touch within 24 hours.</div>
       </div>
     </div>
+    <div id="luaSuccess" style="display:none;text-align:center;padding:32px 0;color:var(--lua);font-weight:600;font-size:17px;max-width:560px">✓ Sent. Lua will be in touch within 24 hours.</div>
   </section>
 
 </main>
@@ -1057,25 +1057,23 @@ function initCtaScreen(prefix) {
   }
 }
 
-async function submitCta(path) {
+function submitCta(path) {
   const isTs = path === 'tech_safari';
   const extraField = document.getElementById(isTs ? 'tsTimeline' : 'luaScope').value.trim();
   const successEl  = document.getElementById(isTs ? 'tsSuccess' : 'luaSuccess');
-  // Use already-collected lead data — no re-entry needed
+  const formEl     = document.getElementById(isTs ? 'tsBriefBody' : 'staticLuaForm');
+
+  // Show success immediately — don't wait for API
+  if (formEl) formEl.style.display = 'none';
+  if (successEl) successEl.style.display = 'block';
+
+  // Fire API in background (fire-and-forget)
   const { leadName: name, leadEmail: email, leadCompany: company, leadTitle: title } = state;
-  try {
-    const scoringJson = JSON.stringify(state.result || {});
-    await fetch(`https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`, {
-      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${LUA_API_KEY}`},
-      body: JSON.stringify({ messages:[{type:'text',text:`Call the submit_cta tool now with these exact values:\npath: "${path}"\nname: "${name}"\ntitle: "${title}"\nemail: "${email}"\ncompany: "${company}"\nextraField: "${extraField}"\nscoringResult: ${scoringJson}`}], navigate:false }),
-    });
-  } catch {}
-  if (successEl) {
-    successEl.style.display = 'block';
-    // Hide form elements
-    const btn = successEl.previousElementSibling;
-    if (btn) btn.style.display = 'none';
-  }
+  const scoringJson = JSON.stringify(state.result || {});
+  fetch(`https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`, {
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${LUA_API_KEY}`},
+    body: JSON.stringify({ messages:[{type:'text',text:`Call the submit_cta tool now with these exact values:\npath: "${path}"\nname: "${name}"\ntitle: "${title}"\nemail: "${email}"\ncompany: "${company}"\nextraField: "${extraField}"\nscoringResult: ${scoringJson}`}], navigate:false }),
+  }).catch(() => {});
 }
 
 // ─── pre-fill CTA forms ───────────────────────────────────────────────────────
