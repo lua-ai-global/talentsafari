@@ -450,6 +450,43 @@
     .ana-split { grid-template-columns:1fr; }
     .ana-right { position:static; }
   }
+
+  /* ── enrichment chat ──────────────────────────────────────────── */
+  .enrich-wrap {
+    max-width: 640px; margin: 0 auto;
+  }
+  .enrich-wrap h2 { margin-bottom: 6px; }
+  .enrich-wrap > p { color: var(--ink-soft); font-size: 15px; margin-bottom: 24px; }
+  .enrich-msgs {
+    background: var(--paper); border: 1.5px solid var(--line); border-radius: 18px;
+    padding: 20px; min-height: 200px; max-height: 380px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px;
+  }
+  .emsg {
+    max-width: 85%; padding: 11px 15px; border-radius: 14px; font-size: 14px; line-height: 1.55;
+  }
+  .emsg.ada {
+    background: var(--forest); color: #fff; align-self: flex-start; border-bottom-left-radius: 4px;
+  }
+  .emsg.user {
+    background: #E8F5EE; color: var(--ink); align-self: flex-end; border-bottom-right-radius: 4px;
+  }
+  .emsg.typing { opacity: .55; font-style: italic; }
+  .enrich-input-row {
+    display: flex; gap: 10px; align-items: flex-end;
+  }
+  .enrich-input-row textarea {
+    flex: 1; border: 1.5px solid var(--line); border-radius: 14px;
+    padding: 11px 14px; font-family: inherit; font-size: 14px; outline: 0;
+    background: var(--cream); resize: none; min-height: 48px; max-height: 120px;
+  }
+  .enrich-input-row textarea:focus { border-color: var(--green); }
+  .enrich-input-row button {
+    background: var(--green); color: var(--forest); border: 0;
+    border-radius: 12px; padding: 0 20px; height: 48px;
+    font-weight: 700; font-size: 15px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  }
+  .enrich-input-row button:disabled { opacity: .5; cursor: default; }
 </style>
 <!-- LinkedIn Insight Tag -->
 <script type="text/javascript">
@@ -566,6 +603,21 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
       </div>
     </div>
     <button class="btn btn-primary btn-block" style="max-width:680px;margin-top:8px" onclick="runAnalysis()">Run the analysis →</button>
+  </section>
+
+  <!-- SCREEN 2b — ENRICHMENT CHAT (short JD path) -->
+  <section class="screen" id="s-enrich">
+    <button class="back-link" onclick="goBack()">← Back</button>
+    <div class="enrich-wrap">
+      <span class="eyebrow">A few quick questions</span>
+      <h2 class="display" style="font-size:26px">Help Ada give you a sharper verdict.</h2>
+      <p>The role description is a bit brief. Ada will ask you 3–4 quick questions, then score it automatically.</p>
+      <div class="enrich-msgs" id="enrichMsgs"></div>
+      <div class="enrich-input-row">
+        <textarea id="enrichInput" placeholder="Type your reply…" rows="2" onkeydown="enrichEnterSend(event)"></textarea>
+        <button id="enrichSendBtn" onclick="sendEnrichMessage()">Send →</button>
+      </div>
+    </div>
   </section>
 
   <!-- SCREEN 3 — ANALYSIS -->
@@ -835,13 +887,21 @@ function showScrapeErr(msg) {
 
 function handleScoreClick() {
   if (state.urlMode) { fetchJD(); return; }
+  const jdVal = document.getElementById('jd').value.trim();
+  const wordCount = jdVal.split(/\s+/).filter(Boolean).length;
   const btn = document.getElementById('heroBtn');
   btn.disabled = true;
-  btn.textContent = 'Preparing your questions…';
+  btn.textContent = 'Preparing…';
   setTimeout(() => {
     btn.disabled = false;
     btn.textContent = 'Score this role →';
-    go('s-questions');
+    if (wordCount < 80) {
+      state.jdText = jdVal;
+      startEnrichChat();
+      go('s-enrich');
+    } else {
+      go('s-questions');
+    }
   }, 700);
 }
 
@@ -865,23 +925,6 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function runAnalysis() {
   state.jdText = document.getElementById('jd').value.trim();
-
-  // Gate: require at least 80 words before calling the API
-  const wordCount = state.jdText.split(/\s+/).filter(Boolean).length;
-  if (wordCount < 80) {
-    let errEl = document.getElementById('jdWordErr');
-    if (!errEl) {
-      errEl = document.createElement('div');
-      errEl.id = 'jdWordErr';
-      errEl.style.cssText = 'color:#c0392b;font-size:13.5px;margin-top:10px;font-weight:600;';
-      document.querySelector('.dropzone').appendChild(errEl);
-    }
-    errEl.textContent = `A bit more detail helps us give you a precise verdict — can you add a few more lines about the role? (${wordCount} words so far, we need at least 80.)`;
-    document.getElementById('jd').focus();
-    return;
-  }
-  const errEl = document.getElementById('jdWordErr');
-  if (errEl) errEl.remove();
 
   state.apiDone = false;
   state.formDone = false;
@@ -1056,6 +1099,107 @@ async function callScoreApi() {
       } catch {}
     }
   } catch(e) { console.error('[Ada] error:', e); }
+}
+
+// ─── enrichment chat ──────────────────────────────────────────────────────────
+const enrichHistory = [];  // [{role,content}]
+
+function startEnrichChat() {
+  enrichHistory.length = 0;
+  document.getElementById('enrichMsgs').innerHTML = '';
+  document.getElementById('enrichInput').value = '';
+
+  const jdPreview = state.jdText ? `"${state.jdText.slice(0, 200).trim()}${state.jdText.length > 200 ? '…' : ''}"` : '(no description provided)';
+  const seed = `The user wants to evaluate a role for automation fit but only gave a brief description: ${jdPreview}. Ask them 3–4 focused questions one at a time to gather what you need for a proper evaluation (main responsibilities, daily volume/frequency, key decisions they make, tools/systems used). After you have enough context, synthesize the information into a full role description and call score_jd to score it. Start by asking your first question now — keep it short and conversational.`;
+
+  enrichHistory.push({ role: 'user', content: seed });
+  callEnrichApi(true);
+}
+
+function enrichEnterSend(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendEnrichMessage(); }
+}
+
+function sendEnrichMessage() {
+  const input = document.getElementById('enrichInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  appendEnrichMsg('user', text);
+  enrichHistory.push({ role: 'user', content: text });
+  callEnrichApi(false);
+}
+
+function appendEnrichMsg(role, text, isTyping) {
+  const msgs = document.getElementById('enrichMsgs');
+  const div = document.createElement('div');
+  div.className = `emsg ${role}${isTyping ? ' typing' : ''}`;
+  div.textContent = text;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+async function callEnrichApi(isFirst) {
+  const btn = document.getElementById('enrichSendBtn');
+  btn.disabled = true;
+
+  const typing = appendEnrichMsg('ada', 'Ada is thinking…', true);
+
+  try {
+    const res = await fetch(
+      `https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LUA_API_KEY}` },
+        body: JSON.stringify({ messages: enrichHistory.map(m => ({ type: 'text', text: `${m.role === 'user' ? '' : 'Ada: '}${m.content}` })), navigate: false }),
+      }
+    );
+
+    typing.remove();
+
+    if (!res.ok) { appendEnrichMsg('ada', 'Something went wrong. Please try again.'); btn.disabled = false; return; }
+
+    const data = await res.json();
+
+    // Check if Ada called score_jd — if so, capture result and navigate
+    const allToolResults = data?.steps?.flatMap(s => s.toolResults || []) || [];
+    const scoringMatch = allToolResults.filter(r => {
+      const name = r.payload?.toolName || r.toolName || '';
+      return name.includes('score_jd') || name.includes('score_role');
+    }).slice().reverse().find(r => {
+      const res = r.payload?.result ?? r.result;
+      return res && !res.error && typeof res.score === 'number' && res.score >= 10 && res.score <= 100;
+    });
+
+    if (scoringMatch) {
+      const raw = scoringMatch.payload?.result ?? scoringMatch.result;
+      const parsed = typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : raw;
+      if (parsed && parsed.verdict) {
+        appendEnrichMsg('ada', 'Perfect — I have everything I need. Taking you to your results now…');
+        state.result = parsed;
+        // Brief delay so user reads the message
+        setTimeout(() => {
+          drawn = false;
+          go('s-result');
+        }, 1800);
+        return;
+      }
+    }
+
+    // Ada's text reply — show it and continue conversation
+    const replyText = (data?.text || '').trim();
+    if (replyText) {
+      appendEnrichMsg('ada', replyText);
+      enrichHistory.push({ role: 'assistant', content: replyText });
+    }
+  } catch(e) {
+    typing.remove();
+    appendEnrichMsg('ada', 'Something went wrong. Please try again.');
+    console.error('[Enrich] error:', e);
+  }
+
+  btn.disabled = false;
 }
 
 // ─── lead capture ─────────────────────────────────────────────────────────────
