@@ -895,7 +895,7 @@ function handleScoreClick() {
   setTimeout(() => {
     btn.disabled = false;
     btn.textContent = 'Score this role →';
-    if (wordCount < 80) {
+    if (wordCount < 20) {
       state.jdText = jdVal;
       startEnrichChat();
       go('s-enrich');
@@ -1110,7 +1110,7 @@ function startEnrichChat() {
   document.getElementById('enrichInput').value = '';
 
   const jdPreview = state.jdText ? `"${state.jdText.slice(0, 200).trim()}${state.jdText.length > 200 ? '…' : ''}"` : '(no description provided)';
-  const seed = `The user wants to evaluate a role for automation fit but only gave a brief description: ${jdPreview}. Ask them 3–4 focused questions one at a time to gather what you need for a proper evaluation (main responsibilities, daily volume/frequency, key decisions they make, tools/systems used). After you have enough context, synthesize the information into a full role description and call score_jd to score it. Start by asking your first question now — keep it short and conversational.`;
+  const seed = `The user wants to evaluate a role for automation fit but only gave a very vague description: ${jdPreview}. Ask them at most 2 short questions — combine what you need into as few questions as possible (e.g. "What are the main day-to-day tasks, and roughly how many does the role handle per day?"). Use any information already given without asking for it again. After at most 2 exchanges, synthesize everything into a role description and call score_jd to score it. Do your best with limited information rather than asking more questions. Start with your first (and ideally only) question now — keep it brief.`;
 
   enrichHistory.push({ role: 'user', content: seed });
   callEnrichApi(true);
