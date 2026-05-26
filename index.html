@@ -73,6 +73,7 @@
   .screen { display: none; max-width: 1080px; margin: 0 auto; animation: rise .5s cubic-bezier(.2,.7,.2,1); }
   .screen.active { display: block; }
   @keyframes rise { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes formPulse { 0%,100% { box-shadow:0 0 0 0 rgba(14,203,123,.4); } 50% { box-shadow:0 0 0 8px rgba(14,203,123,0); } }
   .eyebrow {
     display: inline-flex; align-items: center; gap: 8px;
     font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
@@ -642,8 +643,10 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
         <div class="facts-ticker" id="factsTicker" style="display:none"></div>
       </div>
       <!-- Right: lead form -->
-      <div class="ana-right" id="anaFormWrap">
-        <div class="qn">YOUR DETAILS</div>
+      <div class="ana-right" id="anaFormWrap" style="border:2px solid var(--green);border-radius:18px;padding:22px;animation:formPulse 2s ease-in-out 3;">
+        <div class="qn" style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:18px">👈</span> YOUR DETAILS — fill this while we analyse
+        </div>
         <h3>Where should we send your results?</h3>
         <div class="modal-grid" style="margin-top:14px">
           <div class="field"><label>Full name *</label><input id="leadName" placeholder="Jordan Reyes" /></div>
@@ -964,6 +967,7 @@ function runAnalysis() {
         stopFactsTicker();
         state.apiDone = true;
         if (state.formDone) {
+          drawn = false;
           setTimeout(() => go('s-result'), 600);
         }
       });
@@ -994,6 +998,7 @@ function submitAnalysisForm() {
   document.getElementById('anaSuccessWrap').style.display = '';
 
   if (state.apiDone) {
+    drawn = false;
     setTimeout(() => go('s-result'), 800);
   }
 }
@@ -1335,6 +1340,20 @@ function drawResult() {
   const raw = state.result;
   const valid = raw && Array.isArray(raw.dimensions) && raw.dimensions.length === 7
     && raw.verdict && typeof raw.score === 'number' && raw.score >= 10 && raw.score <= 100;
+
+  // If result invalid, don't silently show demo — send back with retry prompt
+  if (!valid) {
+    drawn = false;
+    const note = document.getElementById('waitingNote');
+    if (note) {
+      note.style.display = 'block';
+      note.textContent = '⚠️ Something went wrong loading your result. Please try again.';
+      note.style.color = '#c0392b';
+    }
+    go('s-analysis');
+    return;
+  }
+
   const d = valid ? raw : DEMO;
 
   // Score gauge
