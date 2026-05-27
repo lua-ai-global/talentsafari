@@ -1057,20 +1057,15 @@ function stopFactsTicker() {
 }
 
 // ─── API call ─────────────────────────────────────────────────────────────────
-const LUA_AGENT_ID       = 'baseAgent_agent_1779215133611_x0svb7j5d';
-const LUA_API_KEY        = 'api_403f64cd0f8b4e3b97c2c98443508e84';
 const SLACK_NOTIFY_ENDPOINT = '/.netlify/functions/slack-notify';
-// Call Ada chat API directly from the browser — no Netlify proxy in the scoring path.
-// Ada's score_jd skill runs server-side with proper AI.generate + tool_choice.
-// The /developer/ai/generate endpoint silently drops tools/tool_choice and cannot
-// be used for structured scoring. Direct browser call also avoids Netlify's 26s limit.
-// Generate a fresh Ada session URL — unique channel per evaluation prevents
-// contamination from prior failed tool calls accumulating in Ada's history.
-function adaSessionUrl(prefix = 'eval') {
+const LUA_CHAT_ENDPOINT     = '/.netlify/functions/lua-chat';
+
+// Generate a unique channel ID — keeps each session isolated server-side
+function newChannelId(prefix = 'session') {
   const id = typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2);
-  return `https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=${prefix}-${id}`;
+  return `${prefix}-${id}`;
 }
 
 async function notifyLeadSubmit(name, title, company, email) {
@@ -1095,82 +1090,8 @@ function extractScore(obj) {
   return null;
 }
 
-// Send jdText to Ada's chat API and extract the score_jd tool result.
-// Called directly from the browser — no Netlify proxy, no timeout constraint.
-async function scoreViaAda(jdText) {
-  const contextLines = [
-    state.volume   && `Task structure: ${state.volume}`,
-    state.taskFreq && `Task frequency: ${state.taskFreq} volume per day`,
-    state.stakes   && `Decision stakes: ${state.stakes}`,
-    state.exposure && `Exposure type: ${state.exposure}`,
-  ].filter(Boolean);
-  const fullJd = contextLines.length
-    ? `${jdText}\n\nContext:\n${contextLines.join('\n')}`
-    : jdText;
-
-  const res = await fetch(adaSessionUrl('eval'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${LUA_API_KEY}` },
-    body: JSON.stringify({
-      messages: [{ type: 'text', text: `Score this job description:\n\n${fullJd}` }],
-      navigate: false,
-    }),
-  });
-  console.log('[Ada] status:', res.status);
-  if (!res.ok) { console.error('[Ada] non-OK', res.status); return null; }
-  const data = await res.json();
-  console.log('[Ada] keys:', Object.keys(data || {}).join(','), '| steps:', data?.steps?.length);
-
-  // Walk all steps looking for the score_jd tool result
-  const steps = Array.isArray(data?.steps) ? data.steps : [];
-  const allToolResults = steps.flatMap(s =>
-    s.toolResults || s.tool_results || []
-  ).concat(data?.toolResults || data?.tool_results || []);
-
-  console.log('[Ada] tool results count:', allToolResults.length);
-
-  const scoringMatches = allToolResults.filter(r => {
-    const name = r.payload?.toolName || r.toolName || r.name || r.tool || '';
-    return name.includes('score_jd') || name.includes('score_role')
-      || !!extractScore(r.payload?.result ?? r.result ?? r.output);
-  });
-
-  const toolResult = scoringMatches.slice().reverse()
-    .find(r => extractScore(r.payload?.result ?? r.result ?? r.output))
-    || scoringMatches[scoringMatches.length - 1];
-
-  if (toolResult) {
-    const parsed = extractScore(toolResult.payload?.result ?? toolResult.result ?? toolResult.output);
-    if (parsed) {
-      console.log('[Ada] score:', parsed.score, 'verdict:', parsed.verdict);
-      return parsed;
-    }
-  }
-
-  // Fallback: check step outputs directly
-  for (const step of steps) {
-    const candidate = extractScore(step.output) || extractScore(step.result);
-    if (candidate) { console.log('[Ada] found in step.output'); return candidate; }
-  }
-
-  // Fallback: parse JSON block from Ada's text reply
-  const text = data?.text || '';
-  const match = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*"score"[\s\S]*\})/);
-  if (match) {
-    try {
-      const fb = JSON.parse(match[1].trim());
-      if (extractScore(fb)) { console.log('[Ada] found in text JSON'); return fb; }
-    } catch {}
-  }
-
-  console.warn('[Ada] no valid score found. Raw preview:', JSON.stringify(data).slice(0, 400));
-  return null;
-}
-
 // Score a JD text via the score-jd Netlify function.
-// Uses Lua's developer AI endpoint (confirmed working) with JSON text output.
-// Keeps LUA_API_KEY server-side. score_jd skill's AI.generate() is broken
-// on the platform; this path bypasses it.
+// score-jd.js calls Ada's chat API server-side — API key stays secret.
 async function scoreViaFunction(jdText) {
   const res = await fetch('/.netlify/functions/score-jd', {
     method: 'POST',
@@ -1222,7 +1143,7 @@ const enrichHistory = [];  // [{role,content}]
 
 function startEnrichChat() {
   enrichHistory.length = 0;
-  state.enrichUrl = adaSessionUrl('enrich');
+  state.enrichChannel = newChannelId('enrich');
   document.getElementById('enrichMsgs').innerHTML = '';
   document.getElementById('enrichInput').value = '';
 
@@ -1264,10 +1185,14 @@ async function callEnrichApi(isFirst) {
   const typing = appendEnrichMsg('ada', 'Ada is thinking…', true);
 
   try {
-    const res = await fetch(state.enrichUrl, {
+    const res = await fetch(LUA_CHAT_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${LUA_API_KEY}` },
-      body: JSON.stringify({ messages: enrichHistory.map(m => ({ type: 'text', text: `${m.role === 'user' ? '' : 'Ada: '}${m.content}` })), navigate: false }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channel: state.enrichChannel,
+        messages: enrichHistory.map(m => ({ type: 'text', text: `${m.role === 'user' ? '' : 'Ada: '}${m.content}` })),
+        navigate: false,
+      }),
     });
 
     typing.remove();
@@ -1334,12 +1259,13 @@ async function submitLead() {
   try {
     const scoringJson = JSON.stringify(state.result || {});
     const jdJson = JSON.stringify((state.jdText || '').slice(0, 3000));
-    await fetch(adaSessionUrl('lead'), {
-      method:'POST',
-      headers:{'Content-Type':'application/json', Authorization:`Bearer ${LUA_API_KEY}`},
+    await fetch(LUA_CHAT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages:[{type:'text',text:`Call the capture_lead tool now with these exact values:\nemail: "${email}"\nname: "${name}"\ntitle: "${title}"\ncompany: "${company}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}`}],
-        navigate:false
+        channel: newChannelId('lead'),
+        messages: [{ type: 'text', text: `Call the capture_lead tool now with these exact values:\nemail: "${email}"\nname: "${name}"\ntitle: "${title}"\ncompany: "${company}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}` }],
+        navigate: false,
       }),
     });
   } catch(e) { console.error('[Ada] capture_lead error:', e); }
@@ -1367,9 +1293,14 @@ function submitCta(path) {
   const { leadName: name, leadEmail: email, leadCompany: company, leadTitle: title } = state;
   const scoringJson = JSON.stringify(state.result || {});
   const jdJson = JSON.stringify((state.jdText || '').slice(0, 3000));
-  fetch(adaSessionUrl('cta'), {
-    method:'POST', headers:{'Content-Type':'application/json', Authorization:`Bearer ${LUA_API_KEY}`},
-    body: JSON.stringify({ messages:[{type:'text',text:`Call the submit_cta tool now with these exact values:\npath: "${path}"\nname: "${name}"\ntitle: "${title}"\nemail: "${email}"\ncompany: "${company}"\nextraField: "${extraField}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}`}], navigate:false }),
+  fetch(LUA_CHAT_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      channel: newChannelId('cta'),
+      messages: [{ type: 'text', text: `Call the submit_cta tool now with these exact values:\npath: "${path}"\nname: "${name}"\ntitle: "${title}"\nemail: "${email}"\ncompany: "${company}"\nextraField: "${extraField}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}` }],
+      navigate: false,
+    }),
   }).catch(() => {});
 }
 

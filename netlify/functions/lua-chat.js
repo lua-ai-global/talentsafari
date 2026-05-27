@@ -1,4 +1,5 @@
-// Proxy for all Lua agent API calls — keeps API key server-side
+// Proxy for all Lua agent API calls — keeps API key server-side.
+// Client passes { channel, messages, ... }; channel is extracted and used in the URL.
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method not allowed' };
@@ -14,15 +15,21 @@ exports.handler = async (event) => {
   try {
     const body = JSON.parse(event.body);
 
+    // Extract channel from body — client generates unique IDs for session isolation
+    const { channel, ...forwardBody } = body;
+    const safeChannel = typeof channel === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(channel)
+      ? channel
+      : 'production';
+
     const response = await fetch(
-      `https://api.heylua.ai/chat/generate/${agentId}?channel=production`,
+      `https://api.heylua.ai/chat/generate/${agentId}?channel=${safeChannel}`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(forwardBody),
       },
     );
 

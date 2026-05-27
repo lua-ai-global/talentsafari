@@ -12,6 +12,42 @@ const scrapeJdInputSchema = z.object({
 type ScrapeJdInput = z.infer<typeof scrapeJdInputSchema>;
 
 // ---------------------------------------------------------------------------
+// SSRF guard — block RFC1918, loopback, link-local, and metadata endpoints
+// ---------------------------------------------------------------------------
+
+const BLOCKED_PATTERNS = [
+  /^localhost$/i,
+  /^127\./,
+  /^10\./,
+  /^172\.(1[6-9]|2\d|3[01])\./,
+  /^192\.168\./,
+  /^169\.254\./,           // link-local / AWS metadata
+  /^::1$/,                 // IPv6 loopback
+  /^fc00:/i,               // IPv6 ULA
+  /^fe80:/i,               // IPv6 link-local
+  /^0\./,                  // 0.x.x.x
+  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./,  // RFC6598 shared
+];
+
+function assertSafeUrl(rawUrl: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error('Invalid URL');
+  }
+  if (parsed.protocol !== 'https:') {
+    throw new Error('Only HTTPS URLs are allowed');
+  }
+  const host = parsed.hostname.toLowerCase();
+  for (const pat of BLOCKED_PATTERNS) {
+    if (pat.test(host)) {
+      throw new Error(`Blocked host: ${host}`);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -53,6 +89,13 @@ export class scrapeJdTool implements LuaTool<typeof scrapeJdInputSchema> {
   async execute(input: ScrapeJdInput): Promise<unknown> {
     const { url } = input;
 
+    // Guard against SSRF — block private/internal/metadata hosts
+    try {
+      assertSafeUrl(url);
+    } catch {
+      return { error: 'Could not fetch that URL. Try pasting the JD text directly.' };
+    }
+
     // Step 1: Fetch the job posting page
     let html: string;
     try {
@@ -91,6 +134,7 @@ export class scrapeJdTool implements LuaTool<typeof scrapeJdInputSchema> {
     try {
       const parsed = new URL(url);
       const careersUrl = `${parsed.origin}/careers`;
+      assertSafeUrl(careersUrl); // same host — already passed, but keep guard consistent
 
       const careersResponse = await fetch(careersUrl, {
         headers: {

@@ -2,9 +2,6 @@ agent:
   agentId: baseAgent_agent_1779215133611_x0svb7j5d
   orgId: e2fa42a6-4fd8-4963-9c46-aaa60ca61d91
 skills:
-  - name: score-role
-    skillId: bf212f12-d2fd-417a-bb30-a9fa71ad1afc
-    version: 1.0.18
   - name: capture-lead
     skillId: 86c230de-eb61-4b97-8111-70602454c2bc
     version: 1.0.16
@@ -19,13 +16,16 @@ skills:
     version: 1.0.11
   - name: scrape-jd
     skillId: 3ed62a95-73fe-41d8-a4d9-910221226965
-    version: 1.0.11
+    version: 1.0.12
+  - name: score-role
+    skillId: bf212f12-d2fd-417a-bb30-a9fa71ad1afc
+    version: 1.0.18
 webhooks: []
 jobs: []
 preprocessors: []
 postprocessors: []
 mcpServers: []
 backup:
-  activeVersion: 25
-  lastHash: ac628bd74612d598a617ae0799ec842aad9282eb9c9934ccebb0ddbc381d7ca5
-  lastPushedAt: '2026-05-27T11:14:48.287Z'
+  activeVersion: 26
+  lastHash: 46947e353baa7424551ca2a665dfa559be73f3420d44338ab0959b26a50a7932
+  lastPushedAt: '2026-05-27T11:40:38.763Z'
