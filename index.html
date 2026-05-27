@@ -1057,84 +1057,14 @@ function stopFactsTicker() {
 }
 
 // ─── API call ─────────────────────────────────────────────────────────────────
-const LUA_AGENT_ID  = 'baseAgent_agent_1779215133611_x0svb7j5d';
-const LUA_API_KEY   = 'api_403f64cd0f8b4e3b97c2c98443508e84';
-const LUA_CHAT_ENDPOINT   = '/.netlify/functions/lua-chat';
+const LUA_AGENT_ID       = 'baseAgent_agent_1779215133611_x0svb7j5d';
+const LUA_API_KEY        = 'api_403f64cd0f8b4e3b97c2c98443508e84';
 const SLACK_NOTIFY_ENDPOINT = '/.netlify/functions/slack-notify';
-
-const SCORING_SYSTEM = `You are an honest expert evaluator scoring job descriptions for automation fit.
-Score each role across 7 dimensions (1–10, where 1 = strongly human-suited, 10 = strongly agent-suited).
-
-Modern AI agents reason, handle nuance, manage emotional conversations well, and operate autonomously
-in complex environments. Score based on whether the STRUCTURE of the role suits an agent — not
-outdated assumptions about AI limits.
-
-DIMENSIONS & WEIGHTS:
-  task_structure      (weight 1.8) — highly novel/ambiguous ↔ structured/repeatable
-  judgment_complexity (weight 2.0) — requires genuine human expertise & judgment ↔ rule-based/learnable
-  volume_scale        (weight 1.5) — one-off strategic ↔ high-throughput repeated
-  regulatory_burden   (weight 1.5) — legally requires human sign-off ↔ agent can act autonomously
-  relationship_depth  (weight 1.3) — long-term strategic relationship ownership ↔ episodic/transactional
-  system_integration  (weight 1.0) — heavy cross-functional human coordination ↔ tool/API-heavy
-  data_sensitivity    (weight 0.9) — highly regulated PII/constrained ↔ open/standard business data
-
-NOTE on relationship_depth: score LOW (human) only for SUSTAINED RELATIONSHIP OWNERSHIP (e.g. managing
-a key account for 12 months). Emotional + episodic = agent-suited.
-
-NOTE on regulatory_burden: high stakes alone does NOT mean human-required. Score based on REGULATORY
-SIGN-OFF requirements only. A $10M contract agent assistant is fine; a licensed financial advisor
-signing off on advice is not.
-
-FINAL SCORE = Σ(dimension.score × dimension.weight), range 10–100. Round to nearest integer.
-
-VERDICT BANDS:
-  10–39  → needs_human             recommended_cta: tech_safari
-  40–64  → human_led_agent_assist  recommended_cta: tech_safari
-  65–100 → strong_agent            recommended_cta: lua
-
-CALIBRATION (non-negotiable):
-  - Head of Sales JDs MUST score 30–45 (needs_human)
-  - Tier-1 support / triage JDs MUST score 82–92 (strong_agent)
-  - ~40% of real JDs should score human — be honest, not optimistic
-
-CANDIDATE CARDS:
-  human_candidate: salary_range = exact salary/budget text from JD if explicitly stated, "" if not mentioned
-  agent_candidate: name always "Lua", role_title adapts to role, monthly_cost $800–$3,000/mo,
-                   avatar_seed short slug from role (e.g. "lua-support", "lua-ops"),
-                   start_date "Today", throughput and coverage reflect agent advantages
-
-FLAGS (check before scoring — set flag but still return full result):
-  short_jd: fewer than 80 words
-  non_english: not written in English
-  suspected_fake: test/lorem ipsum/placeholder content
-
-ADJACENT AGENTS: always include 2–3 distinct Lua agent suggestions for OTHER roles/tasks at this company.
-Base on company type, industry, and function visible in the JD.
-Format: icon (single emoji), name ("Lua [Role]"), value_prop (one sentence, specific to this context).
-
-Call score_role with your complete structured assessment.`;
-
-const SCORE_ROLE_TOOL = {
-  name: 'score_role',
-  description: 'Return the complete structured scoring result for the job description.',
-  input_schema: {
-    type: 'object',
-    required: ['role_title','score','verdict','verdict_line','rationale','dimensions','human_candidate','agent_candidate','recommended_cta','flags','adjacent_agents'],
-    properties: {
-      role_title: { type: 'string' },
-      score: { type: 'number', minimum: 10, maximum: 100 },
-      verdict: { type: 'string', enum: ['needs_human','human_led_agent_assist','strong_agent'] },
-      verdict_line: { type: 'string' },
-      rationale: { type: 'string' },
-      dimensions: { type: 'array', minItems: 7, maxItems: 7, items: { type: 'object', required: ['key','label','score','weight','rationale'], properties: { key:{type:'string'}, label:{type:'string'}, score:{type:'number',minimum:1,maximum:10}, weight:{type:'number'}, rationale:{type:'string'} } } },
-      human_candidate: { type: 'object', required: ['salary_range','time_to_productive','scale_ceiling','coverage','great_at','hard_at'], properties: { salary_range:{type:'string'}, time_to_productive:{type:'string'}, scale_ceiling:{type:'string'}, coverage:{type:'string'}, great_at:{type:'array',items:{type:'string'},maxItems:3}, hard_at:{type:'array',items:{type:'string'},maxItems:3} } },
-      agent_candidate: { type: 'object', required: ['name','role_title','avatar_seed','monthly_cost','start_date','throughput','coverage','great_at','cant_do'], properties: { name:{type:'string'}, role_title:{type:'string'}, avatar_seed:{type:'string'}, monthly_cost:{type:'string'}, start_date:{type:'string'}, throughput:{type:'string'}, coverage:{type:'string'}, great_at:{type:'array',items:{type:'string'},maxItems:3}, cant_do:{type:'array',items:{type:'string'},maxItems:3} } },
-      recommended_cta: { type: 'string', enum: ['lua','tech_safari'] },
-      flags: { type: 'object', required: ['short_jd','non_english','suspected_fake'], properties: { short_jd:{type:'boolean'}, non_english:{type:'boolean'}, suspected_fake:{type:'boolean'} } },
-      adjacent_agents: { type: 'array', minItems: 2, maxItems: 3, items: { type: 'object', required: ['icon','name','value_prop'], properties: { icon:{type:'string'}, name:{type:'string'}, value_prop:{type:'string'} } } },
-    },
-  },
-};
+// Call Ada chat API directly from the browser — no Netlify proxy in the scoring path.
+// Ada's score_jd skill runs server-side with proper AI.generate + tool_choice.
+// The /developer/ai/generate endpoint silently drops tools/tool_choice and cannot
+// be used for structured scoring. Direct browser call also avoids Netlify's 26s limit.
+const ADA_CHAT_URL = `https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`;
 
 async function notifyLeadSubmit(name, title, company, email) {
   try {
@@ -1146,113 +1076,115 @@ async function notifyLeadSubmit(name, title, company, email) {
   } catch {}
 }
 
+// Extract a valid scoring object from any response shape Ada might return.
+function extractScore(obj) {
+  if (!obj) return null;
+  const o = typeof obj === 'string'
+    ? (() => { try { return JSON.parse(obj); } catch { return null; } })()
+    : obj;
+  if (!o) return null;
+  if (Array.isArray(o.dimensions) && o.dimensions.length === 7 && o.verdict
+      && typeof o.score === 'number' && o.score >= 10 && o.score <= 100 && !o.error) return o;
+  return null;
+}
+
+// Send jdText to Ada's chat API and extract the score_jd tool result.
+// Called directly from the browser — no Netlify proxy, no timeout constraint.
+async function scoreViaAda(jdText) {
+  const contextLines = [
+    state.volume   && `Task structure: ${state.volume}`,
+    state.taskFreq && `Task frequency: ${state.taskFreq} volume per day`,
+    state.stakes   && `Decision stakes: ${state.stakes}`,
+    state.exposure && `Exposure type: ${state.exposure}`,
+  ].filter(Boolean);
+  const fullJd = contextLines.length
+    ? `${jdText}\n\nContext:\n${contextLines.join('\n')}`
+    : jdText;
+
+  const res = await fetch(ADA_CHAT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${LUA_API_KEY}` },
+    body: JSON.stringify({
+      messages: [{ type: 'text', text: `Score this job description:\n\n${fullJd}` }],
+      navigate: false,
+    }),
+  });
+  console.log('[Ada] status:', res.status);
+  if (!res.ok) { console.error('[Ada] non-OK', res.status); return null; }
+  const data = await res.json();
+  console.log('[Ada] keys:', Object.keys(data || {}).join(','), '| steps:', data?.steps?.length);
+
+  // Walk all steps looking for the score_jd tool result
+  const steps = Array.isArray(data?.steps) ? data.steps : [];
+  const allToolResults = steps.flatMap(s =>
+    s.toolResults || s.tool_results || []
+  ).concat(data?.toolResults || data?.tool_results || []);
+
+  console.log('[Ada] tool results count:', allToolResults.length);
+
+  const scoringMatches = allToolResults.filter(r => {
+    const name = r.payload?.toolName || r.toolName || r.name || r.tool || '';
+    return name.includes('score_jd') || name.includes('score_role')
+      || !!extractScore(r.payload?.result ?? r.result ?? r.output);
+  });
+
+  const toolResult = scoringMatches.slice().reverse()
+    .find(r => extractScore(r.payload?.result ?? r.result ?? r.output))
+    || scoringMatches[scoringMatches.length - 1];
+
+  if (toolResult) {
+    const parsed = extractScore(toolResult.payload?.result ?? toolResult.result ?? toolResult.output);
+    if (parsed) {
+      console.log('[Ada] score:', parsed.score, 'verdict:', parsed.verdict);
+      return parsed;
+    }
+  }
+
+  // Fallback: check step outputs directly
+  for (const step of steps) {
+    const candidate = extractScore(step.output) || extractScore(step.result);
+    if (candidate) { console.log('[Ada] found in step.output'); return candidate; }
+  }
+
+  // Fallback: parse JSON block from Ada's text reply
+  const text = data?.text || '';
+  const match = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*"score"[\s\S]*\})/);
+  if (match) {
+    try {
+      const fb = JSON.parse(match[1].trim());
+      if (extractScore(fb)) { console.log('[Ada] found in text JSON'); return fb; }
+    } catch {}
+  }
+
+  console.warn('[Ada] no valid score found. Raw preview:', JSON.stringify(data).slice(0, 400));
+  return null;
+}
+
 async function callScoreApi() {
   const isUrl = /^https?:\/\//i.test(state.jdText.trim());
 
-  // Text JDs — call Lua developer AI directly from the browser (no server middleman,
-  // no timeout constraints). One LLM call with forced tool use.
-  if (!isUrl) {
+  if (isUrl) {
+    // Fetch job posting HTML server-side (CORS proxy, no AI) → extract text
     try {
-      const contextLines = [
-        state.volume   && `Task structure: ${state.volume}`,
-        state.taskFreq && `Task frequency: ${state.taskFreq} volume per day`,
-        state.stakes   && `Decision stakes: ${state.stakes}`,
-        state.exposure && `Exposure type: ${state.exposure}`,
-      ].filter(Boolean);
-      const userContent = contextLines.length
-        ? `${state.jdText}\n\nAdditional context:\n${contextLines.join('\n')}`
-        : state.jdText;
-
-      const res = await fetch(
-        `https://api.heylua.ai/developer/ai/${LUA_AGENT_ID}/generate`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${LUA_API_KEY}` },
-          body: JSON.stringify({
-            system: SCORING_SYSTEM,
-            messages: [{ role: 'user', content: userContent }],
-            temperature: 0.2,
-            tools: [SCORE_ROLE_TOOL],
-            tool_choice: { type: 'tool', name: 'score_role' },
-          }),
-        }
-      );
-      console.log('[score-jd] status:', res.status);
-      if (!res.ok) { console.error('[score-jd] non-OK', res.status); return; }
-      const data = await res.json();
-      console.log('[score-jd] success:', data?.success, '| content len:', data?.data?.content?.length);
-      const content = data?.data?.content || data?.content || [];
-      const toolUse = content.find(c => c.type === 'tool_use' && c.name === 'score_role');
-      if (toolUse?.input) {
-        const r = toolUse.input;
-        if (Array.isArray(r.dimensions) && r.dimensions.length === 7) {
-          const computed = Math.round(r.dimensions.reduce((s,d) => s + d.score * d.weight, 0));
-          if (Math.abs(computed - r.score) > 1) r.score = computed;
-        }
-        console.log('[score-jd] score:', r.score, 'verdict:', r.verdict);
-        state.result = r;
-        return;
-      }
-      console.warn('[score-jd] no tool_use in response:', JSON.stringify(data).slice(0, 400));
-    } catch(e) { console.error('[score-jd] error:', e); }
-    return;
-  }
-
-  // URL path — fetch page text server-side (CORS proxy), then call Lua AI direct from browser
-  try {
-    console.log('[fetch-jd] fetching URL via proxy...');
-    const fetchRes = await fetch('/.netlify/functions/fetch-jd', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: state.jdText.trim() }),
-    });
-    console.log('[fetch-jd] status:', fetchRes.status);
-    if (!fetchRes.ok) { console.error('[fetch-jd] non-OK', fetchRes.status); return; }
-    const { text: pageText } = await fetchRes.json();
-    if (!pageText) { console.error('[fetch-jd] empty text'); return; }
-    console.log('[fetch-jd] got', pageText.length, 'chars — scoring directly...');
-
-    const contextLines = [
-      state.volume   && `Task structure: ${state.volume}`,
-      state.taskFreq && `Task frequency: ${state.taskFreq} volume per day`,
-      state.stakes   && `Decision stakes: ${state.stakes}`,
-      state.exposure && `Exposure type: ${state.exposure}`,
-    ].filter(Boolean);
-    const userContent = contextLines.length
-      ? `${pageText}\n\nAdditional context:\n${contextLines.join('\n')}`
-      : pageText;
-
-    const scoreRes = await fetch(
-      `https://api.heylua.ai/developer/ai/${LUA_AGENT_ID}/generate`,
-      {
+      console.log('[fetch-jd] fetching URL...');
+      const fetchRes = await fetch('/.netlify/functions/fetch-jd', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${LUA_API_KEY}` },
-        body: JSON.stringify({
-          system: SCORING_SYSTEM,
-          messages: [{ role: 'user', content: userContent }],
-          temperature: 0.2,
-          tools: [SCORE_ROLE_TOOL],
-          tool_choice: { type: 'tool', name: 'score_role' },
-        }),
-      }
-    );
-    console.log('[score-url] status:', scoreRes.status);
-    if (!scoreRes.ok) { console.error('[score-url] non-OK', scoreRes.status); return; }
-    const data = await scoreRes.json();
-    const content = data?.data?.content || data?.content || [];
-    const toolUse = content.find(c => c.type === 'tool_use' && c.name === 'score_role');
-    if (toolUse?.input) {
-      const r = toolUse.input;
-      if (Array.isArray(r.dimensions) && r.dimensions.length === 7) {
-        const computed = Math.round(r.dimensions.reduce((s,d) => s + d.score * d.weight, 0));
-        if (Math.abs(computed - r.score) > 1) r.score = computed;
-      }
-      console.log('[score-url] score:', r.score, 'verdict:', r.verdict);
-      state.result = r;
-    } else {
-      console.warn('[score-url] no tool_use in response:', JSON.stringify(data).slice(0, 400));
-    }
-  } catch(e) { console.error('[fetch-jd] error:', e); }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: state.jdText.trim() }),
+      });
+      console.log('[fetch-jd] status:', fetchRes.status);
+      if (!fetchRes.ok) { console.error('[fetch-jd] non-OK', fetchRes.status); return; }
+      const { text: pageText } = await fetchRes.json();
+      if (!pageText) { console.error('[fetch-jd] empty response'); return; }
+      console.log('[fetch-jd] got', pageText.length, 'chars');
+      state.result = await scoreViaAda(pageText);
+    } catch(e) { console.error('[fetch-jd] error:', e); }
+  } else {
+    // Text JD — send directly to Ada
+    try {
+      state.result = await scoreViaAda(state.jdText.trim());
+    } catch(e) { console.error('[Ada] error:', e); }
+  }
 }
 
 // ─── enrichment chat ──────────────────────────────────────────────────────────
