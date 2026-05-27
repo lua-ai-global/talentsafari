@@ -295,6 +295,22 @@
   @media(max-width:560px) { .rec-split { grid-template-columns:1fr; } .cta-row { grid-template-columns:1fr; } }
 
   /* dual CTA */
+  .cta-section-head {
+    text-align: center; font-size: 11.5px; font-weight: 700;
+    letter-spacing: .11em; text-transform: uppercase;
+    color: var(--ink-soft); margin-top: 28px; margin-bottom: 14px;
+  }
+  .cta-brand-label {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .13em;
+    text-transform: uppercase; margin-bottom: 7px;
+  }
+  .cta-brand-label.ts-lbl { color: var(--green); }
+  .cta-brand-label.lua-lbl { color: var(--lua-glow); }
+  .cta-card.cta-ts { background: var(--forest); border-color: var(--forest-2); }
+  .cta-card.cta-ts h4 { color: var(--cream); }
+  .cta-card.cta-ts p { color: var(--cream); opacity: .75; }
+  .cta-ts-btn { background: var(--green) !important; color: var(--forest) !important; }
+
   .cta-row {
     margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
   }
@@ -385,8 +401,8 @@
   .bc-status { font-size: 12px; color: var(--green-deep); font-weight: 600; }
   .bc-summary { font-size: 13.5px; color: var(--ink-soft); margin-bottom: 16px; }
   .bc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-  .bc-box { background: white; border-radius: 14px; padding: 14px; border: 1px solid var(--line); }
-  .bc-lbl { font-size: 11px; font-weight: 700; letter-spacing: .05em; color: #9AA39B; text-transform: uppercase; margin-bottom: 8px; }
+  .bc-box { background: var(--paper); border-radius: 14px; padding: 14px; border: 1px solid var(--line); }
+  .bc-lbl { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 8px; }
   .bc-item { font-size: 13px; color: var(--ink); display: flex; gap: 7px; margin-bottom: 5px; }
   .bc-icon-g { color: var(--green-deep); font-weight: 800; }
   .bc-icon-p { color: var(--lua); }
@@ -426,27 +442,29 @@
   }
   .facts-ticker strong { color:var(--forest); font-weight:700; }
 
-  /* adjacent agents section */
+  /* adjacent agents section — clean editorial rows */
   .adjacent-section {
-    margin-top:22px; border-radius:20px; border:1px solid var(--lua-soft);
-    background:linear-gradient(135deg,rgba(108,76,240,.04),var(--paper));
-    overflow:hidden; box-shadow:var(--shadow-sm);
+    margin-top: 22px; background: var(--paper); border: 1px solid var(--line);
+    border-radius: 18px; padding: 20px 22px; box-shadow: var(--shadow-sm);
   }
-  .adjacent-header { padding:18px 24px; background:linear-gradient(135deg,var(--lua-soft),#fff); border-bottom:1px solid var(--line); }
-  .adjacent-header h3 { font-family:'Space Grotesk',sans-serif; font-size:18px; color:var(--ink); }
-  .adjacent-header p { font-size:13px; color:var(--ink-soft); margin-top:3px; }
-  .adjacent-agents { padding:18px 20px; display:flex; flex-direction:column; gap:12px; }
-  .agent-sug {
-    padding:14px 16px; background:var(--paper); border:1px solid var(--line);
-    border-radius:14px; display:flex; gap:14px; align-items:flex-start;
+  .adjacent-title {
+    font-size: 11.5px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase;
+    color: var(--ink-soft); margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
   }
-  .agent-sug-icon {
-    width:42px; height:42px; border-radius:11px; flex-shrink:0;
-    background:linear-gradient(140deg,var(--lua),var(--lua-2));
-    display:grid; place-items:center; font-size:20px;
+  .adjacent-title::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .agent-row {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 13px 0; border-bottom: 1px solid var(--line);
   }
-  .agent-sug-body h4 { font-size:14px; font-weight:700; color:var(--ink); margin-bottom:3px; }
-  .agent-sug-body p { font-size:13px; color:var(--ink-soft); line-height:1.5; }
+  .agent-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .agent-row-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--cream); border: 1px solid var(--line);
+    display: grid; place-items: center; font-size: 16px; flex-shrink: 0;
+  }
+  .agent-row-body h4 { font-size: 13.5px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+  .agent-row-body p { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
 
   @media (max-width: 760px) {
     .ana-split { grid-template-columns:1fr; }
@@ -704,23 +722,23 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
 
     <!-- Adjacent agents -->
     <div class="adjacent-section">
-      <div class="adjacent-header">
-        <h3>⚡ How else agents could help</h3>
-        <p>Other areas where Lua could add immediate value at your company</p>
-      </div>
-      <div class="adjacent-agents" id="adjacentAgents"></div>
+      <div class="adjacent-title">More ways Lua could help here</div>
+      <div id="adjacentAgents"></div>
     </div>
 
     <!-- Dual CTA -->
+    <div class="cta-section-head">What's your next move?</div>
     <div class="cta-row">
-      <div class="cta-card">
-        <h4>🧭 Brief Talent Safari</h4>
-        <p>Our recruiting team sources pre-vetted candidates for this role. Reply within one business day.</p>
-        <button class="btn btn-ts btn-block" onclick="go('s-brief')">Brief Talent Safari →</button>
+      <div class="cta-card cta-ts">
+        <div class="cta-brand-label ts-lbl">Talent Safari</div>
+        <h4>Hire the right person</h4>
+        <p>We source and vet pre-qualified candidates for this specific role. A specialist replies within one business day.</p>
+        <button class="btn btn-block cta-ts-btn" onclick="go('s-brief')">Brief Talent Safari →</button>
       </div>
       <div class="cta-card lua">
-        <h4>⚡ Talk to Lua</h4>
-        <p>Lua scopes, builds, and deploys the agent for this role. Typically live within a week.</p>
+        <div class="cta-brand-label lua-lbl">Lua</div>
+        <h4>Build an agent instead</h4>
+        <p>Lua scopes, builds, and deploys an agent for this exact role. Typically live within a week.</p>
         <button class="btn btn-block" onclick="go('s-connect')">Connect with Lua →</button>
       </div>
     </div>
@@ -1067,22 +1085,30 @@ async function callScoreApi() {
     console.log('[Ada] status:', res.status);
     if (!res.ok) { console.error('[Ada] non-OK', res.status); return; }
     const data = await res.json();
-    console.log('[Ada] steps:', data?.steps?.length, '| preview:', (data?.text||'').slice(0,80));
+    console.log('[Ada] keys:', Object.keys(data || {}).join(','), '| steps:', data?.steps?.length, '| preview:', (data?.text||'').slice(0,80));
+    if (data?.steps?.length) console.log('[Ada] step[0]:', JSON.stringify(data.steps[0]).slice(0, 300));
 
-    const allToolResults = data?.steps?.flatMap(s => s.toolResults || []) || [];
+    // Collect tool results from all possible response shapes
+    let allToolResults = [];
+    if (Array.isArray(data?.steps)) {
+      allToolResults = data.steps.flatMap(s => s.toolResults || s.tool_results || []);
+    }
+    if (allToolResults.length === 0 && Array.isArray(data?.toolResults)) allToolResults = data.toolResults;
+    if (allToolResults.length === 0 && Array.isArray(data?.tool_results)) allToolResults = data.tool_results;
+
     // Find the LAST successful score_jd result (first attempt may fail score_mismatch, Ada retries)
     const scoringMatches = allToolResults.filter(r => {
-      const name = r.payload?.toolName || r.toolName || '';
+      const name = r.payload?.toolName || r.toolName || r.name || '';
       return name.includes('score_jd') || name.includes('score_role');
     });
     const toolResult = scoringMatches.slice().reverse().find(r => {
-      const res = r.payload?.result ?? r.result;
+      const res = r.payload?.result ?? r.result ?? r.output;
       return res && !res.error && typeof res.score === 'number' && res.score >= 10 && res.score <= 100;
     }) || scoringMatches[scoringMatches.length - 1];
-    console.log('[Ada] tool matches:', scoringMatches.length, '| using:', toolResult?.payload?.toolName || 'none');
+    console.log('[Ada] tool matches:', scoringMatches.length, '| using:', toolResult?.payload?.toolName || toolResult?.toolName || 'none');
 
     if (toolResult) {
-      const raw = toolResult.payload?.result ?? toolResult.result;
+      const raw = toolResult.payload?.result ?? toolResult.result ?? toolResult.output;
       const parsed = typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : raw;
       console.log('[Ada] score:', parsed?.score, 'verdict:', parsed?.verdict, 'error:', parsed?.error);
       if (parsed && !parsed.error && typeof parsed.score === 'number' && parsed.score >= 10 && parsed.score <= 100 && parsed.verdict) {
@@ -1442,9 +1468,9 @@ function drawResult() {
   const adjEl = document.getElementById('adjacentAgents');
   const adjAgents = (d.adjacent_agents && d.adjacent_agents.length >= 2) ? d.adjacent_agents : DEMO.adjacent_agents;
   adjEl.innerHTML = adjAgents.map(a => `
-    <div class="agent-sug">
-      <div class="agent-sug-icon">${a.icon}</div>
-      <div class="agent-sug-body">
+    <div class="agent-row">
+      <div class="agent-row-icon">${a.icon}</div>
+      <div class="agent-row-body">
         <h4>${a.name}</h4>
         <p>${a.value_prop}</p>
       </div>
@@ -1615,7 +1641,7 @@ function restart() {
   document.getElementById('urlChip').classList.remove('active');
   document.getElementById('heroBtn').textContent = 'Score this role →';
   document.getElementById('otherRoles').style.display = 'none';
-  document.getElementById('overlay').classList.remove('show');
+  const _ov = document.getElementById('overlay'); if (_ov) _ov.classList.remove('show');
   go('s-hero');
 }
 </script>
