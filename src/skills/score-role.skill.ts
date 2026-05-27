@@ -53,7 +53,21 @@ FLAGS (check before scoring — set flag but still return full result):
 
 ADJACENT AGENTS: always include 2–3 distinct Lua agent suggestions for OTHER roles/tasks at this company.
 Base on company type, industry, and function visible in the JD.
-Format: icon (single emoji), name ("Lua [Role]"), value_prop (one sentence, specific to this context).`;
+Format: icon (single emoji), name ("Lua [Role]"), value_prop (one sentence, specific to this context).
+
+OUTPUT FORMAT (fallback if structured output is not enforced by the platform):
+Return ONLY a single JSON object. No markdown fences, no prose before/after. All fields required. Schema:
+{
+  "role_title": string, "score": int 10-100,
+  "verdict": "needs_human" | "human_led_agent_assist" | "strong_agent",
+  "verdict_line": string, "rationale": string,
+  "dimensions": [ exactly 7 of { "key": str, "label": str, "score": int 1-10, "weight": num, "rationale": str } ],
+  "human_candidate": { "salary_range": str, "time_to_productive": str, "scale_ceiling": str, "coverage": str, "great_at": [3 strings], "hard_at": [3 strings] },
+  "agent_candidate": { "name": "Lua", "role_title": str, "avatar_seed": str, "monthly_cost": str, "start_date": "Today", "throughput": str, "coverage": str, "great_at": [3 strings], "cant_do": [3 strings] },
+  "recommended_cta": "lua" | "tech_safari",
+  "flags": { "short_jd": bool, "non_english": bool, "suspected_fake": bool },
+  "adjacent_agents": [ 2-3 of { "icon": str, "name": str, "value_prop": str } ]
+}`;
 
 // ---------------------------------------------------------------------------
 // JSON Schema 7 — drives AI.generate's structuredOutput. The platform converts
@@ -193,6 +207,35 @@ function verdictForScore(score: number): { verdict: string; recommended_cta: str
   return                  { verdict: 'strong_agent',           recommended_cta: 'lua' };
 }
 
+// Extract a JSON object from a possibly-fenced or noisy LLM text response.
+// Used as the fallback path when platform's structuredOutput isn't enforced.
+function extractJsonObject(text: string): Record<string, unknown> | null {
+  const stripped = text
+    .replace(/^\s*```(?:json)?\s*/i, '')
+    .replace(/\s*```\s*$/i, '')
+    .trim();
+  const start = stripped.indexOf('{');
+  if (start === -1) return null;
+
+  let depth = 0, inString = false, escape = false;
+  for (let i = start; i < stripped.length; i++) {
+    const c = stripped[i];
+    if (escape) { escape = false; continue; }
+    if (c === '\\') { escape = true; continue; }
+    if (c === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (c === '{') depth++;
+    else if (c === '}') {
+      depth--;
+      if (depth === 0) {
+        try { return JSON.parse(stripped.slice(start, i + 1)); }
+        catch { return null; }
+      }
+    }
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Tool — runs the structured scoring call via AI.generate({ structuredOutput })
 // ---------------------------------------------------------------------------
@@ -233,9 +276,16 @@ export class scoreJdTool implements LuaTool<typeof scoreJdInputSchema> {
       return { error: 'generation_failed', detail: response.error?.message ?? 'Unknown error' };
     }
 
-    const raw = response.data?.output as Record<string, unknown> | undefined;
+    // Dual-path: prefer platform's structured output, fall back to parsing JSON
+    // from text. Lets us ship before PR #533 (structuredOutput support) lands.
+    let raw = response.data?.output as Record<string, unknown> | undefined;
     if (!raw || typeof raw !== 'object') {
-      return { error: 'parse_failed', detail: 'No structured output on AI.generate response' };
+      const text = response.data?.text ?? '';
+      const fromText = text ? extractJsonObject(text) : null;
+      if (fromText) raw = fromText;
+    }
+    if (!raw || typeof raw !== 'object') {
+      return { error: 'parse_failed', detail: 'No structured output and no parseable JSON in text response' };
     }
 
     const dims = raw.dimensions as Array<{ score: number; weight: number }> | undefined;
