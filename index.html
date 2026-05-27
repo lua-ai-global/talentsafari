@@ -1198,80 +1198,61 @@ async function callScoreApi() {
     return;
   }
 
-  // URL path — use Ada via lua-chat (scraping happens inside)
-  const prompt = `Score this job posting: ${state.jdText.trim()}`;
+  // URL path — fetch page text server-side (CORS proxy), then call Lua AI direct from browser
   try {
-    const res = await fetch(LUA_CHAT_ENDPOINT, {
+    console.log('[fetch-jd] fetching URL via proxy...');
+    const fetchRes = await fetch('/.netlify/functions/fetch-jd', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [{ type: 'text', text: prompt }], navigate: false }),
+      body: JSON.stringify({ url: state.jdText.trim() }),
     });
-    console.log('[Ada] status:', res.status);
-    if (!res.ok) { console.error('[Ada] non-OK', res.status); return; }
-    const data = await res.json();
-    console.log('[Ada] keys:', Object.keys(data || {}).join(','), '| steps:', data?.steps?.length, '| preview:', (data?.text||'').slice(0,80));
-    if (data?.steps?.length) console.log('[Ada] step[0]:', JSON.stringify(data.steps[0]).slice(0, 300));
+    console.log('[fetch-jd] status:', fetchRes.status);
+    if (!fetchRes.ok) { console.error('[fetch-jd] non-OK', fetchRes.status); return; }
+    const { text: pageText } = await fetchRes.json();
+    if (!pageText) { console.error('[fetch-jd] empty text'); return; }
+    console.log('[fetch-jd] got', pageText.length, 'chars — scoring directly...');
 
-    // Collect tool results from all possible response shapes
-    let allToolResults = [];
-    if (Array.isArray(data?.steps)) {
-      allToolResults = data.steps.flatMap(s =>
-        s.toolResults || s.tool_results || (s.output ? [s] : [])
-      );
-    }
-    if (allToolResults.length === 0 && Array.isArray(data?.toolResults)) allToolResults = data.toolResults;
-    if (allToolResults.length === 0 && Array.isArray(data?.tool_results)) allToolResults = data.tool_results;
-    console.log('[Ada] all tool results count:', allToolResults.length);
-    if (allToolResults.length) console.log('[Ada] first tool result:', JSON.stringify(allToolResults[0]).slice(0, 300));
+    const contextLines = [
+      state.volume   && `Task structure: ${state.volume}`,
+      state.taskFreq && `Task frequency: ${state.taskFreq} volume per day`,
+      state.stakes   && `Decision stakes: ${state.stakes}`,
+      state.exposure && `Exposure type: ${state.exposure}`,
+    ].filter(Boolean);
+    const userContent = contextLines.length
+      ? `${pageText}\n\nAdditional context:\n${contextLines.join('\n')}`
+      : pageText;
 
-    // Helper: extract scoring object from any shape
-    function extractScore(obj) {
-      if (!obj) return null;
-      const o = typeof obj === 'string' ? (() => { try { return JSON.parse(obj); } catch { return null; } })() : obj;
-      if (!o) return null;
-      if (Array.isArray(o.dimensions) && o.dimensions.length === 7 && o.verdict
-          && typeof o.score === 'number' && o.score >= 10 && o.score <= 100 && !o.error) return o;
-      return null;
-    }
-
-    // Find the LAST successful score_jd result (first attempt may fail score_mismatch, Ada retries)
-    const scoringMatches = allToolResults.filter(r => {
-      const name = r.payload?.toolName || r.toolName || r.name || r.tool || '';
-      const hasScore = extractScore(r.payload?.result ?? r.result ?? r.output);
-      return name.includes('score_jd') || name.includes('score_role') || hasScore;
-    });
-    const toolResult = scoringMatches.slice().reverse().find(r =>
-      extractScore(r.payload?.result ?? r.result ?? r.output)
-    ) || scoringMatches[scoringMatches.length - 1];
-    console.log('[Ada] tool matches:', scoringMatches.length, '| using:', toolResult?.payload?.toolName || toolResult?.toolName || toolResult?.name || 'none');
-
-    if (toolResult) {
-      const parsed = extractScore(toolResult.payload?.result ?? toolResult.result ?? toolResult.output);
-      console.log('[Ada] score:', parsed?.score, 'verdict:', parsed?.verdict, 'error:', parsed?.error);
-      if (parsed) { state.result = parsed; return; }
-    }
-
-    // Fallback: scan every step's output directly for a valid scoring object
-    if (!state.result && Array.isArray(data?.steps)) {
-      for (const step of data.steps) {
-        const candidate = extractScore(step.output) || extractScore(step.result);
-        if (candidate) { state.result = candidate; console.log('[Ada] found via step.output/result'); break; }
+    const scoreRes = await fetch(
+      `https://api.heylua.ai/developer/ai/${LUA_AGENT_ID}/generate`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${LUA_API_KEY}` },
+        body: JSON.stringify({
+          system: SCORING_SYSTEM,
+          messages: [{ role: 'user', content: userContent }],
+          temperature: 0.2,
+          tools: [SCORE_ROLE_TOOL],
+          tool_choice: { type: 'tool', name: 'score_role' },
+        }),
       }
+    );
+    console.log('[score-url] status:', scoreRes.status);
+    if (!scoreRes.ok) { console.error('[score-url] non-OK', scoreRes.status); return; }
+    const data = await scoreRes.json();
+    const content = data?.data?.content || data?.content || [];
+    const toolUse = content.find(c => c.type === 'tool_use' && c.name === 'score_role');
+    if (toolUse?.input) {
+      const r = toolUse.input;
+      if (Array.isArray(r.dimensions) && r.dimensions.length === 7) {
+        const computed = Math.round(r.dimensions.reduce((s,d) => s + d.score * d.weight, 0));
+        if (Math.abs(computed - r.score) > 1) r.score = computed;
+      }
+      console.log('[score-url] score:', r.score, 'verdict:', r.verdict);
+      state.result = r;
+    } else {
+      console.warn('[score-url] no tool_use in response:', JSON.stringify(data).slice(0, 400));
     }
-
-    // Fallback: parse JSON from text — only accept if it has dimensions + verdict
-    const text = data?.text || '';
-    const match = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*"score"[\s\S]*\})/);
-    if (match) {
-      try {
-        const fb = JSON.parse(match[1].trim());
-        if (fb && Array.isArray(fb.dimensions) && fb.dimensions.length === 7 && fb.verdict
-            && typeof fb.score === 'number' && fb.score >= 10 && fb.score <= 100) {
-          state.result = fb;
-        }
-      } catch {}
-    }
-  } catch(e) { console.error('[Ada] error:', e); }
+  } catch(e) { console.error('[fetch-jd] error:', e); }
 }
 
 // ─── enrichment chat ──────────────────────────────────────────────────────────
