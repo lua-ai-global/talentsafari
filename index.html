@@ -1057,15 +1057,20 @@ function stopFactsTicker() {
 }
 
 // ─── API call ─────────────────────────────────────────────────────────────────
-const SLACK_NOTIFY_ENDPOINT = '/.netlify/functions/slack-notify';
-const LUA_CHAT_ENDPOINT     = '/.netlify/functions/lua-chat';
+// All Lua/Slack calls route through Vercel serverless functions in /api so the
+// LUA_API_KEY and SLACK_LEADS_WEBHOOK_URL stay server-side (process.env on Vercel).
+const SCORE_JD_ENDPOINT     = '/api/score-jd';
+const FETCH_JD_ENDPOINT     = '/api/fetch-jd';
+const SLACK_NOTIFY_ENDPOINT = '/api/slack-notify';
 
-// Generate a unique channel ID — keeps each session isolated server-side
-function newChannelId(prefix = 'session') {
+// Unique channel per call prevents contamination from prior failed tool calls
+// accumulating in Ada's session history. The /api/lua-chat proxy forwards this
+// query param to Lua's chat API after attaching the Bearer token server-side.
+function adaSessionUrl(prefix = 'eval') {
   const id = typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2);
-  return `${prefix}-${id}`;
+  return `/api/lua-chat?channel=${prefix}-${id}`;
 }
 
 async function notifyLeadSubmit(name, title, company, email) {
@@ -1078,22 +1083,10 @@ async function notifyLeadSubmit(name, title, company, email) {
   } catch {}
 }
 
-// Extract a valid scoring object from any response shape Ada might return.
-function extractScore(obj) {
-  if (!obj) return null;
-  const o = typeof obj === 'string'
-    ? (() => { try { return JSON.parse(obj); } catch { return null; } })()
-    : obj;
-  if (!o) return null;
-  if (Array.isArray(o.dimensions) && o.dimensions.length === 7 && o.verdict
-      && typeof o.score === 'number' && o.score >= 10 && o.score <= 100 && !o.error) return o;
-  return null;
-}
-
 // Score a JD text via the score-jd Netlify function.
 // score-jd.js calls Ada's chat API server-side — API key stays secret.
 async function scoreViaFunction(jdText) {
-  const res = await fetch('/.netlify/functions/score-jd', {
+  const res = await fetch(SCORE_JD_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1118,7 +1111,7 @@ async function callScoreApi() {
     // Fetch job posting HTML server-side (CORS proxy, no AI) → extract text → score
     try {
       console.log('[fetch-jd] fetching URL...');
-      const fetchRes = await fetch('/.netlify/functions/fetch-jd', {
+      const fetchRes = await fetch(FETCH_JD_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: state.jdText.trim() }),
@@ -1143,7 +1136,7 @@ const enrichHistory = [];  // [{role,content}]
 
 function startEnrichChat() {
   enrichHistory.length = 0;
-  state.enrichChannel = newChannelId('enrich');
+  state.enrichUrl = adaSessionUrl('enrich');
   document.getElementById('enrichMsgs').innerHTML = '';
   document.getElementById('enrichInput').value = '';
 
@@ -1185,14 +1178,10 @@ async function callEnrichApi(isFirst) {
   const typing = appendEnrichMsg('ada', 'Ada is thinking…', true);
 
   try {
-    const res = await fetch(LUA_CHAT_ENDPOINT, {
+    const res = await fetch(state.enrichUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        channel: state.enrichChannel,
-        messages: enrichHistory.map(m => ({ type: 'text', text: `${m.role === 'user' ? '' : 'Ada: '}${m.content}` })),
-        navigate: false,
-      }),
+      body: JSON.stringify({ messages: enrichHistory.map(m => ({ type: 'text', text: `${m.role === 'user' ? '' : 'Ada: '}${m.content}` })), navigate: false }),
     });
 
     typing.remove();
@@ -1259,11 +1248,10 @@ async function submitLead() {
   try {
     const scoringJson = JSON.stringify(state.result || {});
     const jdJson = JSON.stringify((state.jdText || '').slice(0, 3000));
-    await fetch(LUA_CHAT_ENDPOINT, {
+    await fetch(adaSessionUrl('lead'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        channel: newChannelId('lead'),
         messages: [{ type: 'text', text: `Call the capture_lead tool now with these exact values:\nemail: "${email}"\nname: "${name}"\ntitle: "${title}"\ncompany: "${company}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}` }],
         navigate: false,
       }),
@@ -1293,11 +1281,10 @@ function submitCta(path) {
   const { leadName: name, leadEmail: email, leadCompany: company, leadTitle: title } = state;
   const scoringJson = JSON.stringify(state.result || {});
   const jdJson = JSON.stringify((state.jdText || '').slice(0, 3000));
-  fetch(LUA_CHAT_ENDPOINT, {
+  fetch(adaSessionUrl('cta'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      channel: newChannelId('cta'),
       messages: [{ type: 'text', text: `Call the submit_cta tool now with these exact values:\npath: "${path}"\nname: "${name}"\ntitle: "${title}"\nemail: "${email}"\ncompany: "${company}"\nextraField: "${extraField}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}` }],
       navigate: false,
     }),
