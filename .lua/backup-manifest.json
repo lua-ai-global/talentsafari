@@ -1,10 +1,30 @@
 {
-  "lastHash": "46947e353baa7424551ca2a665dfa559be73f3420d44338ab0959b26a50a7932",
-  "lastPushedAt": "2026-05-27T11:40:38.769Z",
+  "lastHash": "926cf181a9867ae681ca30e756c0ba75376f6607fb4ebc7450762bfbd9e63125",
+  "lastPushedAt": "2026-05-27T12:15:39.690Z",
   "files": [
     {
+      "relativePath": "api/_lib/origin.js",
+      "hash": "abc2037d9a2ad20e"
+    },
+    {
+      "relativePath": "api/fetch-jd.js",
+      "hash": "5d722ab2beef2bc3"
+    },
+    {
+      "relativePath": "api/lua-chat.js",
+      "hash": "901ddc625a8acbde"
+    },
+    {
+      "relativePath": "api/score-jd.js",
+      "hash": "1d49403cc7e38192"
+    },
+    {
+      "relativePath": "api/slack-notify.js",
+      "hash": "c20203d16dd987c8"
+    },
+    {
       "relativePath": "build.md",
-      "hash": "ebd959666e8c4a1f"
+      "hash": "4722e1e36284660f"
     },
     {
       "relativePath": "env.example",
@@ -12,31 +32,35 @@
     },
     {
       "relativePath": "index.html",
-      "hash": "c95755bb037cb1a5"
+      "hash": "f7bdbd88bd04adb0"
+    },
+    {
+      "relativePath": "LAUNCH-CHECKLIST.md",
+      "hash": "12b83e3041df6b2c"
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "5222b792c62fd8c6"
+      "hash": "d373b82fc5eaa427"
     },
     {
       "relativePath": "netlify.toml",
-      "hash": "070bab15623f07fe"
+      "hash": "7bcd116156bdee81"
     },
     {
       "relativePath": "netlify/functions/fetch-jd.js",
-      "hash": "b90e437bca8a2761"
+      "hash": "99372ecf4067d76b"
     },
     {
       "relativePath": "netlify/functions/lua-chat.js",
-      "hash": "bed7406e266cbf94"
+      "hash": "b8a3883e4b99c1a9"
     },
     {
       "relativePath": "netlify/functions/score-jd.js",
-      "hash": "ed7372e8085853f4"
+      "hash": "83da42d230e001ba"
     },
     {
       "relativePath": "netlify/functions/slack-notify.js",
-      "hash": "4f1524ac3066c787"
+      "hash": "eb8d2040c636852a"
     },
     {
       "relativePath": "package.json",
@@ -53,6 +77,14 @@
     {
       "relativePath": "README.md",
       "hash": "2ca2d2b3168e75e5"
+    },
+    {
+      "relativePath": "REVIEW-PLATFORM.md",
+      "hash": "64ce6443ae7711ce"
+    },
+    {
+      "relativePath": "REVIEW-TALENTSAFARI.md",
+      "hash": "dbccd712e13ae737"
     },
     {
       "relativePath": "src/index.ts",
@@ -101,6 +133,10 @@
     {
       "relativePath": "tsconfig.json",
       "hash": "748d6fffca1cc9ce"
+    },
+    {
+      "relativePath": "vercel.json",
+      "hash": "17076faabaa8dde5"
     }
   ]
 }
