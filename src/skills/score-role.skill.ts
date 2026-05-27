@@ -208,33 +208,57 @@ function verdictForScore(score: number): { verdict: string; recommended_cta: str
   return                  { verdict: 'strong_agent',           recommended_cta: 'lua' };
 }
 
-// Extract a JSON object from a possibly-fenced or noisy LLM text response.
-// Used as the fallback path when platform's structuredOutput isn't enforced.
+// Extract the scoring JSON from a possibly-fenced or noisy LLM text response.
+// Robust against:
+//   - bare JSON ("{...}")
+//   - markdown-fenced JSON ("```json\n{...}\n```")
+//   - prose-wrapped JSON ("Here is the verdict: {...}. Hope this helps.")
+//   - multiple { } blocks in the response (picks the one with role_title)
 function extractJsonObject(text: string): Record<string, unknown> | null {
-  const stripped = text
-    .replace(/^\s*```(?:json)?\s*/i, '')
-    .replace(/\s*```\s*$/i, '')
-    .trim();
-  const start = stripped.indexOf('{');
-  if (start === -1) return null;
+  const stripped = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
 
-  let depth = 0, inString = false, escape = false;
-  for (let i = start; i < stripped.length; i++) {
-    const c = stripped[i];
-    if (escape) { escape = false; continue; }
-    if (c === '\\') { escape = true; continue; }
-    if (c === '"') { inString = !inString; continue; }
-    if (inString) continue;
-    if (c === '{') depth++;
-    else if (c === '}') {
-      depth--;
-      if (depth === 0) {
-        try { return JSON.parse(stripped.slice(start, i + 1)); }
-        catch { return null; }
+  const tryParse = (s: string): Record<string, unknown> | null => {
+    try {
+      const obj = JSON.parse(s);
+      return obj && typeof obj === 'object' && !Array.isArray(obj)
+        ? (obj as Record<string, unknown>)
+        : null;
+    } catch { return null; }
+  };
+
+  const hasScoringShape = (o: Record<string, unknown> | null): boolean =>
+    !!o && typeof o.role_title === 'string' && Array.isArray(o.dimensions);
+
+  // Best case — model returned pure JSON.
+  const whole = tryParse(stripped);
+  if (hasScoringShape(whole)) return whole;
+
+  // Scan for every { ... } candidate with balanced braces. Pick the first one
+  // that parses AND has the scoring shape; fall back to first that parses at all.
+  let firstParseable: Record<string, unknown> | null = null;
+  let start = stripped.indexOf('{');
+  while (start !== -1) {
+    let depth = 0, inString = false, escape = false;
+    for (let i = start; i < stripped.length; i++) {
+      const c = stripped[i];
+      if (escape) { escape = false; continue; }
+      if (c === '\\') { escape = true; continue; }
+      if (c === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (c === '{') depth++;
+      else if (c === '}') {
+        depth--;
+        if (depth === 0) {
+          const candidate = tryParse(stripped.slice(start, i + 1));
+          if (hasScoringShape(candidate)) return candidate;
+          if (candidate && !firstParseable) firstParseable = candidate;
+          break;
+        }
       }
     }
+    start = stripped.indexOf('{', start + 1);
   }
-  return null;
+  return firstParseable;
 }
 
 // ---------------------------------------------------------------------------
