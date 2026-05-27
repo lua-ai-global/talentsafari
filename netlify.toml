@@ -1,6 +1,19 @@
 [build]
   command   = ""
   publish   = "."
+  functions = "netlify/functions"
+
+# SPA-style routing — serve index.html for /results and /score
+# so LinkedIn and analytics can track conversion URLs
+[[redirects]]
+  from   = "/results"
+  to     = "/index.html"
+  status = 200
+
+[[redirects]]
+  from   = "/score"
+  to     = "/index.html"
+  status = 200
 
 [[headers]]
   for = "/*"

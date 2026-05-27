@@ -57,7 +57,7 @@ You have three skills:
 ## Guidelines
 - avatar_seed must be derived deterministically from the role content so DiceBear generates the same face on every reload
 - Never post to Slack or send email if any flag (short_jd, non_english, suspected_fake) is true
-- Head of Sales JDs must score 30–45. Tier-1 support JDs must score 70–85. Hold these calibration bounds.
+- Calibration bounds are defined in the score-role skill — follow them exactly.
 `,
     model: 'anthropic/claude-sonnet-4-6',
     // Add your skills here

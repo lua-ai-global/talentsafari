@@ -805,6 +805,9 @@ function go(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo({ top:0, behavior:'smooth' });
+  // Update URL for analytics / LinkedIn conversion tracking
+  const urlMap = { 's-result': '/results', 's-analysis': '/score', 's-hero': '/' };
+  if (urlMap[id]) history.pushState({}, '', urlMap[id]);
   const n = railMap[id];
   document.querySelectorAll('#rail i').forEach((bar,i) => {
     bar.className = i<=n ? (i===3?'on lua':'on') : '';
@@ -1035,13 +1038,12 @@ function stopFactsTicker() {
 }
 
 // ─── API call ─────────────────────────────────────────────────────────────────
-const LUA_AGENT_ID   = 'baseAgent_agent_1779215133611_x0svb7j5d';
-const LUA_API_KEY    = 'api_403f64cd0f8b4e3b97c2c98443508e84';
-const SLACK_WEBHOOK  = 'https://hooks.slack.com/services/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';
+const LUA_CHAT_ENDPOINT   = '/.netlify/functions/lua-chat';
+const SLACK_NOTIFY_ENDPOINT = '/.netlify/functions/slack-notify';
 
 async function notifyLeadSubmit(name, title, company, email) {
   try {
-    await fetch(SLACK_WEBHOOK, {
+    await fetch(SLACK_NOTIFY_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: `*New JD submitted — evaluation starting*\nLead: ${name} · ${title} · ${company}\nEmail: ${email}` }),
@@ -1056,14 +1058,11 @@ async function callScoreApi() {
     : `Score this job description:\n\n${state.jdText}\n\nContext: Task structure is ${state.volume}, task frequency is ${state.taskFreq} (low/medium/high volume per day), decision stakes are ${state.stakes}, exposure type is ${state.exposure}.`;
 
   try {
-    const res = await fetch(
-      `https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LUA_API_KEY}` },
-        body: JSON.stringify({ messages: [{ type: 'text', text: prompt }], navigate: false }),
-      }
-    );
+    const res = await fetch(LUA_CHAT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ type: 'text', text: prompt }], navigate: false }),
+    });
     console.log('[Ada] status:', res.status);
     if (!res.ok) { console.error('[Ada] non-OK', res.status); return; }
     const data = await res.json();
@@ -1152,14 +1151,11 @@ async function callEnrichApi(isFirst) {
   const typing = appendEnrichMsg('ada', 'Ada is thinking…', true);
 
   try {
-    const res = await fetch(
-      `https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LUA_API_KEY}` },
-        body: JSON.stringify({ messages: enrichHistory.map(m => ({ type: 'text', text: `${m.role === 'user' ? '' : 'Ada: '}${m.content}` })), navigate: false }),
-      }
-    );
+    const res = await fetch(LUA_CHAT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: enrichHistory.map(m => ({ type: 'text', text: `${m.role === 'user' ? '' : 'Ada: '}${m.content}` })), navigate: false }),
+    });
 
     typing.remove();
 
@@ -1225,9 +1221,9 @@ async function submitLead() {
   try {
     const scoringJson = JSON.stringify(state.result || {});
     const jdJson = JSON.stringify((state.jdText || '').slice(0, 3000));
-    await fetch(`https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`, {
+    await fetch(LUA_CHAT_ENDPOINT, {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${LUA_API_KEY}`},
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         messages:[{type:'text',text:`Call the capture_lead tool now with these exact values:\nemail: "${email}"\nname: "${name}"\ntitle: "${title}"\ncompany: "${company}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}`}],
         navigate:false
@@ -1258,8 +1254,8 @@ function submitCta(path) {
   const { leadName: name, leadEmail: email, leadCompany: company, leadTitle: title } = state;
   const scoringJson = JSON.stringify(state.result || {});
   const jdJson = JSON.stringify((state.jdText || '').slice(0, 3000));
-  fetch(`https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`, {
-    method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${LUA_API_KEY}`},
+  fetch(LUA_CHAT_ENDPOINT, {
+    method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ messages:[{type:'text',text:`Call the submit_cta tool now with these exact values:\npath: "${path}"\nname: "${name}"\ntitle: "${title}"\nemail: "${email}"\ncompany: "${company}"\nextraField: "${extraField}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}`}], navigate:false }),
   }).catch(() => {});
 }
