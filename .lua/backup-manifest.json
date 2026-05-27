@@ -1,74 +1,66 @@
 {
-  "lastHash": "1620d698897a8224c7f346988a73dbbc2846932b4f999bb1db40360fe52bcadb",
-  "lastPushedAt": "2026-05-27T14:45:30.009Z",
+  "lastHash": "cd7ccf0d401d196ae2e33f35e95e25dfe8ba936998117bd74653577cf80fe6f8",
+  "lastPushedAt": "2026-05-27T18:48:17.935Z",
   "files": [
     {
       "relativePath": "api/_lib/origin.js",
-      "hash": "abc2037d9a2ad20e"
+      "hash": "070fdda7ada767e0"
     },
     {
       "relativePath": "api/_lib/rate-limit.js",
-      "hash": "086e410e25685975"
+      "hash": "db0a8de93a3343f7"
     },
     {
       "relativePath": "api/fetch-jd.js",
-      "hash": "1c548362212ba216"
+      "hash": "3a58ac34c99e6933"
     },
     {
       "relativePath": "api/lua-chat.js",
-      "hash": "9c63e2cbfda61ecb"
+      "hash": "9b47beaa33dc00fc"
     },
     {
       "relativePath": "api/slack-notify.js",
-      "hash": "77352a502849a493"
+      "hash": "b833aa74f830f675"
     },
     {
       "relativePath": "build.md",
-      "hash": "4722e1e36284660f"
+      "hash": "ebd959666e8c4a1f"
     },
     {
       "relativePath": "env.example",
-      "hash": "ead1850d272e4c59"
+      "hash": "59392d82dfe28f83"
     },
     {
       "relativePath": "index.html",
-      "hash": "786cc5d09c14f7ba"
-    },
-    {
-      "relativePath": "LAUNCH-CHECKLIST.md",
-      "hash": "12b83e3041df6b2c"
+      "hash": "47ca4b77f096d468"
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "694560dc53335995"
+      "hash": "c22d33ae1d002ed5"
     },
     {
       "relativePath": "netlify.toml",
-      "hash": "7bcd116156bdee81"
+      "hash": "727c69f88afb9f64"
     },
     {
       "relativePath": "netlify/functions/fetch-jd.js",
-      "hash": "99372ecf4067d76b"
+      "hash": "bb81caa3e5def80a"
     },
     {
       "relativePath": "netlify/functions/lua-chat.js",
-      "hash": "b8a3883e4b99c1a9"
+      "hash": "16101723d6c98c1b"
     },
     {
       "relativePath": "netlify/functions/score-jd.js",
-      "hash": "83da42d230e001ba"
+      "hash": "aa55c62eb9180ae2"
     },
     {
       "relativePath": "netlify/functions/slack-notify.js",
-      "hash": "eb8d2040c636852a"
+      "hash": "e6fe55adcfaaa480"
     },
     {
       "relativePath": "package.json",
-      "hash": "e5ac7f8205350540"
-    },
-    {
-      "relativePath": "PARALLEL-SESSIONS.md",
-      "hash": "2a30f863a1c630cf"
+      "hash": "3b54f9b24f03cb8b"
     },
     {
       "relativePath": "public/talentsafari_logo.jpg",
@@ -76,71 +68,63 @@
     },
     {
       "relativePath": "QUICKSTART.md",
-      "hash": "31e631fd64512cd1"
+      "hash": "1f6dc757b3084517"
     },
     {
       "relativePath": "README.md",
-      "hash": "2ca2d2b3168e75e5"
-    },
-    {
-      "relativePath": "REVIEW-PLATFORM.md",
-      "hash": "64ce6443ae7711ce"
-    },
-    {
-      "relativePath": "REVIEW-TALENTSAFARI.md",
-      "hash": "dbccd712e13ae737"
+      "hash": "f690bd869269a060"
     },
     {
       "relativePath": "src/index.ts",
-      "hash": "92d10e5a06558867"
+      "hash": "3230cc344d38ed89"
     },
     {
       "relativePath": "src/skills/ada-chat.skill.ts",
-      "hash": "ff6a77d4e7ae4057"
+      "hash": "3346044462ff1853"
     },
     {
       "relativePath": "src/skills/brief-wizard.skill.ts",
-      "hash": "4b62f4aff2be7218"
+      "hash": "7059cc4a52537329"
     },
     {
       "relativePath": "src/skills/capture-lead.skill.ts",
-      "hash": "07abb33d708827c9"
+      "hash": "f8d4066e969e6424"
     },
     {
       "relativePath": "src/skills/score-role.skill.ts",
-      "hash": "336d837f8454e942"
+      "hash": "1906c8f7d5aa671d"
     },
     {
       "relativePath": "src/skills/scrape-jd.skill.ts",
-      "hash": "35d0e547fcbce515"
+      "hash": "ea239ed0bf6c77d9"
     },
     {
       "relativePath": "src/skills/submit-cta.skill.ts",
-      "hash": "959e71e2d4166df1"
+      "hash": "dc763c7a8b21fd8c"
     },
     {
       "relativePath": "src/skills/tools/CaptureLead.ts",
-      "hash": "ca4a90094034c3bd"
+      "hash": "64b4f7182dd5148f"
     },
     {
       "relativePath": "src/skills/tools/ScoreJd.ts",
-      "hash": "d3ba2342b9a6059b"
+      "hash": "53d90ce11f3e1496"
     },
     {
       "relativePath": "src/skills/tools/SubmitCta.ts",
-      "hash": "de0fd5eab1a5204f"
+      "hash": "f69d281cfaeef67c"
     },
     {
       "relativePath": "test-ada-chat-input.json",
-      "hash": "d963b4efd19b7a81"
+      "hash": "9b1ccd64078183c1"
     },
     {
       "relativePath": "tsconfig.json",
-      "hash": "748d6fffca1cc9ce"
+      "hash": "deef34fa8b853cfe"
     },
     {
       "relativePath": "vercel.json",
-      "hash": "e94acf1768ea7fe9"
+      "hash": "5974190c5edad224"
     }
   ]
 }
