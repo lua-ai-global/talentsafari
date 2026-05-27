@@ -39,7 +39,10 @@
       "Bash(git *)",
       "Bash(node *)",
       "Bash(gh auth *)",
-      "PowerShell(New-Item *)"
+      "PowerShell(New-Item *)",
+      "PowerShell(Select-String -Path \"C:\\\\Users\\\\Elitebook\\\\OneDrive\\\\Documents\\\\PROJECTS\\\\TechSafari x Lua\\\\TechSafari x Lua\\\\node_modules\\\\lua-cli\\\\dist\\\\index.js\" -Pattern \"async generate\" -Context 0,25 | Select-Object -First 1 | ForEach-Object { $_.Line; $_.Context.PostContext })",
+      "PowerShell(Select-String -Path \"C:\\\\Users\\\\Elitebook\\\\OneDrive\\\\Documents\\\\PROJECTS\\\\TechSafari x Lua\\\\TechSafari x Lua\\\\node_modules\\\\lua-cli\\\\dist\\\\index.js\" -Pattern \"aiGenerateInputFromSimplified\" -Context 0,20 | Select-Object -First 1 | ForEach-Object { $_.Line; $_.Context.PostContext })",
+      "PowerShell(Select-String -Path \"C:\\\\Users\\\\Elitebook\\\\OneDrive\\\\Documents\\\\PROJECTS\\\\TechSafari x Lua\\\\TechSafari x Lua\\\\node_modules\\\\lua-cli\\\\dist\\\\index.js\" -Pattern \"LuaTool\\\\b\" -Context 0,5 | Select-Object -First 3 | ForEach-Object { $_.Line; $_.Context.PostContext })"
     ]
   }
 }
