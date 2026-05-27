@@ -1523,11 +1523,12 @@ const WZ_ACKS = ['Got it.','Thanks — helpful context.','Noted — that shapes 
 let wizardState = { initialized:false, msgs:[], answers:[], qIndex:0, phase:'wizard', brief:null };
 
 function initConnectScreen() {
-  const d = state.result || DEMO;
-  const showWizard = d.score >= 65;
-  document.getElementById('wizardSection').style.display = showWizard ? '' : 'none';
-  document.getElementById('staticLuaForm').style.display = showWizard ? 'none' : '';
-  if (showWizard && !wizardState.initialized) initWizard(d);
+  // Wizard ("Let's build your agent brief") is disabled — it was hardcoded
+  // theater (no agent invocation, DEMO_BRIEF for everyone) and Lorcan wants
+  // it hidden until a real implementation lands. All Connect-with-Lua leads
+  // now go through the static form. Wizard code is kept for re-enable later.
+  document.getElementById('wizardSection').style.display = 'none';
+  document.getElementById('staticLuaForm').style.display = '';
 }
 
 function initWizard(d) {
