@@ -37,7 +37,9 @@
       "Bash(python3 -c ' *)",
       "Bash(git push *)",
       "Bash(git *)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(gh auth *)",
+      "PowerShell(New-Item *)"
     ]
   }
 }
