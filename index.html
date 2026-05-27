@@ -1091,29 +1091,47 @@ async function callScoreApi() {
     // Collect tool results from all possible response shapes
     let allToolResults = [];
     if (Array.isArray(data?.steps)) {
-      allToolResults = data.steps.flatMap(s => s.toolResults || s.tool_results || []);
+      allToolResults = data.steps.flatMap(s =>
+        s.toolResults || s.tool_results || (s.output ? [s] : [])
+      );
     }
     if (allToolResults.length === 0 && Array.isArray(data?.toolResults)) allToolResults = data.toolResults;
     if (allToolResults.length === 0 && Array.isArray(data?.tool_results)) allToolResults = data.tool_results;
+    console.log('[Ada] all tool results count:', allToolResults.length);
+    if (allToolResults.length) console.log('[Ada] first tool result:', JSON.stringify(allToolResults[0]).slice(0, 300));
+
+    // Helper: extract scoring object from any shape
+    function extractScore(obj) {
+      if (!obj) return null;
+      const o = typeof obj === 'string' ? (() => { try { return JSON.parse(obj); } catch { return null; } })() : obj;
+      if (!o) return null;
+      if (Array.isArray(o.dimensions) && o.dimensions.length === 7 && o.verdict
+          && typeof o.score === 'number' && o.score >= 10 && o.score <= 100 && !o.error) return o;
+      return null;
+    }
 
     // Find the LAST successful score_jd result (first attempt may fail score_mismatch, Ada retries)
     const scoringMatches = allToolResults.filter(r => {
-      const name = r.payload?.toolName || r.toolName || r.name || '';
-      return name.includes('score_jd') || name.includes('score_role');
+      const name = r.payload?.toolName || r.toolName || r.name || r.tool || '';
+      const hasScore = extractScore(r.payload?.result ?? r.result ?? r.output);
+      return name.includes('score_jd') || name.includes('score_role') || hasScore;
     });
-    const toolResult = scoringMatches.slice().reverse().find(r => {
-      const res = r.payload?.result ?? r.result ?? r.output;
-      return res && !res.error && typeof res.score === 'number' && res.score >= 10 && res.score <= 100;
-    }) || scoringMatches[scoringMatches.length - 1];
-    console.log('[Ada] tool matches:', scoringMatches.length, '| using:', toolResult?.payload?.toolName || toolResult?.toolName || 'none');
+    const toolResult = scoringMatches.slice().reverse().find(r =>
+      extractScore(r.payload?.result ?? r.result ?? r.output)
+    ) || scoringMatches[scoringMatches.length - 1];
+    console.log('[Ada] tool matches:', scoringMatches.length, '| using:', toolResult?.payload?.toolName || toolResult?.toolName || toolResult?.name || 'none');
 
     if (toolResult) {
-      const raw = toolResult.payload?.result ?? toolResult.result ?? toolResult.output;
-      const parsed = typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : raw;
+      const parsed = extractScore(toolResult.payload?.result ?? toolResult.result ?? toolResult.output);
       console.log('[Ada] score:', parsed?.score, 'verdict:', parsed?.verdict, 'error:', parsed?.error);
-      if (parsed && !parsed.error && typeof parsed.score === 'number' && parsed.score >= 10 && parsed.score <= 100 && parsed.verdict) {
-        state.result = parsed;
-        return;
+      if (parsed) { state.result = parsed; return; }
+    }
+
+    // Fallback: scan every step's output directly for a valid scoring object
+    if (!state.result && Array.isArray(data?.steps)) {
+      for (const step of data.steps) {
+        const candidate = extractScore(step.output) || extractScore(step.result);
+        if (candidate) { state.result = candidate; console.log('[Ada] found via step.output/result'); break; }
       }
     }
 
