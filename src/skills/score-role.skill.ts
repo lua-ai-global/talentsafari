@@ -53,26 +53,12 @@ FLAGS (check before scoring — set flag but still return full result):
 
 ADJACENT AGENTS: always include 2–3 distinct Lua agent suggestions for OTHER roles/tasks at this company.
 Base on company type, industry, and function visible in the JD.
-Format: icon (single emoji), name ("Lua [Role]"), value_prop (one sentence, specific to this context).
-
-OUTPUT FORMAT (fallback if structured output is not enforced by the platform):
-Return ONLY a single JSON object. No markdown fences, no prose before/after. All fields required. Schema:
-{
-  "role_title": string, "score": int 10-100,
-  "verdict": "needs_human" | "human_led_agent_assist" | "strong_agent",
-  "verdict_line": string, "rationale": string,
-  "dimensions": [ exactly 7 of { "key": str, "label": str, "score": int 1-10, "weight": num, "rationale": str } ],
-  "human_candidate": { "salary_range": str, "time_to_productive": str, "scale_ceiling": str, "coverage": str, "great_at": [3 strings], "hard_at": [3 strings] },
-  "agent_candidate": { "name": "Lua", "role_title": str, "avatar_seed": str, "monthly_cost": str, "start_date": "Today", "throughput": str, "coverage": str, "great_at": [3 strings], "cant_do": [3 strings] },
-  "recommended_cta": "lua" | "tech_safari",
-  "flags": { "short_jd": bool, "non_english": bool, "suspected_fake": bool },
-  "adjacent_agents": [ 2-3 of { "icon": str, "name": str, "value_prop": str } ]
-}`;
+Format: icon (single emoji), name ("Lua [Role]"), value_prop (one sentence, specific to this context).`;
 
 // ---------------------------------------------------------------------------
 // JSON Schema 7 — drives AI.generate's structuredOutput. The platform converts
-// this to AI SDK's Output.object({ schema }) and the model returns a parsed
-// object matching the shape.
+// this to AI SDK's `experimental_output: Output.object({ schema })`, and the
+// response surfaces the parsed object on `response.output`.
 // ---------------------------------------------------------------------------
 
 const dimensionSchema = {
@@ -181,20 +167,6 @@ const scoreJdInputSchema = z.object({
 type ScoreJdInput = z.infer<typeof scoreJdInputSchema>;
 
 // ---------------------------------------------------------------------------
-// Local type extension — drops once lua-cli ships the widened types from PR
-// #533. Runtime works either way (body forwards verbatim).
-// ---------------------------------------------------------------------------
-
-type AiGenerateArgs = Parameters<typeof AI.generate>[0] & {
-  structuredOutput?: { schema: Record<string, unknown> };
-};
-
-type AiGenerateResponse = Awaited<ReturnType<typeof AI.generate>> & {
-  output?: unknown;
-  text?: string;
-};
-
-// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -206,59 +178,6 @@ function verdictForScore(score: number): { verdict: string; recommended_cta: str
   if (score < 40) return { verdict: 'needs_human',            recommended_cta: 'tech_safari' };
   if (score < 65) return { verdict: 'human_led_agent_assist', recommended_cta: 'tech_safari' };
   return                  { verdict: 'strong_agent',           recommended_cta: 'lua' };
-}
-
-// Extract the scoring JSON from a possibly-fenced or noisy LLM text response.
-// Robust against:
-//   - bare JSON ("{...}")
-//   - markdown-fenced JSON ("```json\n{...}\n```")
-//   - prose-wrapped JSON ("Here is the verdict: {...}. Hope this helps.")
-//   - multiple { } blocks in the response (picks the one with role_title)
-function extractJsonObject(text: string): Record<string, unknown> | null {
-  const stripped = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
-
-  const tryParse = (s: string): Record<string, unknown> | null => {
-    try {
-      const obj = JSON.parse(s);
-      return obj && typeof obj === 'object' && !Array.isArray(obj)
-        ? (obj as Record<string, unknown>)
-        : null;
-    } catch { return null; }
-  };
-
-  const hasScoringShape = (o: Record<string, unknown> | null): boolean =>
-    !!o && typeof o.role_title === 'string' && Array.isArray(o.dimensions);
-
-  // Best case — model returned pure JSON.
-  const whole = tryParse(stripped);
-  if (hasScoringShape(whole)) return whole;
-
-  // Scan for every { ... } candidate with balanced braces. Pick the first one
-  // that parses AND has the scoring shape; fall back to first that parses at all.
-  let firstParseable: Record<string, unknown> | null = null;
-  let start = stripped.indexOf('{');
-  while (start !== -1) {
-    let depth = 0, inString = false, escape = false;
-    for (let i = start; i < stripped.length; i++) {
-      const c = stripped[i];
-      if (escape) { escape = false; continue; }
-      if (c === '\\') { escape = true; continue; }
-      if (c === '"') { inString = !inString; continue; }
-      if (inString) continue;
-      if (c === '{') depth++;
-      else if (c === '}') {
-        depth--;
-        if (depth === 0) {
-          const candidate = tryParse(stripped.slice(start, i + 1));
-          if (hasScoringShape(candidate)) return candidate;
-          if (candidate && !firstParseable) firstParseable = candidate;
-          break;
-        }
-      }
-    }
-    start = stripped.indexOf('{', start + 1);
-  }
-  return firstParseable;
 }
 
 // ---------------------------------------------------------------------------
@@ -285,32 +204,26 @@ export class scoreJdTool implements LuaTool<typeof scoreJdInputSchema> {
       ? `${jd_text}\n\nAdditional context:\n${contextLines.join('\n')}`
       : jd_text;
 
-    let response: AiGenerateResponse;
+    let response: { output?: unknown; finishReason?: string };
     try {
       response = (await AI.generate({
         system: SCORING_SYSTEM,
         messages: [{ role: 'user', content: userContent }],
         temperature: 0.2,
         structuredOutput: { schema: SCORE_ROLE_SCHEMA },
-      } as AiGenerateArgs)) as AiGenerateResponse;
+        // Two narrow casts drop on the next lua-cli release that widens
+        // AiGenerateInput with structuredOutput and AiGenerateOutput with output.
+      } as any)) as { output?: unknown; finishReason?: string };
     } catch (err) {
       return { error: 'generation_failed', detail: (err as Error)?.message ?? String(err) };
     }
 
-    // AI.generate returns AiGenerateOutput directly (not a wrapper).
-    // Dual-path: prefer platform's structured output, fall back to parsing JSON
-    // from text so the skill works before/after PR #533 deploy.
-    let raw = (response.output as Record<string, unknown> | undefined);
-    if (!raw || typeof raw !== 'object') {
-      const text = response.text ?? '';
-      const fromText = text ? extractJsonObject(text) : null;
-      if (fromText) raw = fromText;
-    }
+    const raw = response.output as Record<string, unknown> | undefined;
     if (!raw || typeof raw !== 'object') {
       return {
         error: 'parse_failed',
-        detail: 'No structured output and no parseable JSON in text response',
-        sample: (response.text ?? '').slice(0, 200),
+        detail: 'AI.generate returned no structured output',
+        finishReason: response.finishReason,
       };
     }
 

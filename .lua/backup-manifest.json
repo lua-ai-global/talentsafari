@@ -1,6 +1,6 @@
 {
-  "lastHash": "3c6bcee9d4e81bc2eba50845ffa7d6e4ee4030c0e568f4cc39b9e03112e37d12",
-  "lastPushedAt": "2026-05-27T13:30:14.111Z",
+  "lastHash": "1620d698897a8224c7f346988a73dbbc2846932b4f999bb1db40360fe52bcadb",
+  "lastPushedAt": "2026-05-27T14:45:30.009Z",
   "files": [
     {
       "relativePath": "api/_lib/origin.js",
@@ -40,7 +40,7 @@
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "b29762d62d9719e7"
+      "hash": "694560dc53335995"
     },
     {
       "relativePath": "netlify.toml",
@@ -108,7 +108,7 @@
     },
     {
       "relativePath": "src/skills/score-role.skill.ts",
-      "hash": "eee38f0533f32ca7"
+      "hash": "336d837f8454e942"
     },
     {
       "relativePath": "src/skills/scrape-jd.skill.ts",
