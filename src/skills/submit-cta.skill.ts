@@ -1,4 +1,4 @@
-import { LuaSkill, LuaTool, env } from 'lua-cli';
+import { LuaSkill, LuaTool, Data, env } from 'lua-cli';
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
@@ -52,7 +52,7 @@ async function postCtaToSlack(webhookUrl: string, input: SubmitCtaInput): Promis
       : '';
 
   const jdSnippet = jdText
-    ? jdText.length > 600 ? jdText.slice(0, 600) + '…' : jdText
+    ? jdText.length > 2800 ? jdText.slice(0, 2800) + '…' : jdText
     : null;
 
   const text = [
@@ -135,6 +135,27 @@ export class submitCtaTool implements LuaTool<typeof submitCtaInputSchema> {
     const slackUrl = env('SLACK_LEADS_WEBHOOK_URL') ?? '';
     const resendKey = env('RESEND_API_KEY') ?? '';
     const fromEmail = env('FROM_EMAIL') ?? '';
+
+    // Store CTA submission to Data
+    try {
+      await Data.create(
+        'cta-submissions',
+        {
+          path,
+          name,
+          email,
+          company,
+          extra_field: extraField ?? '',
+          role_title: scoringResult.role_title,
+          score: scoringResult.score,
+          verdict_line: scoringResult.verdict_line,
+          recommended_cta: scoringResult.recommended_cta,
+          jd_text: jdText ?? '',
+          timestamp: new Date().toISOString(),
+        },
+        `${scoringResult.role_title} ${path} ${company} ${jdText ?? ''}`.slice(0, 2000),
+      );
+    } catch { /* non-fatal */ }
 
     await postCtaToSlack(slackUrl, input);
     await sendConfirmationEmail(resendKey, fromEmail, input);

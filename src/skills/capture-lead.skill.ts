@@ -64,8 +64,8 @@ async function postToSlack(
   const roleSlug = slugify(role_title);
 
   const jdSnippet = jdText
-    ? jdText.length > 600
-      ? jdText.slice(0, 600) + '…'
+    ? jdText.length > 2800
+      ? jdText.slice(0, 2800) + '…'
       : jdText
     : null;
 
@@ -236,9 +236,9 @@ export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
 
     // Always store to Data regardless of flags
     try {
-      await Data.create({
-        name: `eval_${Date.now()}`,
-        metadata: {
+      await Data.create(
+        'evaluations',
+        {
           email,
           name: name ?? '',
           title: title ?? '',
@@ -250,7 +250,8 @@ export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
           jd_text: jdText ?? '',
           timestamp: new Date().toISOString(),
         },
-      });
+        `${scoringResult.role_title} ${scoringResult.verdict} ${company} ${jdText ?? ''}`.slice(0, 2000),
+      );
     } catch { /* non-fatal */ }
 
     // Flag short-circuit — no Slack, no email
