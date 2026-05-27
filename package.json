@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@pinecone-database/pinecone": "^6.1.2",
+    "@vercel/kv": "^3.0.0",
     "@types/inquirer": "^9.0.9",
     "@types/js-yaml": "^4.0.9",
     "axios": "^1.6.0",

@@ -2,6 +2,7 @@
 // Includes SSRF protection: blocks loopback, private IP ranges, and AWS metadata.
 
 import { isOriginAllowed } from './_lib/origin.js';
+import { checkRateLimit, pickStricter, send429 } from './_lib/rate-limit.js';
 
 function isSafeUrl(url) {
   let parsed;
@@ -27,6 +28,13 @@ export default async function handler(req, res) {
   if (!isOriginAllowed(req.headers.origin, req.headers.host)) {
     return res.status(403).json({ error: 'Origin not allowed' });
   }
+
+  const [rlMin, rlHr] = await Promise.all([
+    checkRateLimit(req, { route: 'fetch-jd', limit: 5,  windowSeconds: 60 }),
+    checkRateLimit(req, { route: 'fetch-jd', limit: 30, windowSeconds: 3600 }),
+  ]);
+  const rl = pickStricter(rlMin, rlHr);
+  if (!rl.allowed) return send429(res, { route: 'fetch-jd', result: rl });
 
   const body = typeof req.body === 'string' ? safeParse(req.body) : req.body;
   if (!body) return res.status(400).json({ error: 'Invalid JSON body' });

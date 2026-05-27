@@ -4,6 +4,7 @@
 // Keeps LUA_API_KEY in process.env, never on the wire to the browser.
 
 import { isOriginAllowed } from './_lib/origin.js';
+import { checkRateLimit, pickStricter, send429 } from './_lib/rate-limit.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Method not allowed');
@@ -11,6 +12,13 @@ export default async function handler(req, res) {
   if (!isOriginAllowed(req.headers.origin, req.headers.host)) {
     return res.status(403).json({ error: 'Origin not allowed' });
   }
+
+  const [rlMin, rlHr] = await Promise.all([
+    checkRateLimit(req, { route: 'lua-chat', limit: 10, windowSeconds: 60 }),
+    checkRateLimit(req, { route: 'lua-chat', limit: 60, windowSeconds: 3600 }),
+  ]);
+  const rl = pickStricter(rlMin, rlHr);
+  if (!rl.allowed) return send429(res, { route: 'lua-chat', result: rl });
 
   const agentId = process.env.LUA_AGENT_ID;
   const apiKey  = process.env.LUA_API_KEY;
