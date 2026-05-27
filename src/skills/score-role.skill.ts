@@ -190,7 +190,8 @@ type AiGenerateArgs = Parameters<typeof AI.generate>[0] & {
 };
 
 type AiGenerateResponse = Awaited<ReturnType<typeof AI.generate>> & {
-  data?: { output?: unknown; text?: string };
+  output?: unknown;
+  text?: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -269,23 +270,24 @@ export class scoreJdTool implements LuaTool<typeof scoreJdInputSchema> {
         structuredOutput: { schema: SCORE_ROLE_SCHEMA },
       } as AiGenerateArgs)) as AiGenerateResponse;
     } catch (err) {
-      return { error: 'generation_failed', detail: (err as Error)?.message };
+      return { error: 'generation_failed', detail: (err as Error)?.message ?? String(err) };
     }
 
-    if (!response.success) {
-      return { error: 'generation_failed', detail: response.error?.message ?? 'Unknown error' };
-    }
-
+    // AI.generate returns AiGenerateOutput directly (not a wrapper).
     // Dual-path: prefer platform's structured output, fall back to parsing JSON
-    // from text. Lets us ship before PR #533 (structuredOutput support) lands.
-    let raw = response.data?.output as Record<string, unknown> | undefined;
+    // from text so the skill works before/after PR #533 deploy.
+    let raw = (response.output as Record<string, unknown> | undefined);
     if (!raw || typeof raw !== 'object') {
-      const text = response.data?.text ?? '';
+      const text = response.text ?? '';
       const fromText = text ? extractJsonObject(text) : null;
       if (fromText) raw = fromText;
     }
     if (!raw || typeof raw !== 'object') {
-      return { error: 'parse_failed', detail: 'No structured output and no parseable JSON in text response' };
+      return {
+        error: 'parse_failed',
+        detail: 'No structured output and no parseable JSON in text response',
+        sample: (response.text ?? '').slice(0, 200),
+      };
     }
 
     const dims = raw.dimensions as Array<{ score: number; weight: number }> | undefined;

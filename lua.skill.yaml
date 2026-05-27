@@ -4,28 +4,28 @@ agent:
 skills:
   - name: capture-lead
     skillId: 86c230de-eb61-4b97-8111-70602454c2bc
-    version: 1.0.20
+    version: 1.0.21
   - name: submit-cta
     skillId: 278ee16a-780a-464f-8022-c04a88b9e1fc
-    version: 1.0.18
+    version: 1.0.19
   - name: ada-chat
     skillId: c489ffca-735c-46fc-abfc-68644f269f18
-    version: 1.0.15
+    version: 1.0.16
   - name: brief-wizard
     skillId: 624cdb64-6a55-4745-8469-c6770d10c490
-    version: 1.0.15
+    version: 1.0.16
   - name: scrape-jd
     skillId: 3ed62a95-73fe-41d8-a4d9-910221226965
-    version: 1.0.16
+    version: 1.0.17
   - name: score-role
     skillId: bf212f12-d2fd-417a-bb30-a9fa71ad1afc
-    version: 1.0.21
+    version: 1.0.22
 webhooks: []
 jobs: []
 preprocessors: []
 postprocessors: []
 mcpServers: []
 backup:
-  activeVersion: 30
-  lastHash: 1ff02e0e394aaa7587684fcb745bb28bc739291659ec8ad346032c8861eca62a
-  lastPushedAt: '2026-05-27T13:22:15.951Z'
+  activeVersion: 31
+  lastHash: 1979afbffa22e7505957a44babfdea4417778dbbc3a5f9b597015341d334db90
+  lastPushedAt: '2026-05-27T13:25:42.519Z'
