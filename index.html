@@ -1167,11 +1167,34 @@ async function scoreViaAda(jdText) {
   return null;
 }
 
+// Score a JD text via the score-jd Netlify function.
+// Uses Lua's developer AI endpoint (confirmed working) with JSON text output.
+// Keeps LUA_API_KEY server-side. score_jd skill's AI.generate() is broken
+// on the platform; this path bypasses it.
+async function scoreViaFunction(jdText) {
+  const res = await fetch('/.netlify/functions/score-jd', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jdText,
+      volume:   state.volume,
+      taskFreq: state.taskFreq,
+      stakes:   state.stakes,
+      exposure: state.exposure,
+    }),
+  });
+  console.log('[score-jd] status:', res.status);
+  if (!res.ok) { console.error('[score-jd] non-OK', res.status, await res.text()); return null; }
+  const data = await res.json();
+  console.log('[score-jd] score:', data?.result?.score, 'verdict:', data?.result?.verdict);
+  return data?.result || null;
+}
+
 async function callScoreApi() {
   const isUrl = /^https?:\/\//i.test(state.jdText.trim());
 
   if (isUrl) {
-    // Fetch job posting HTML server-side (CORS proxy, no AI) → extract text
+    // Fetch job posting HTML server-side (CORS proxy, no AI) → extract text → score
     try {
       console.log('[fetch-jd] fetching URL...');
       const fetchRes = await fetch('/.netlify/functions/fetch-jd', {
@@ -1184,13 +1207,13 @@ async function callScoreApi() {
       const { text: pageText } = await fetchRes.json();
       if (!pageText) { console.error('[fetch-jd] empty response'); return; }
       console.log('[fetch-jd] got', pageText.length, 'chars');
-      state.result = await scoreViaAda(pageText);
+      state.result = await scoreViaFunction(pageText);
     } catch(e) { console.error('[fetch-jd] error:', e); }
   } else {
-    // Text JD — send directly to Ada
+    // Text JD — score via Netlify function
     try {
-      state.result = await scoreViaAda(state.jdText.trim());
-    } catch(e) { console.error('[Ada] error:', e); }
+      state.result = await scoreViaFunction(state.jdText.trim());
+    } catch(e) { console.error('[score-jd] error:', e); }
   }
 }
 

@@ -1,6 +1,6 @@
-// Direct JD scoring — bypasses Ada's chat routing, calls Lua developer AI
-// endpoint in one LLM call. Avoids the Ada→score_jd 2-call chain that causes
-// 504 timeouts on Netlify's 26s function limit.
+// JD scoring via Lua developer AI endpoint.
+// Proven working: /developer/ai/{id}/generate supports text generation.
+// Tools + tool_choice are silently dropped by the platform — use JSON text output instead.
 
 const SCORING_SYSTEM = `You are an honest expert evaluator scoring job descriptions for automation fit.
 Score each role across 7 dimensions (1–10, where 1 = strongly human-suited, 10 = strongly agent-suited).
@@ -52,81 +52,22 @@ ADJACENT AGENTS: always include 2–3 distinct Lua agent suggestions for OTHER r
 Base on company type, industry, and function visible in the JD.
 Format: icon (single emoji), name ("Lua [Role]"), value_prop (one sentence, specific to this context).
 
-Call score_role with your complete structured assessment.`;
-
-const SCORE_ROLE_TOOL = {
-  name: 'score_role',
-  description: 'Return the complete structured scoring result for the job description.',
-  input_schema: {
-    type: 'object',
-    required: [
-      'role_title', 'score', 'verdict', 'verdict_line', 'rationale',
-      'dimensions', 'human_candidate', 'agent_candidate',
-      'recommended_cta', 'flags', 'adjacent_agents',
-    ],
-    properties: {
-      role_title: { type: 'string' },
-      score: { type: 'number', minimum: 10, maximum: 100 },
-      verdict: { type: 'string', enum: ['needs_human', 'human_led_agent_assist', 'strong_agent'] },
-      verdict_line: { type: 'string' },
-      rationale: { type: 'string' },
-      dimensions: {
-        type: 'array', minItems: 7, maxItems: 7,
-        items: {
-          type: 'object',
-          required: ['key', 'label', 'score', 'weight', 'rationale'],
-          properties: {
-            key: { type: 'string' }, label: { type: 'string' },
-            score: { type: 'number', minimum: 1, maximum: 10 },
-            weight: { type: 'number' }, rationale: { type: 'string' },
-          },
-        },
-      },
-      human_candidate: {
-        type: 'object',
-        required: ['salary_range', 'time_to_productive', 'scale_ceiling', 'coverage', 'great_at', 'hard_at'],
-        properties: {
-          salary_range: { type: 'string' }, time_to_productive: { type: 'string' },
-          scale_ceiling: { type: 'string' }, coverage: { type: 'string' },
-          great_at: { type: 'array', items: { type: 'string' }, maxItems: 3 },
-          hard_at:  { type: 'array', items: { type: 'string' }, maxItems: 3 },
-        },
-      },
-      agent_candidate: {
-        type: 'object',
-        required: ['name', 'role_title', 'avatar_seed', 'monthly_cost', 'start_date', 'throughput', 'coverage', 'great_at', 'cant_do'],
-        properties: {
-          name: { type: 'string' }, role_title: { type: 'string' },
-          avatar_seed: { type: 'string' }, monthly_cost: { type: 'string' },
-          start_date: { type: 'string' }, throughput: { type: 'string' },
-          coverage: { type: 'string' },
-          great_at: { type: 'array', items: { type: 'string' }, maxItems: 3 },
-          cant_do:  { type: 'array', items: { type: 'string' }, maxItems: 3 },
-        },
-      },
-      recommended_cta: { type: 'string', enum: ['lua', 'tech_safari'] },
-      flags: {
-        type: 'object',
-        required: ['short_jd', 'non_english', 'suspected_fake'],
-        properties: {
-          short_jd: { type: 'boolean' }, non_english: { type: 'boolean' },
-          suspected_fake: { type: 'boolean' },
-        },
-      },
-      adjacent_agents: {
-        type: 'array', minItems: 2, maxItems: 3,
-        items: {
-          type: 'object',
-          required: ['icon', 'name', 'value_prop'],
-          properties: {
-            icon: { type: 'string' }, name: { type: 'string' },
-            value_prop: { type: 'string' },
-          },
-        },
-      },
-    },
-  },
-};
+OUTPUT FORMAT — CRITICAL:
+Return ONLY a valid JSON object. No markdown fences, no explanation, nothing before or after the JSON.
+The object must have exactly these fields:
+{
+  "role_title": string,
+  "score": number (10–100),
+  "verdict": "needs_human" | "human_led_agent_assist" | "strong_agent",
+  "verdict_line": string (max 60 chars),
+  "rationale": string (max 240 chars),
+  "dimensions": [exactly 7: {"key":str,"label":str,"score":1-10,"weight":num,"rationale":str}],
+  "human_candidate": {"salary_range":str,"time_to_productive":str,"scale_ceiling":str,"coverage":str,"great_at":[3 strings],"hard_at":[3 strings]},
+  "agent_candidate": {"name":"Lua","role_title":str,"avatar_seed":str,"monthly_cost":str,"start_date":"Today","throughput":str,"coverage":str,"great_at":[3 strings],"cant_do":[3 strings]},
+  "recommended_cta": "lua" | "tech_safari",
+  "flags": {"short_jd":bool,"non_english":bool,"suspected_fake":bool},
+  "adjacent_agents": [2–3: {"icon":emoji,"name":str,"value_prop":str}]
+}`;
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -168,36 +109,44 @@ exports.handler = async (event) => {
           system: SCORING_SYSTEM,
           messages: [{ role: 'user', content: userContent }],
           temperature: 0.2,
-          tools: [SCORE_ROLE_TOOL],
-          tool_choice: { type: 'tool', name: 'score_role' },
         }),
       },
     );
 
     const data = await response.json();
-    console.log('[score-jd] status:', response.status, '| success:', data?.success);
+    console.log('[score-jd] status:', response.status);
 
     if (!response.ok) {
       return { statusCode: response.status, body: JSON.stringify({ error: data }) };
     }
 
-    // Lua developer endpoint returns { success, data: { content: [...] } }
-    // content[0] should be type=tool_use, name=score_role, input={...scoring result}
-    const content = data?.data?.content || data?.content || [];
-    const toolUse = content.find(c => c.type === 'tool_use' && c.name === 'score_role');
+    // Developer endpoint returns { text, finishReason, usage }
+    const rawText = data?.text || data?.data?.text || '';
+    console.log('[score-jd] text preview:', rawText.slice(0, 120));
 
-    if (!toolUse?.input) {
-      console.error('[score-jd] unexpected response:', JSON.stringify(data).slice(0, 400));
-      return { statusCode: 500, body: JSON.stringify({ error: 'No scoring result', raw: data }) };
+    // Extract JSON from the text — model may wrap in ```json fences
+    const jsonMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)```/) || rawText.match(/(\{[\s\S]*\})/);
+    if (!jsonMatch) {
+      console.error('[score-jd] no JSON in response:', rawText.slice(0, 300));
+      return { statusCode: 500, body: JSON.stringify({ error: 'No JSON in response', raw: rawText.slice(0, 300) }) };
     }
 
-    const result = toolUse.input;
-
-    // Validate + self-correct weighted sum
-    if (Array.isArray(result.dimensions) && result.dimensions.length === 7) {
-      const computed = Math.round(result.dimensions.reduce((s, d) => s + d.score * d.weight, 0));
-      if (Math.abs(computed - result.score) > 1) result.score = computed;
+    let result;
+    try {
+      result = JSON.parse(jsonMatch[1].trim());
+    } catch (parseErr) {
+      console.error('[score-jd] JSON parse error:', parseErr.message);
+      return { statusCode: 500, body: JSON.stringify({ error: 'JSON parse failed', raw: jsonMatch[1].slice(0, 300) }) };
     }
+
+    if (!result.role_title || !Array.isArray(result.dimensions) || result.dimensions.length !== 7) {
+      console.error('[score-jd] invalid result shape:', JSON.stringify(result).slice(0, 300));
+      return { statusCode: 500, body: JSON.stringify({ error: 'Invalid result shape', raw: result }) };
+    }
+
+    // Self-correct weighted sum
+    const computed = Math.round(result.dimensions.reduce((s, d) => s + d.score * d.weight, 0));
+    if (Math.abs(computed - result.score) > 1) result.score = computed;
 
     return {
       statusCode: 200,
