@@ -1,6 +1,6 @@
 {
-  "lastHash": "5f0162aa7619604e054197f68926fbfb037ac499bcba7d306d578d40883686a3",
-  "lastPushedAt": "2026-05-27T06:48:52.510Z",
+  "lastHash": "09964c6a3883380cd9537b5083f8e4af9e4c14dd4b13bc0fdfc7ee1cf754310e",
+  "lastPushedAt": "2026-05-27T09:56:44.775Z",
   "files": [
     {
       "relativePath": "build.md",
@@ -12,11 +12,11 @@
     },
     {
       "relativePath": "index.html",
-      "hash": "9669da33e4957dae"
+      "hash": "350d93fbfcbd7194"
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "63c733a852176015"
+      "hash": "42d776f4778cd47f"
     },
     {
       "relativePath": "netlify.toml",
