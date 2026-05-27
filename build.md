@@ -1,8 +1,44 @@
-# Human or Agent? — Full Build Spec
-### Frontend Replica + Lua Agent (Ada)
-> **Launch target:** Mon 25 May 2026  
-> **Stack:** Next.js 14 · Tailwind CSS · Claude API (structured output) · Lua agent platform · Slack webhook · Resend email  
-> **Reference site:** https://human-or-agent.vercel.app/
+# Human or Agent? — Build Spec (Updated to match shipped architecture)
+### Static HTML Frontend + Netlify Functions + Lua Agent (Ada)
+> **Launched:** 25 May 2026  
+> **Stack (shipped):** Static `index.html` · Netlify Functions (API proxy) · Lua agent platform · Claude Sonnet 4.6 (via AI.generate in score_jd tool) · Slack webhook · Resend email  
+> **Original spec stack:** Next.js 14 + Vercel — not built; static HTML + Netlify chosen for speed of launch
+
+---
+
+## Architecture (as shipped)
+
+```
+Browser (index.html)
+  └─► /.netlify/functions/lua-chat      ← proxies all Lua agent API calls
+  └─► /.netlify/functions/slack-notify  ← proxies frontend Slack pings
+
+Netlify Functions (server-side, secrets never reach browser)
+  └─► Lua agent API (Ada)
+        └─► score_jd tool → AI.generate({ temperature: 0.2, tool_choice: forced })
+        └─► capture_lead tool → Slack Block Kit + Resend email
+        └─► submit_cta tool → Slack + Resend confirmation
+
+Environment variables (set in Netlify dashboard):
+  LUA_AGENT_ID          — Lua agent ID
+  LUA_API_KEY           — Lua API key (rotate from git history exposure)
+  SLACK_LEADS_WEBHOOK_URL — Slack incoming webhook (recreate from git history exposure)
+  RESEND_API_KEY        — Resend transactional email key
+  FROM_EMAIL            — Sender address for Resend
+```
+
+## URL routing
+- `/`        → hero/JD input
+- `/score`   → analysis screen (history.pushState)
+- `/results` → results screen (history.pushState, tracked for LinkedIn conversion)
+All routes served by `index.html` via Netlify redirects.
+
+## What was NOT built from original spec
+- PDF generation (called out in spec — not implemented)
+- Email gate before showing monthly_cost (spec called this out — tool returns value, frontend hides it behind lead form instead)
+- Next.js / Vercel stack
+
+---
 
 ---
 
