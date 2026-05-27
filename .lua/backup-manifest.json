@@ -1,6 +1,6 @@
 {
-  "lastHash": "09964c6a3883380cd9537b5083f8e4af9e4c14dd4b13bc0fdfc7ee1cf754310e",
-  "lastPushedAt": "2026-05-27T09:56:44.775Z",
+  "lastHash": "928d32288a94702b215ee42823a9f6103224f4173656954d11c3908c6beba90d",
+  "lastPushedAt": "2026-05-27T11:11:19.454Z",
   "files": [
     {
       "relativePath": "build.md",
@@ -12,19 +12,27 @@
     },
     {
       "relativePath": "index.html",
-      "hash": "350d93fbfcbd7194"
+      "hash": "4cc39f6858daf8e3"
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "42d776f4778cd47f"
+      "hash": "40ed68207d9729de"
     },
     {
       "relativePath": "netlify.toml",
-      "hash": "27819deb309a1bbb"
+      "hash": "070bab15623f07fe"
+    },
+    {
+      "relativePath": "netlify/functions/fetch-jd.js",
+      "hash": "b90e437bca8a2761"
     },
     {
       "relativePath": "netlify/functions/lua-chat.js",
       "hash": "f1c77fc6eead5925"
+    },
+    {
+      "relativePath": "netlify/functions/score-jd.js",
+      "hash": "e546487e7ebb21bc"
     },
     {
       "relativePath": "netlify/functions/slack-notify.js",
@@ -48,7 +56,7 @@
     },
     {
       "relativePath": "src/index.ts",
-      "hash": "df0b8a1226a03c80"
+      "hash": "0e6b83d1ea296fb9"
     },
     {
       "relativePath": "src/skills/ada-chat.skill.ts",
@@ -64,7 +72,7 @@
     },
     {
       "relativePath": "src/skills/score-role.skill.ts",
-      "hash": "d5544e9a9d7374eb"
+      "hash": "eff7616e3a233e20"
     },
     {
       "relativePath": "src/skills/scrape-jd.skill.ts",

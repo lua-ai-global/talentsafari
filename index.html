@@ -1064,7 +1064,14 @@ const SLACK_NOTIFY_ENDPOINT = '/.netlify/functions/slack-notify';
 // Ada's score_jd skill runs server-side with proper AI.generate + tool_choice.
 // The /developer/ai/generate endpoint silently drops tools/tool_choice and cannot
 // be used for structured scoring. Direct browser call also avoids Netlify's 26s limit.
-const ADA_CHAT_URL = `https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`;
+// Generate a fresh Ada session URL — unique channel per evaluation prevents
+// contamination from prior failed tool calls accumulating in Ada's history.
+function adaSessionUrl(prefix = 'eval') {
+  const id = typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+  return `https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=${prefix}-${id}`;
+}
 
 async function notifyLeadSubmit(name, title, company, email) {
   try {
@@ -1101,7 +1108,7 @@ async function scoreViaAda(jdText) {
     ? `${jdText}\n\nContext:\n${contextLines.join('\n')}`
     : jdText;
 
-  const res = await fetch(ADA_CHAT_URL, {
+  const res = await fetch(adaSessionUrl('eval'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${LUA_API_KEY}` },
     body: JSON.stringify({
@@ -1192,6 +1199,7 @@ const enrichHistory = [];  // [{role,content}]
 
 function startEnrichChat() {
   enrichHistory.length = 0;
+  state.enrichUrl = adaSessionUrl('enrich');
   document.getElementById('enrichMsgs').innerHTML = '';
   document.getElementById('enrichInput').value = '';
 
@@ -1233,9 +1241,9 @@ async function callEnrichApi(isFirst) {
   const typing = appendEnrichMsg('ada', 'Ada is thinking…', true);
 
   try {
-    const res = await fetch(ADA_CHAT_URL, {
+    const res = await fetch(state.enrichUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${LUA_API_KEY}` },
       body: JSON.stringify({ messages: enrichHistory.map(m => ({ type: 'text', text: `${m.role === 'user' ? '' : 'Ada: '}${m.content}` })), navigate: false }),
     });
 
@@ -1303,9 +1311,9 @@ async function submitLead() {
   try {
     const scoringJson = JSON.stringify(state.result || {});
     const jdJson = JSON.stringify((state.jdText || '').slice(0, 3000));
-    await fetch(ADA_CHAT_URL, {
+    await fetch(adaSessionUrl('lead'), {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json', Authorization:`Bearer ${LUA_API_KEY}`},
       body: JSON.stringify({
         messages:[{type:'text',text:`Call the capture_lead tool now with these exact values:\nemail: "${email}"\nname: "${name}"\ntitle: "${title}"\ncompany: "${company}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}`}],
         navigate:false
@@ -1336,8 +1344,8 @@ function submitCta(path) {
   const { leadName: name, leadEmail: email, leadCompany: company, leadTitle: title } = state;
   const scoringJson = JSON.stringify(state.result || {});
   const jdJson = JSON.stringify((state.jdText || '').slice(0, 3000));
-  fetch(ADA_CHAT_URL, {
-    method:'POST', headers:{'Content-Type':'application/json'},
+  fetch(adaSessionUrl('cta'), {
+    method:'POST', headers:{'Content-Type':'application/json', Authorization:`Bearer ${LUA_API_KEY}`},
     body: JSON.stringify({ messages:[{type:'text',text:`Call the submit_cta tool now with these exact values:\npath: "${path}"\nname: "${name}"\ntitle: "${title}"\nemail: "${email}"\ncompany: "${company}"\nextraField: "${extraField}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}`}], navigate:false }),
   }).catch(() => {});
 }
