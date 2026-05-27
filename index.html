@@ -1233,7 +1233,7 @@ async function callEnrichApi(isFirst) {
   const typing = appendEnrichMsg('ada', 'Ada is thinking…', true);
 
   try {
-    const res = await fetch(LUA_CHAT_ENDPOINT, {
+    const res = await fetch(ADA_CHAT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: enrichHistory.map(m => ({ type: 'text', text: `${m.role === 'user' ? '' : 'Ada: '}${m.content}` })), navigate: false }),
@@ -1303,7 +1303,7 @@ async function submitLead() {
   try {
     const scoringJson = JSON.stringify(state.result || {});
     const jdJson = JSON.stringify((state.jdText || '').slice(0, 3000));
-    await fetch(LUA_CHAT_ENDPOINT, {
+    await fetch(ADA_CHAT_URL, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
@@ -1336,7 +1336,7 @@ function submitCta(path) {
   const { leadName: name, leadEmail: email, leadCompany: company, leadTitle: title } = state;
   const scoringJson = JSON.stringify(state.result || {});
   const jdJson = JSON.stringify((state.jdText || '').slice(0, 3000));
-  fetch(LUA_CHAT_ENDPOINT, {
+  fetch(ADA_CHAT_URL, {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ messages:[{type:'text',text:`Call the submit_cta tool now with these exact values:\npath: "${path}"\nname: "${name}"\ntitle: "${title}"\nemail: "${email}"\ncompany: "${company}"\nextraField: "${extraField}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}`}], navigate:false }),
   }).catch(() => {});
