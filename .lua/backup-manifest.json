@@ -1,26 +1,26 @@
 {
-  "lastHash": "926cf181a9867ae681ca30e756c0ba75376f6607fb4ebc7450762bfbd9e63125",
-  "lastPushedAt": "2026-05-27T12:15:39.690Z",
+  "lastHash": "4d147665b4e93cf156ec2fce2e6200ff730a223877afe420940d24e6b4048639",
+  "lastPushedAt": "2026-05-27T13:14:41.958Z",
   "files": [
     {
       "relativePath": "api/_lib/origin.js",
       "hash": "abc2037d9a2ad20e"
     },
     {
+      "relativePath": "api/_lib/rate-limit.js",
+      "hash": "086e410e25685975"
+    },
+    {
       "relativePath": "api/fetch-jd.js",
-      "hash": "5d722ab2beef2bc3"
+      "hash": "1c548362212ba216"
     },
     {
       "relativePath": "api/lua-chat.js",
-      "hash": "901ddc625a8acbde"
-    },
-    {
-      "relativePath": "api/score-jd.js",
-      "hash": "1d49403cc7e38192"
+      "hash": "9c63e2cbfda61ecb"
     },
     {
       "relativePath": "api/slack-notify.js",
-      "hash": "c20203d16dd987c8"
+      "hash": "77352a502849a493"
     },
     {
       "relativePath": "build.md",
@@ -32,7 +32,7 @@
     },
     {
       "relativePath": "index.html",
-      "hash": "f7bdbd88bd04adb0"
+      "hash": "786cc5d09c14f7ba"
     },
     {
       "relativePath": "LAUNCH-CHECKLIST.md",
@@ -40,7 +40,7 @@
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "d373b82fc5eaa427"
+      "hash": "29d08a7b75c36b3a"
     },
     {
       "relativePath": "netlify.toml",
@@ -64,7 +64,11 @@
     },
     {
       "relativePath": "package.json",
-      "hash": "110536777933a2d1"
+      "hash": "e5ac7f8205350540"
+    },
+    {
+      "relativePath": "PARALLEL-SESSIONS.md",
+      "hash": "2a30f863a1c630cf"
     },
     {
       "relativePath": "public/talentsafari_logo.jpg",
@@ -88,7 +92,7 @@
     },
     {
       "relativePath": "src/index.ts",
-      "hash": "d37db09172469cf8"
+      "hash": "92d10e5a06558867"
     },
     {
       "relativePath": "src/skills/ada-chat.skill.ts",
@@ -104,7 +108,7 @@
     },
     {
       "relativePath": "src/skills/score-role.skill.ts",
-      "hash": "eff7616e3a233e20"
+      "hash": "22f6690484837cf8"
     },
     {
       "relativePath": "src/skills/scrape-jd.skill.ts",
@@ -136,7 +140,7 @@
     },
     {
       "relativePath": "vercel.json",
-      "hash": "17076faabaa8dde5"
+      "hash": "e94acf1768ea7fe9"
     }
   ]
 }

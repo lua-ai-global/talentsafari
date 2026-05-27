@@ -1059,7 +1059,6 @@ function stopFactsTicker() {
 // ─── API call ─────────────────────────────────────────────────────────────────
 // All Lua/Slack calls route through Vercel serverless functions in /api so the
 // LUA_API_KEY and SLACK_LEADS_WEBHOOK_URL stay server-side (process.env on Vercel).
-const SCORE_JD_ENDPOINT     = '/api/score-jd';
 const FETCH_JD_ENDPOINT     = '/api/fetch-jd';
 const SLACK_NOTIFY_ENDPOINT = '/api/slack-notify';
 
@@ -1083,26 +1082,49 @@ async function notifyLeadSubmit(name, title, company, email) {
   } catch {}
 }
 
-// Score a JD text via the score-jd Netlify function.
-// score-jd.js calls Ada's chat API server-side — API key stays secret.
-async function scoreViaFunction(jdText) {
-  const res = await fetch(SCORE_JD_ENDPOINT, {
+// Score a JD by sending it to Ada's chat endpoint and extracting the
+// score_jd tool result from her response. Ada's score-role skill runs
+// the structured-output AI.generate call internally.
+async function scoreViaAda(jdText) {
+  const url = adaSessionUrl('eval');
+  const prompt =
+    `Score this job description: ${jdText}\n\n` +
+    `Context: Task structure is ${state.volume}, ` +
+    `task frequency is ${state.taskFreq} (low/medium/high volume per day), ` +
+    `decision stakes are ${state.stakes}, ` +
+    `exposure type is ${state.exposure}.`;
+
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jdText,
-      volume:   state.volume,
-      taskFreq: state.taskFreq,
-      stakes:   state.stakes,
-      exposure: state.exposure,
-    }),
+    body: JSON.stringify({ messages: [{ type: 'text', text: prompt }], navigate: false }),
   });
-  console.log('[score-jd] status:', res.status);
-  if (!res.ok) { console.error('[score-jd] non-OK', res.status, await res.text()); return null; }
+  console.log('[ada-score] status:', res.status);
+  if (!res.ok) { console.error('[ada-score] non-OK', res.status, await res.text()); return null; }
   const data = await res.json();
-  console.log('[score-jd] score:', data?.result?.score, 'verdict:', data?.result?.verdict);
-  return data?.result || null;
+
+  const result = extractScoreFromAdaResponse(data);
+  console.log('[ada-score] score:', result?.score, 'verdict:', result?.verdict);
+  return result;
 }
+
+// Walk Ada's chat response shape and pull out the score_jd tool result.
+function extractScoreFromAdaResponse(data) {
+  const allToolResults = (data?.steps || []).flatMap(s => s.toolResults || s.tool_results || []);
+  const candidates = allToolResults.filter(r => {
+    const name = r.payload?.toolName || r.toolName || r.name || '';
+    return name === 'score_jd' || name === 'score_role' || name.includes('score_jd');
+  });
+  for (const c of candidates.slice().reverse()) {
+    const raw = c.payload?.result ?? c.result ?? c.output;
+    const parsed = typeof raw === 'string' ? safeParseJson(raw) : raw;
+    if (parsed && typeof parsed.score === 'number' && Array.isArray(parsed.dimensions) && parsed.dimensions.length === 7) {
+      return parsed;
+    }
+  }
+  return null;
+}
+function safeParseJson(s) { try { return JSON.parse(s); } catch { return null; } }
 
 async function callScoreApi() {
   const isUrl = /^https?:\/\//i.test(state.jdText.trim());
@@ -1121,13 +1143,12 @@ async function callScoreApi() {
       const { text: pageText } = await fetchRes.json();
       if (!pageText) { console.error('[fetch-jd] empty response'); return; }
       console.log('[fetch-jd] got', pageText.length, 'chars');
-      state.result = await scoreViaFunction(pageText);
+      state.result = await scoreViaAda(pageText);
     } catch(e) { console.error('[fetch-jd] error:', e); }
   } else {
-    // Text JD — score via Netlify function
     try {
-      state.result = await scoreViaFunction(state.jdText.trim());
-    } catch(e) { console.error('[score-jd] error:', e); }
+      state.result = await scoreViaAda(state.jdText.trim());
+    } catch(e) { console.error('[ada-score] error:', e); }
   }
 }
 

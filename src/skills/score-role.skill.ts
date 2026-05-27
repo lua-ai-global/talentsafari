@@ -2,7 +2,7 @@ import { LuaSkill, LuaTool, AI } from 'lua-cli';
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
-// Scoring rubric — single source of truth (used as system prompt for AI.generate)
+// Scoring rubric — single source of truth, used as the AI.generate system prompt
 // ---------------------------------------------------------------------------
 
 const SCORING_SYSTEM = `You are an honest expert evaluator scoring job descriptions for automation fit.
@@ -53,51 +53,131 @@ FLAGS (check before scoring — set flag but still return full result):
 
 ADJACENT AGENTS: always include 2–3 distinct Lua agent suggestions for OTHER roles/tasks at this company.
 Base on company type, industry, and function visible in the JD.
-Format: icon (single emoji), name ("Lua [Role]"), value_prop (one sentence, specific to this context).
-
-OUTPUT INSTRUCTIONS:
-Return ONLY a valid JSON object — no markdown fences, no explanation, nothing else before or after.
-The JSON must have exactly these fields:
-{
-  "role_title": string,
-  "score": number,
-  "verdict": "needs_human" | "human_led_agent_assist" | "strong_agent",
-  "verdict_line": string,
-  "rationale": string,
-  "dimensions": [
-    { "key": string, "label": string, "score": number, "weight": number, "rationale": string }
-    ... exactly 7 items
-  ],
-  "human_candidate": {
-    "salary_range": string, "time_to_productive": string, "scale_ceiling": string,
-    "coverage": string, "great_at": [string, string, string], "hard_at": [string, string, string]
-  },
-  "agent_candidate": {
-    "name": "Lua", "role_title": string, "avatar_seed": string, "monthly_cost": string,
-    "start_date": "Today", "throughput": string, "coverage": string,
-    "great_at": [string, string, string], "cant_do": [string, string, string]
-  },
-  "recommended_cta": "lua" | "tech_safari",
-  "flags": { "short_jd": boolean, "non_english": boolean, "suspected_fake": boolean },
-  "adjacent_agents": [
-    { "icon": string, "name": string, "value_prop": string }
-    ... 2 or 3 items
-  ]
-}`;
+Format: icon (single emoji), name ("Lua [Role]"), value_prop (one sentence, specific to this context).`;
 
 // ---------------------------------------------------------------------------
-// Input schema — tool now accepts the JD text directly
+// JSON Schema 7 — drives AI.generate's structuredOutput. The platform converts
+// this to AI SDK's Output.object({ schema }) and the model returns a parsed
+// object matching the shape.
+// ---------------------------------------------------------------------------
+
+const dimensionSchema = {
+  type: 'object',
+  required: ['key', 'label', 'score', 'weight', 'rationale'],
+  properties: {
+    key: { type: 'string' },
+    label: { type: 'string' },
+    score: { type: 'integer', minimum: 1, maximum: 10 },
+    weight: { type: 'number' },
+    rationale: { type: 'string' },
+  },
+  additionalProperties: false,
+};
+
+const SCORE_ROLE_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  required: [
+    'role_title', 'score', 'verdict', 'verdict_line', 'rationale',
+    'dimensions', 'human_candidate', 'agent_candidate',
+    'recommended_cta', 'flags', 'adjacent_agents',
+  ],
+  properties: {
+    role_title: { type: 'string' },
+    score: { type: 'integer', minimum: 10, maximum: 100 },
+    verdict: { type: 'string', enum: ['needs_human', 'human_led_agent_assist', 'strong_agent'] },
+    verdict_line: { type: 'string' },
+    rationale: { type: 'string' },
+    dimensions: {
+      type: 'array',
+      minItems: 7,
+      maxItems: 7,
+      items: dimensionSchema,
+    },
+    human_candidate: {
+      type: 'object',
+      required: ['salary_range', 'time_to_productive', 'scale_ceiling', 'coverage', 'great_at', 'hard_at'],
+      properties: {
+        salary_range: { type: 'string' },
+        time_to_productive: { type: 'string' },
+        scale_ceiling: { type: 'string' },
+        coverage: { type: 'string' },
+        great_at: { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 3 },
+        hard_at: { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 3 },
+      },
+      additionalProperties: false,
+    },
+    agent_candidate: {
+      type: 'object',
+      required: ['name', 'role_title', 'avatar_seed', 'monthly_cost', 'start_date', 'throughput', 'coverage', 'great_at', 'cant_do'],
+      properties: {
+        name: { type: 'string' },
+        role_title: { type: 'string' },
+        avatar_seed: { type: 'string' },
+        monthly_cost: { type: 'string' },
+        start_date: { type: 'string' },
+        throughput: { type: 'string' },
+        coverage: { type: 'string' },
+        great_at: { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 3 },
+        cant_do: { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 3 },
+      },
+      additionalProperties: false,
+    },
+    recommended_cta: { type: 'string', enum: ['lua', 'tech_safari'] },
+    flags: {
+      type: 'object',
+      required: ['short_jd', 'non_english', 'suspected_fake'],
+      properties: {
+        short_jd: { type: 'boolean' },
+        non_english: { type: 'boolean' },
+        suspected_fake: { type: 'boolean' },
+      },
+      additionalProperties: false,
+    },
+    adjacent_agents: {
+      type: 'array',
+      minItems: 2,
+      maxItems: 3,
+      items: {
+        type: 'object',
+        required: ['icon', 'name', 'value_prop'],
+        properties: {
+          icon: { type: 'string' },
+          name: { type: 'string' },
+          value_prop: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+    },
+  },
+  additionalProperties: false,
+};
+
+// ---------------------------------------------------------------------------
+// Input
 // ---------------------------------------------------------------------------
 
 const scoreJdInputSchema = z.object({
   jd_text: z.string().describe('The full job description text to evaluate'),
-  volume: z.string().optional().describe('Task structure context from user questions'),
+  volume: z.string().optional().describe('Task structure context'),
   task_freq: z.string().optional().describe('Task frequency (low/medium/high volume per day)'),
   stakes: z.string().optional().describe('Decision stakes context'),
   exposure: z.string().optional().describe('Exposure type (e.g. customer_unregulated, regulated)'),
 });
 
 type ScoreJdInput = z.infer<typeof scoreJdInputSchema>;
+
+// ---------------------------------------------------------------------------
+// Local type extension — drops once lua-cli ships the widened types from PR
+// #533. Runtime works either way (body forwards verbatim).
+// ---------------------------------------------------------------------------
+
+type AiGenerateArgs = Parameters<typeof AI.generate>[0] & {
+  structuredOutput?: { schema: Record<string, unknown> };
+};
+
+type AiGenerateResponse = Awaited<ReturnType<typeof AI.generate>> & {
+  data?: { output?: unknown; text?: string };
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -107,54 +187,20 @@ function computeScore(dimensions: Array<{ score: number; weight: number }>): num
   return Math.round(dimensions.reduce((sum, d) => sum + d.score * d.weight, 0));
 }
 
-function extractScoringResult(data: unknown): Record<string, unknown> | null {
-  if (!data || typeof data !== 'object') return null;
-  const d = data as Record<string, unknown>;
-
-  // Tool use response (future-proof if Lua adds support)
-  if (Array.isArray(d['content'])) {
-    const content = d['content'] as Array<Record<string, unknown>>;
-    const toolUse = content.find((c) => c['type'] === 'tool_use');
-    if (toolUse?.['input'] && typeof toolUse['input'] === 'object') {
-      return toolUse['input'] as Record<string, unknown>;
-    }
-    // Text response — parse JSON from content block
-    const textBlock = content.find((c) => c['type'] === 'text');
-    const text = (textBlock?.['text'] as string) ?? '';
-    const parsed = tryParseJson(text);
-    if (parsed) return parsed;
-  }
-
-  // Top-level text field (some Lua response shapes)
-  if (typeof d['text'] === 'string') {
-    const parsed = tryParseJson(d['text'] as string);
-    if (parsed) return parsed;
-  }
-
-  // Already the scoring object
-  if (d['role_title'] && d['dimensions']) return d;
-
-  return null;
-}
-
-function tryParseJson(text: string): Record<string, unknown> | null {
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) return null;
-  try {
-    const obj = JSON.parse(match[0]) as Record<string, unknown>;
-    if (obj['role_title'] && Array.isArray(obj['dimensions'])) return obj;
-  } catch {}
-  return null;
+function verdictForScore(score: number): { verdict: string; recommended_cta: string } {
+  if (score < 40) return { verdict: 'needs_human',            recommended_cta: 'tech_safari' };
+  if (score < 65) return { verdict: 'human_led_agent_assist', recommended_cta: 'tech_safari' };
+  return                  { verdict: 'strong_agent',           recommended_cta: 'lua' };
 }
 
 // ---------------------------------------------------------------------------
-// Tool — scoring runs inside execute() via AI.generate at temperature 0.2
+// Tool — runs the structured scoring call via AI.generate({ structuredOutput })
 // ---------------------------------------------------------------------------
 
 export class scoreJdTool implements LuaTool<typeof scoreJdInputSchema> {
   name = 'score_jd';
   description =
-    'Score a job description for automation fit. Pass the raw JD text and optional context — the tool runs a structured AI evaluation at temperature 0.2 and returns the full verdict with candidate cards.';
+    'Score a job description for automation fit. Returns a structured verdict (score, dimensions, candidate cards) via a temperature-0.2 LLM call constrained by JSON Schema.';
   inputSchema = scoreJdInputSchema;
 
   async execute(input: ScoreJdInput): Promise<unknown> {
@@ -171,46 +217,43 @@ export class scoreJdTool implements LuaTool<typeof scoreJdInputSchema> {
       ? `${jd_text}\n\nAdditional context:\n${contextLines.join('\n')}`
       : jd_text;
 
-    let raw: Record<string, unknown> | null = null;
-
+    let response: AiGenerateResponse;
     try {
-      // Lua's AI.generate silently drops tools/tool_choice — passing tool_choice
-      // without tools causes an Anthropic 400 error. Use JSON text output instead.
-      const response = await AI.generate({
+      response = (await AI.generate({
         system: SCORING_SYSTEM,
         messages: [{ role: 'user', content: userContent }],
         temperature: 0.2,
-      } as Parameters<typeof AI.generate>[0]);
-
-      const result = response as { success: boolean; data: unknown; error?: { message?: string } };
-
-      if (!result.success) {
-        return { error: 'generation_failed', detail: result.error?.message ?? 'Unknown error' };
-      }
-
-      raw = extractScoringResult(result.data);
-    } catch (err: unknown) {
+        structuredOutput: { schema: SCORE_ROLE_SCHEMA },
+      } as AiGenerateArgs)) as AiGenerateResponse;
+    } catch (err) {
       return { error: 'generation_failed', detail: (err as Error)?.message };
     }
 
-    if (!raw) {
-      return { error: 'parse_failed', detail: 'Could not extract structured scoring result from AI response' };
+    if (!response.success) {
+      return { error: 'generation_failed', detail: response.error?.message ?? 'Unknown error' };
     }
 
-    // Validate weighted sum (±1 tolerance)
-    const dims = raw['dimensions'] as Array<{ score: number; weight: number }> | undefined;
+    const raw = response.data?.output as Record<string, unknown> | undefined;
+    if (!raw || typeof raw !== 'object') {
+      return { error: 'parse_failed', detail: 'No structured output on AI.generate response' };
+    }
+
+    const dims = raw.dimensions as Array<{ score: number; weight: number }> | undefined;
     if (!Array.isArray(dims) || dims.length !== 7) {
       return { error: 'invalid_dimensions', detail: 'Expected exactly 7 dimensions' };
     }
 
-    const reportedScore = raw['score'] as number;
+    // Sanity-correct score + verdict band so the two stay in sync
+    const reported = raw.score as number;
     const computed = computeScore(dims);
-    if (Math.abs(computed - reportedScore) > 1) {
-      // Self-correct and retry once
-      const corrected = { ...raw, score: computed };
-      return corrected;
+    if (Math.abs(computed - reported) > 1) {
+      const v = verdictForScore(computed);
+      return { ...raw, score: computed, verdict: v.verdict, recommended_cta: v.recommended_cta };
     }
-
+    const expected = verdictForScore(reported);
+    if (raw.verdict !== expected.verdict) {
+      return { ...raw, verdict: expected.verdict, recommended_cta: expected.recommended_cta };
+    }
     return raw;
   }
 }
@@ -222,13 +265,9 @@ export class scoreJdTool implements LuaTool<typeof scoreJdInputSchema> {
 export const scoreRoleSkill = new LuaSkill({
   name: 'score-role',
   description:
-    'Evaluates a job description for automation fit. The tool handles all scoring internally via AI.generate at temperature 0.2 — returns a structured verdict with candidate cards.',
-  context: `When the user provides a job description (or URL), call score_jd with the raw jd_text and any context from user questions (volume, task_freq, stakes, exposure).
+    'Evaluates a job description for automation fit via a temperature-0.2 structured-output LLM call.',
+  context: `When the user asks to score a job description, call score_jd with the raw jd_text and any context (volume, task_freq, stakes, exposure). Pass the returned object straight on — no transformation needed.
 
-Do NOT attempt to score the JD yourself. The tool runs an internal AI evaluation with the full rubric as its system prompt and returns the structured result directly.
-
-Pass the returned object straight to capture_lead — no transformation needed.
-
-If the tool returns { error: 'generation_failed' | 'parse_failed' | 'invalid_dimensions' }, tell the user something went wrong and ask them to try again.`,
+If the tool returns { error: ... }, tell the user something went wrong and ask them to try again.`,
   tools: [new scoreJdTool()],
 });
