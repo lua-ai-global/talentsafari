@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "echo 'Static HTML + api/ serverless — no build step needed.'",
   "rewrites": [
     { "source": "/results", "destination": "/index.html" },
     { "source": "/score",   "destination": "/index.html" }
