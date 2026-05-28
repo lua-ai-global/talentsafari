@@ -1,6 +1,6 @@
 {
-  "lastHash": "cd7ccf0d401d196ae2e33f35e95e25dfe8ba936998117bd74653577cf80fe6f8",
-  "lastPushedAt": "2026-05-27T18:48:17.935Z",
+  "lastHash": "4cc5216bde4037289d9eff0c57eed0cb05760ca39ff9e11fbc8d38e9095b54c5",
+  "lastPushedAt": "2026-05-27T18:51:41.603Z",
   "files": [
     {
       "relativePath": "api/_lib/origin.js",
@@ -36,7 +36,7 @@
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "c22d33ae1d002ed5"
+      "hash": "4142ff87b31063c1"
     },
     {
       "relativePath": "netlify.toml",

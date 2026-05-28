@@ -2,5 +2,7 @@ dist-v2/
 
 node_modules
 
+.env
+
 # Claude Code local settings — contains approved bash commands with secrets
 .claude/settings.local.json
