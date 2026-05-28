@@ -118,14 +118,7 @@
   .chip:hover { border-color: var(--green-deep); color: var(--green-deep); transform: translateY(-1px); }
   .chip.active { background: var(--forest); color: var(--green); border-color: var(--forest); }
 
-  /* url mode */
-  .url-wrap { display: none; }
-  .url-wrap input {
-    width: 100%; border: 0; outline: 0; font-family: inherit; font-size: 15px;
-    color: var(--ink); background: transparent; padding: 4px 0; line-height: 1.6;
-  }
-  .url-wrap input::placeholder { color: #9AA39B; }
-  .scrape-err { font-size: 13px; font-weight: 600; color: #d6432f; margin-top: 6px; display: none; }
+  .scrape-err { display: none; }
   .other-roles {
     margin-top: 12px; padding: 12px 14px; background: var(--cream);
     border-radius: 12px; border: 1px solid rgba(14,203,123,.35); display: none;
@@ -553,16 +546,11 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
     <div class="hero">
       <span class="eyebrow">Free · No signup</span>
       <h1 class="display">Should your next hire be<br/><span class="swap">human or AI?</span></h1>
-      <p class="sub">Paste a job description or drop a link. In 15 seconds you'll get an Agent Fit Score across 7 dimensions — and a clear verdict on what this role actually needs.</p>
+      <p class="sub">Paste a job description below. In 15 seconds you'll get an Agent Fit Score across 7 dimensions — and a clear verdict on what this role actually needs.</p>
 
       <div class="dropzone">
         <div id="textWrap">
           <textarea id="jd" placeholder="Paste a job description here…"></textarea>
-        </div>
-        <div class="url-wrap" id="urlWrap">
-          <div style="color:var(--ink-soft);font-size:14px;margin-bottom:6px;">Job posting URL</div>
-          <input id="urlInput" type="url" placeholder="https://www.linkedin.com/jobs/view/… or any job posting" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-family:inherit;font-size:15px;outline:0;background:transparent;color:var(--ink);" onfocus="this.style.borderColor='var(--green-deep)'" onblur="this.style.borderColor='var(--line)'" />
-          <div id="scrapeErr" class="scrape-err"></div>
         </div>
         <div class="other-roles" id="otherRoles">
           <p id="orTitle"></p>
@@ -574,7 +562,6 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
           <div class="dz-chips">
             <span class="chip" onclick="loadSample()">▲ Try a sample JD</span>
             <span class="chip pdf-chip" onclick="document.getElementById('pdfInput').click()">📄 Upload PDF</span>
-            <span class="chip" id="urlChip" onclick="toggleUrlMode()">🔗 Paste link</span>
           </div>
           <button class="btn btn-primary" id="heroBtn" onclick="handleScoreClick()">Score this role →</button>
         </div>
@@ -810,7 +797,6 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
 const state = {
   jdText: '', volume: 'medium', stakes: 'low', taskFreq: 'medium',
   exposure: 'customer_unregulated', result: null,
-  urlMode: false,
   leadName: '', leadTitle: '', leadCompany: '', leadEmail: '',
   leadSubmitted: false, apiDone: false, formDone: false,
 };
@@ -872,8 +858,6 @@ async function handlePdfUpload(event) {
       text += content.items.map(s => s.str).join(' ') + '\n';
     }
     jdEl.value = text.trim();
-    // Switch out of URL mode if active
-    if (state.urlMode) toggleUrlMode();
     document.getElementById('pdfInput').value = '';
   } catch (e) {
     jdEl.value = '';
@@ -881,37 +865,7 @@ async function handlePdfUpload(event) {
   }
 }
 
-// ─── URL mode ─────────────────────────────────────────────────────────────────
-function toggleUrlMode() {
-  state.urlMode = !state.urlMode;
-  document.getElementById('textWrap').style.display = state.urlMode ? 'none' : '';
-  document.getElementById('urlWrap').style.display = state.urlMode ? '' : 'none';
-  document.getElementById('dzSep').style.display = state.urlMode ? 'none' : '';
-  document.getElementById('urlChip').classList.toggle('active', state.urlMode);
-  document.getElementById('heroBtn').textContent = state.urlMode ? 'Fetch & score this role →' : 'Score this role →';
-  document.getElementById('scrapeErr').style.display = 'none';
-}
-
-async function fetchJD() {
-  const url = document.getElementById('urlInput').value.trim();
-  if (!url) { showScrapeErr('Please enter a URL.'); return; }
-  state.urlMode = false;
-  state.jdText = url;
-  document.getElementById('textWrap').style.display = '';
-  document.getElementById('urlWrap').style.display = 'none';
-  document.getElementById('dzSep').style.display = '';
-  document.getElementById('urlChip').classList.remove('active');
-  document.getElementById('jd').value = url;
-  go('s-questions');
-}
-
-function showScrapeErr(msg) {
-  const el = document.getElementById('scrapeErr');
-  el.textContent = msg; el.style.display = '';
-}
-
 function handleScoreClick() {
-  if (state.urlMode) { fetchJD(); return; }
   const jdVal = document.getElementById('jd').value.trim();
   const wordCount = jdVal.split(/\s+/).filter(Boolean).length;
   const btn = document.getElementById('heroBtn');
@@ -931,7 +885,6 @@ function handleScoreClick() {
 }
 
 function loadSample() {
-  if (state.urlMode) toggleUrlMode();
   document.getElementById('jd').value =
     "Tier 1 Customer Support Specialist — Northwind Co.\n\n" +
     "Respond to inbound customer emails and chats, resolve common order, billing and shipping questions, " +
@@ -1059,7 +1012,6 @@ function stopFactsTicker() {
 // ─── API call ─────────────────────────────────────────────────────────────────
 // All Lua/Slack calls route through Vercel serverless functions in /api so the
 // LUA_API_KEY and SLACK_LEADS_WEBHOOK_URL stay server-side (process.env on Vercel).
-const FETCH_JD_ENDPOINT     = '/api/fetch-jd';
 const SLACK_NOTIFY_ENDPOINT = '/api/slack-notify';
 
 // Unique channel per call prevents contamination from prior failed tool calls
@@ -1127,29 +1079,9 @@ function extractScoreFromAdaResponse(data) {
 function safeParseJson(s) { try { return JSON.parse(s); } catch { return null; } }
 
 async function callScoreApi() {
-  const isUrl = /^https?:\/\//i.test(state.jdText.trim());
-
-  if (isUrl) {
-    // Fetch job posting HTML server-side (CORS proxy, no AI) → extract text → score
-    try {
-      console.log('[fetch-jd] fetching URL...');
-      const fetchRes = await fetch(FETCH_JD_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: state.jdText.trim() }),
-      });
-      console.log('[fetch-jd] status:', fetchRes.status);
-      if (!fetchRes.ok) { console.error('[fetch-jd] non-OK', fetchRes.status); return; }
-      const { text: pageText } = await fetchRes.json();
-      if (!pageText) { console.error('[fetch-jd] empty response'); return; }
-      console.log('[fetch-jd] got', pageText.length, 'chars');
-      state.result = await scoreViaAda(pageText);
-    } catch(e) { console.error('[fetch-jd] error:', e); }
-  } else {
-    try {
-      state.result = await scoreViaAda(state.jdText.trim());
-    } catch(e) { console.error('[ada-score] error:', e); }
-  }
+  try {
+    state.result = await scoreViaAda(state.jdText.trim());
+  } catch(e) { console.error('[ada-score] error:', e); }
 }
 
 // ─── enrichment chat ──────────────────────────────────────────────────────────
@@ -1656,16 +1588,11 @@ function renderBrief(brief, seed) {
 function restart() {
   drawn = false;
   wizardState = { initialized:false, msgs:[], answers:[], qIndex:0, phase:'wizard', brief:null };
-  state.result = null; state.urlMode = false;
+  state.result = null;
   state.leadName = ''; state.leadTitle = ''; state.leadCompany = ''; state.leadEmail = '';
   state.leadSubmitted = false;
   navHistory.length = 0; navHistory.push('s-hero');
   document.getElementById('jd').value = '';
-  document.getElementById('textWrap').style.display = '';
-  document.getElementById('urlWrap').style.display = 'none';
-  document.getElementById('dzSep').style.display = '';
-  document.getElementById('urlChip').classList.remove('active');
-  document.getElementById('heroBtn').textContent = 'Score this role →';
   document.getElementById('otherRoles').style.display = 'none';
   const _ov = document.getElementById('overlay'); if (_ov) _ov.classList.remove('show');
   go('s-hero');
