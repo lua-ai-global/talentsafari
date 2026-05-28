@@ -61,7 +61,7 @@ async function postCtaToSlack(webhookUrl: string, input: SubmitCtaInput): Promis
     `Contact: ${name} · ${email} · ${company}`,
     extraField ? `${extraLabel}: ${extraField}` : '',
     financialLine,
-    jdSnippet ? `\n*Job description:*\n${jdSnippet}` : '',
+    path === 'tech_safari' && jdSnippet ? `\n*Job description:*\n${jdSnippet}` : '',
   ]
     .filter(Boolean)
     .join('\n');
