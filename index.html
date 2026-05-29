@@ -798,7 +798,7 @@ const state = {
   jdText: '', volume: 'medium', stakes: 'low', taskFreq: 'medium',
   exposure: 'customer_unregulated', result: null,
   leadName: '', leadTitle: '', leadCompany: '', leadEmail: '',
-  leadSubmitted: false, apiDone: false, formDone: false,
+  leadSubmitted: false, leadCaptured: false, apiDone: false, formDone: false,
 };
 
 const railMap = { 's-hero':0,'s-questions':1,'s-analysis':2,'s-result':3,'s-brief':3,'s-connect':3 };
@@ -1185,17 +1185,8 @@ async function callEnrichApi(isFirst) {
 
 // ─── lead capture ─────────────────────────────────────────────────────────────
 async function submitLead() {
-  const name    = document.getElementById('leadName').value.trim();
-  const title   = document.getElementById('leadTitle').value.trim();
-  const company = document.getElementById('leadCompany').value.trim();
-  const email   = document.getElementById('leadEmail').value.trim();
-  if (!name || !title || !company || !email) {
-    document.getElementById('leadFormErr').style.display = 'block'; return;
-  }
-  document.getElementById('leadFormErr').style.display = 'none';
-  state.leadName = name; state.leadTitle = title;
-  state.leadCompany = company; state.leadEmail = email;
-  state.leadSubmitted = true;
+  const { leadName: name, leadTitle: title, leadCompany: company, leadEmail: email } = state;
+  if (!name || !title || !company || !email) return;
 
   // Fire capture_lead — pass full scoringResult + JD text
   try {
@@ -1335,6 +1326,12 @@ function drawResult() {
   }
 
   const d = valid ? raw : DEMO;
+
+  // Fire capture_lead once — deferred until result is available
+  if (state.leadSubmitted && !state.leadCaptured) {
+    state.leadCaptured = true;
+    submitLead();
+  }
 
   // Score gauge
   document.getElementById('resultEyebrow').textContent = 'Your verdict · ' + d.role_title;
@@ -1591,6 +1588,7 @@ function restart() {
   state.result = null;
   state.leadName = ''; state.leadTitle = ''; state.leadCompany = ''; state.leadEmail = '';
   state.leadSubmitted = false;
+  state.leadCaptured = false;
   navHistory.length = 0; navHistory.push('s-hero');
   document.getElementById('jd').value = '';
   document.getElementById('otherRoles').style.display = 'none';
