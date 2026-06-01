@@ -62,4 +62,4 @@ export default async function handler(req, res) {
 
 function safeParse(s) { try { return JSON.parse(s); } catch { return null; } }
 
-export const config = { maxDuration: 60 };
+export const config = { maxDuration: 120 };
