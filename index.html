@@ -821,41 +821,59 @@ const state = {
 };
 
 const railMap = { 's-hero':0,'s-questions':1,'s-analysis':2,'s-result':3,'s-brief':3,'s-connect':3 };
-const navHistory = ['s-hero'];
+// URLs kept for analytics / LinkedIn conversion tracking. Screens not listed
+// keep the current path but still get a history entry (via state) so the
+// browser back/forward buttons can move between them.
+const URL_MAP = { 's-result': '/results', 's-analysis': '/score', 's-hero': '/' };
+let currentScreen = 's-hero';
 
 // ─── navigation ───────────────────────────────────────────────────────────────
-function go(id) {
-  navHistory.push(id);
+// Browser history is the single source of truth: every go() records the target
+// screen in history.state, and popstate (back/forward, or our own goBack())
+// re-renders whatever screen that entry holds.
+
+// Swap the visible screen, update the rail, run per-screen side effects.
+// Pure render — never touches history.
+function renderScreen(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  currentScreen = id;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
   window.scrollTo({ top:0, behavior:'smooth' });
-  // Update URL for analytics / LinkedIn conversion tracking
-  const urlMap = { 's-result': '/results', 's-analysis': '/score', 's-hero': '/' };
-  if (urlMap[id]) history.pushState({}, '', urlMap[id]);
   const n = railMap[id];
   document.querySelectorAll('#rail i').forEach((bar,i) => {
     bar.className = i<=n ? (i===3?'on lua':'on') : '';
   });
-  if (id === 's-result') {
-    const anaIdx = navHistory.indexOf('s-analysis');
-    if (anaIdx !== -1) navHistory.splice(anaIdx, 1);
-    drawResult();
-  }
+  if (id === 's-result') drawResult();
   if (id === 's-brief') initCtaScreen('ts');
   if (id === 's-connect') { initCtaScreen('lua'); initConnectScreen(); }
 }
 
-function goBack() {
-  navHistory.pop(); // remove current
-  const prev = navHistory[navHistory.length - 1] || 's-hero';
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(prev).classList.add('active');
-  window.scrollTo({ top:0, behavior:'smooth' });
-  const n = railMap[prev];
-  document.querySelectorAll('#rail i').forEach((bar,i) => {
-    bar.className = i<=n ? (i===3?'on lua':'on') : '';
-  });
+function go(id) {
+  // Reaching the result from the analysis theater replaces that transient
+  // entry, so Back from the result skips analysis (as before) and lands on
+  // the questions/enrich screen the user came from.
+  const replace = id === 's-result' && currentScreen === 's-analysis';
+  const url = URL_MAP[id] || location.pathname + location.search;
+  const entry = { screen: id };
+  if (replace) history.replaceState(entry, '', url);
+  else         history.pushState(entry, '', url);
+  renderScreen(id);
 }
+
+// In-app "← Back" buttons delegate to the browser so app nav and the browser
+// back/forward buttons stay in lockstep.
+function goBack() {
+  history.back();
+}
+
+window.addEventListener('popstate', (e) => {
+  renderScreen((e.state && e.state.screen) || 's-hero');
+});
+
+// Seed the initial entry so the very first Back has a screen to return to.
+history.replaceState({ screen: 's-hero' }, '', URL_MAP['s-hero']);
 
 // ─── PDF upload ───────────────────────────────────────────────────────────────
 if (window.pdfjsLib) {
@@ -1643,7 +1661,6 @@ function restart() {
   state.leadName = ''; state.leadTitle = ''; state.leadCompany = ''; state.leadEmail = '';
   state.leadSubmitted = false;
   state.leadCaptured = false;
-  navHistory.length = 0; navHistory.push('s-hero');
   document.getElementById('jd').value = '';
   document.getElementById('otherRoles').style.display = 'none';
   const _ov = document.getElementById('overlay'); if (_ov) _ov.classList.remove('show');
