@@ -22,6 +22,10 @@ import { aggregateStreamResponse } from './_lib/stream-aggregate.js';
 const UPSTREAM = 'https://api.heylua.ai';
 
 export default async function handler(req, res) {
+  // Deploy marker — present on EVERY response (even errors) so you can confirm,
+  // from the browser Network tab, which version of this function is live.
+  res.setHeader('x-ts-build', 'streaming-proxy-v1-2026-06-02');
+
   if (req.method !== 'POST') return res.status(405).send('Method not allowed');
 
   if (!isOriginAllowed(req.headers.origin, req.headers.host)) {
