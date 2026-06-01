@@ -53,6 +53,31 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+async function appendToSheets(
+  webhookUrl: string,
+  name: string,
+  title: string,
+  company: string,
+  email: string,
+  scoringResult: ScoringResult,
+): Promise<void> {
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'append',
+      name,
+      title,
+      company,
+      email,
+      score: scoringResult.score,
+      path: scoringResult.recommended_cta === 'lua' ? 'Lua' : 'Talent Safari',
+      jobTitle: scoringResult.role_title,
+    }),
+  });
+  if (!response.ok) throw new Error(`Sheets webhook error ${response.status}`);
+}
+
 async function postToSlack(
   webhookUrl: string,
   scoringResult: ScoringResult,
@@ -272,6 +297,14 @@ export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
 
     // Slack — primary signal, must succeed
     await postToSlack(slackUrl, scoringResult, email, company, jdText);
+
+    // Sheets — non-fatal
+    const sheetsUrl = env('SHEETS_WEBHOOK_URL') ?? '';
+    if (sheetsUrl) {
+      try {
+        await appendToSheets(sheetsUrl, name ?? '', title ?? '', company, email, scoringResult);
+      } catch { /* non-fatal */ }
+    }
 
     // Email — non-fatal if Resend key not configured
     let email1Sent = false;

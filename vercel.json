@@ -2,6 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "echo 'Static HTML + api/ serverless — no build step needed.'",
   "outputDirectory": ".",
+  "functions": {
+    "api/lua-chat.js": { "maxDuration": 120 }
+  },
   "rewrites": [
     { "source": "/results", "destination": "/index.html" },
     { "source": "/score",   "destination": "/index.html" }

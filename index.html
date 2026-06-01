@@ -986,6 +986,7 @@ function submitAnalysisForm() {
   state.formDone = true;
 
   notifyLeadSubmit(name, title, company, email);
+  if (typeof window.lintrk === 'function') window.lintrk('track', { conversion_id: 26416564 });
 
   // Swap form → success state
   document.getElementById('anaFormWrap').style.display = 'none';
@@ -1053,11 +1054,9 @@ async function notifyLeadSubmit(name, title, company, email) {
   } catch {}
 }
 
-// Score a JD by sending it to Ada's chat endpoint and extracting the
-// score_jd tool result from her response. Ada's score-role skill runs
-// the structured-output AI.generate call internally.
+// Score a JD via Ada. Retries once on a fresh channel if the first
+// attempt returns no tool result (handles Lua early-return edge cases).
 async function scoreViaAda(jdText) {
-  const url = adaSessionUrl('eval');
   const prompt =
     `Score this job description: ${jdText}\n\n` +
     `Context: Task structure is ${state.volume}, ` +
@@ -1065,18 +1064,33 @@ async function scoreViaAda(jdText) {
     `decision stakes are ${state.stakes}, ` +
     `exposure type is ${state.exposure}.`;
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: [{ type: 'text', text: prompt }], navigate: false }),
-  });
-  console.log('[ada-score] status:', res.status);
-  if (!res.ok) { console.error('[ada-score] non-OK', res.status, await res.text()); return null; }
-  const data = await res.json();
+  const result1 = await _adaScoreFetch(adaSessionUrl('eval'), prompt);
+  if (result1) return result1;
 
-  const result = extractScoreFromAdaResponse(data);
-  console.log('[ada-score] score:', result?.score, 'verdict:', result?.verdict);
-  return result;
+  console.log('[ada-score] attempt 1 returned no result — retrying on fresh channel in 3s…');
+  await new Promise(r => setTimeout(r, 3000));
+
+  return await _adaScoreFetch(adaSessionUrl('eval'), prompt);
+}
+
+async function _adaScoreFetch(url, text) {
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ type: 'text', text }], navigate: false }),
+    });
+    console.log('[ada-score] status:', res.status, 'channel:', url.split('channel=')[1]);
+    if (!res.ok) { console.error('[ada-score] non-OK', res.status, await res.text()); return null; }
+    const data = await res.json();
+    console.log('[ada-score] raw response (first 500):', JSON.stringify(data).slice(0, 500));
+    const result = extractScoreFromAdaResponse(data);
+    console.log('[ada-score] extracted score:', result?.score, 'verdict:', result?.verdict);
+    return result;
+  } catch (e) {
+    console.error('[ada-score] fetch error:', e);
+    return null;
+  }
 }
 
 // Walk Ada's chat response shape and pull out the score_jd tool result.
@@ -1100,7 +1114,10 @@ function safeParseJson(s) { try { return JSON.parse(s); } catch { return null; }
 async function callScoreApi() {
   try {
     state.result = await scoreViaAda(state.jdText.trim());
-  } catch(e) { console.error('[ada-score] error:', e); }
+  } catch(e) {
+    console.error('[ada-score] unexpected error:', e);
+    state.result = null;
+  }
 }
 
 // ─── enrichment chat ──────────────────────────────────────────────────────────
@@ -1207,11 +1224,10 @@ async function submitLead() {
   const { leadName: name, leadTitle: title, leadCompany: company, leadEmail: email } = state;
   if (!name || !title || !company || !email) return;
 
-  // Fire capture_lead — pass full scoringResult + JD text
   try {
     const scoringJson = JSON.stringify(state.result || {});
     const jdJson = JSON.stringify((state.jdText || '').slice(0, 3000));
-    await fetch(adaSessionUrl('lead'), {
+    const res = await fetch(adaSessionUrl('lead'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1219,6 +1235,12 @@ async function submitLead() {
         navigate: false,
       }),
     });
+    if (!res.ok) {
+      console.error('[Ada] capture_lead HTTP error:', res.status, await res.text());
+      return;
+    }
+    const data = await res.json();
+    console.log('[Ada] capture_lead result:', JSON.stringify(data).slice(0, 300));
   } catch(e) { console.error('[Ada] capture_lead error:', e); }
 }
 

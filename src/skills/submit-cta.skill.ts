@@ -40,6 +40,19 @@ type SubmitCtaInput = z.infer<typeof submitCtaInputSchema>;
 // Helpers
 // ---------------------------------------------------------------------------
 
+async function updateSheetsRow(webhookUrl: string, email: string, path: string): Promise<void> {
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'updateCta',
+      email,
+      ctaPath: path === 'lua' ? 'Lua' : 'Talent Safari',
+    }),
+  });
+  if (!response.ok) throw new Error(`Sheets webhook error ${response.status}`);
+}
+
 async function postCtaToSlack(webhookUrl: string, input: SubmitCtaInput): Promise<void> {
   const { path, name, email, company, extraField, jdText, scoringResult } = input;
   const { role_title, score, verdict_line, agent_candidate, human_candidate } = scoringResult;
@@ -132,6 +145,7 @@ export class submitCtaTool implements LuaTool<typeof submitCtaInputSchema> {
   inputSchema = submitCtaInputSchema;
 
   async execute(input: SubmitCtaInput): Promise<unknown> {
+    const { path, name, email, company, extraField, jdText, scoringResult } = input;
     const slackUrl = env('SLACK_LEADS_WEBHOOK_URL') ?? '';
     const resendKey = env('RESEND_API_KEY') ?? '';
     const fromEmail = env('FROM_EMAIL') ?? '';
@@ -158,6 +172,15 @@ export class submitCtaTool implements LuaTool<typeof submitCtaInputSchema> {
     } catch { /* non-fatal */ }
 
     await postCtaToSlack(slackUrl, input);
+
+    // Sheets — update CTA Clicked + Path for this email, non-fatal
+    const sheetsUrl = env('SHEETS_WEBHOOK_URL') ?? '';
+    if (sheetsUrl) {
+      try {
+        await updateSheetsRow(sheetsUrl, input.email, input.path);
+      } catch { /* non-fatal */ }
+    }
+
     await sendConfirmationEmail(resendKey, fromEmail, input);
 
     return {

@@ -1,6 +1,6 @@
 {
-  "lastHash": "4cc5216bde4037289d9eff0c57eed0cb05760ca39ff9e11fbc8d38e9095b54c5",
-  "lastPushedAt": "2026-05-27T18:51:41.603Z",
+  "lastHash": "68b74fb43e833ff8acadf87680b7eabee33380c61c6afa50eabb3a0f2cfa8cab",
+  "lastPushedAt": "2026-06-01T08:56:24.217Z",
   "files": [
     {
       "relativePath": "api/_lib/origin.js",
@@ -27,16 +27,20 @@
       "hash": "ebd959666e8c4a1f"
     },
     {
+      "relativePath": "dev-server.mjs",
+      "hash": "7ae969c564777cae"
+    },
+    {
       "relativePath": "env.example",
       "hash": "59392d82dfe28f83"
     },
     {
       "relativePath": "index.html",
-      "hash": "47ca4b77f096d468"
+      "hash": "49a25d6a551b3928"
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "4142ff87b31063c1"
+      "hash": "39e19931e36263e4"
     },
     {
       "relativePath": "netlify.toml",
@@ -60,7 +64,7 @@
     },
     {
       "relativePath": "package.json",
-      "hash": "3b54f9b24f03cb8b"
+      "hash": "46984f79a5117601"
     },
     {
       "relativePath": "public/talentsafari_logo.jpg",
@@ -76,7 +80,7 @@
     },
     {
       "relativePath": "src/index.ts",
-      "hash": "3230cc344d38ed89"
+      "hash": "0c11ad514ca91512"
     },
     {
       "relativePath": "src/skills/ada-chat.skill.ts",
@@ -88,7 +92,7 @@
     },
     {
       "relativePath": "src/skills/capture-lead.skill.ts",
-      "hash": "f8d4066e969e6424"
+      "hash": "6f4c19da6abe7ee5"
     },
     {
       "relativePath": "src/skills/score-role.skill.ts",
@@ -100,7 +104,7 @@
     },
     {
       "relativePath": "src/skills/submit-cta.skill.ts",
-      "hash": "dc763c7a8b21fd8c"
+      "hash": "2dfd3636024fd6a3"
     },
     {
       "relativePath": "src/skills/tools/CaptureLead.ts",

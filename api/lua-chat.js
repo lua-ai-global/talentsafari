@@ -33,6 +33,8 @@ export default async function handler(req, res) {
   const rawChannel = (req.query?.channel || 'production').toString();
   const safeChannel = rawChannel.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64) || 'production';
 
+  const controller = new AbortController();
+  const fetchTimeout = setTimeout(() => controller.abort(), 115_000);
   try {
     const response = await fetch(
       `https://api.heylua.ai/chat/generate/${agentId}?channel=${encodeURIComponent(safeChannel)}`,
@@ -43,12 +45,17 @@ export default async function handler(req, res) {
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(body),
+        signal: controller.signal,
       },
     );
-
+    clearTimeout(fetchTimeout);
     const data = await response.json();
     return res.status(response.status).json(data);
   } catch (err) {
+    clearTimeout(fetchTimeout);
+    if (err.name === 'AbortError') {
+      return res.status(504).json({ error: 'scoring_timeout', detail: 'Evaluation took too long. Please try again.' });
+    }
     return res.status(500).json({ error: err.message });
   }
 }
