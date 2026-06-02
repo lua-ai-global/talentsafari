@@ -18,6 +18,18 @@ const captureLeadInputSchema = z.object({
       verdict: z.enum(['needs_human', 'human_led_agent_assist', 'strong_agent']),
       verdict_line: z.string(),
       rationale: z.string(),
+      dimensions: z
+        .array(
+          z.object({
+            key: z.string(),
+            label: z.string(),
+            score: z.number(),
+            weight: z.number(),
+            rationale: z.string(),
+          }),
+        )
+        .optional()
+        .describe('The 7 scored dimensions from score_jd — the agent\'s per-dimension analysis'),
       human_candidate: z.object({
         salary_range: z.string(),
         time_to_productive: z.string(),
@@ -51,6 +63,21 @@ function slugify(text: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+// Compose the agent's analysis into a readable string for the evaluations record.
+// Falls back gracefully to verdict + rationale when dimensions weren't relayed.
+function buildAnalysis(s: ScoringResult): string {
+  const lines: string[] = [];
+  lines.push(`Score: ${s.score}/100 — ${s.verdict_line} (${s.verdict})`);
+  if (s.rationale) lines.push('', s.rationale);
+  if (s.dimensions?.length) {
+    lines.push('', 'Dimension breakdown:');
+    for (const d of [...s.dimensions].sort((a, b) => b.weight - a.weight)) {
+      lines.push(`- ${d.label}: ${d.score}/10 (weight ${d.weight}×) — ${d.rationale}`);
+    }
+  }
+  return lines.join('\n');
 }
 
 async function appendToSheets(
@@ -273,6 +300,8 @@ export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
           verdict: scoringResult.verdict,
           recommended_cta: scoringResult.recommended_cta,
           jd_text: jdText ?? '',
+          analysis: buildAnalysis(scoringResult),
+          dimensions: scoringResult.dimensions ?? [],
           timestamp: new Date().toISOString(),
         },
         `${scoringResult.role_title} ${scoringResult.verdict} ${company} ${jdText ?? ''}`.slice(0, 2000),

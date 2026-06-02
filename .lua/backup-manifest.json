@@ -1,6 +1,6 @@
 {
-  "lastHash": "68b74fb43e833ff8acadf87680b7eabee33380c61c6afa50eabb3a0f2cfa8cab",
-  "lastPushedAt": "2026-06-01T08:56:24.217Z",
+  "lastHash": "7ff3cc22b2d9b6158acf353887b12b9ead7ee1a254e6d46f36615f08be98eebb",
+  "lastPushedAt": "2026-06-01T13:40:07.016Z",
   "files": [
     {
       "relativePath": "api/_lib/origin.js",
@@ -16,7 +16,7 @@
     },
     {
       "relativePath": "api/lua-chat.js",
-      "hash": "9b47beaa33dc00fc"
+      "hash": "e724ea38bac62936"
     },
     {
       "relativePath": "api/slack-notify.js",
@@ -36,11 +36,11 @@
     },
     {
       "relativePath": "index.html",
-      "hash": "49a25d6a551b3928"
+      "hash": "cd01940ab0f13552"
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "39e19931e36263e4"
+      "hash": "9cd2baa4114319c6"
     },
     {
       "relativePath": "netlify.toml",
@@ -80,7 +80,7 @@
     },
     {
       "relativePath": "src/index.ts",
-      "hash": "0c11ad514ca91512"
+      "hash": "8d3c0d9e9e710a87"
     },
     {
       "relativePath": "src/skills/ada-chat.skill.ts",
@@ -128,7 +128,7 @@
     },
     {
       "relativePath": "vercel.json",
-      "hash": "5974190c5edad224"
+      "hash": "7febe2b39cf94413"
     }
   ]
 }
