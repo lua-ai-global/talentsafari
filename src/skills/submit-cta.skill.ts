@@ -47,7 +47,7 @@ async function updateSheetsRow(webhookUrl: string, email: string, path: string):
     body: JSON.stringify({
       action: 'updateCta',
       email,
-      ctaPath: path === 'lua' ? 'Lua' : 'Talent Safari',
+      ctaClicked: path === 'lua' ? 'Lua' : 'Talent Safari',
     }),
   });
   if (!response.ok) throw new Error(`Sheets webhook error ${response.status}`);
@@ -164,6 +164,7 @@ export class submitCtaTool implements LuaTool<typeof submitCtaInputSchema> {
           score: scoringResult.score,
           verdict_line: scoringResult.verdict_line,
           recommended_cta: scoringResult.recommended_cta,
+          cta_clicked: path === 'lua' ? 'Lua' : 'Talent Safari',
           jd_text: jdText ?? '',
           timestamp: new Date().toISOString(),
         },

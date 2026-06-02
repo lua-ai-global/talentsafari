@@ -1,6 +1,6 @@
 {
-  "lastHash": "7ff3cc22b2d9b6158acf353887b12b9ead7ee1a254e6d46f36615f08be98eebb",
-  "lastPushedAt": "2026-06-01T13:40:07.016Z",
+  "lastHash": "1dd182cf65e468eaced6998d61d14365cf4ce95477e5fc359643a2b067ac28c9",
+  "lastPushedAt": "2026-06-02T19:13:29.747Z",
   "files": [
     {
       "relativePath": "api/_lib/origin.js",
@@ -11,12 +11,16 @@
       "hash": "db0a8de93a3343f7"
     },
     {
+      "relativePath": "api/_lib/stream-aggregate.js",
+      "hash": "5f4d9f1878f9a956"
+    },
+    {
       "relativePath": "api/fetch-jd.js",
       "hash": "3a58ac34c99e6933"
     },
     {
       "relativePath": "api/lua-chat.js",
-      "hash": "e724ea38bac62936"
+      "hash": "d7175f27ea4c8f33"
     },
     {
       "relativePath": "api/slack-notify.js",
@@ -25,6 +29,10 @@
     {
       "relativePath": "build.md",
       "hash": "ebd959666e8c4a1f"
+    },
+    {
+      "relativePath": "changes.md",
+      "hash": "7ca74dd43a3326f1"
     },
     {
       "relativePath": "dev-server.mjs",
@@ -36,11 +44,11 @@
     },
     {
       "relativePath": "index.html",
-      "hash": "cd01940ab0f13552"
+      "hash": "194b7f3924380145"
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "9cd2baa4114319c6"
+      "hash": "f62656a4003306b6"
     },
     {
       "relativePath": "netlify.toml",
@@ -79,6 +87,10 @@
       "hash": "f690bd869269a060"
     },
     {
+      "relativePath": "sheets-apps-script.gs",
+      "hash": "332cdc231c8b56b6"
+    },
+    {
       "relativePath": "src/index.ts",
       "hash": "8d3c0d9e9e710a87"
     },
@@ -92,7 +104,7 @@
     },
     {
       "relativePath": "src/skills/capture-lead.skill.ts",
-      "hash": "6f4c19da6abe7ee5"
+      "hash": "20052c9f9e4129ab"
     },
     {
       "relativePath": "src/skills/score-role.skill.ts",
@@ -104,7 +116,7 @@
     },
     {
       "relativePath": "src/skills/submit-cta.skill.ts",
-      "hash": "2dfd3636024fd6a3"
+      "hash": "d224274a53655891"
     },
     {
       "relativePath": "src/skills/tools/CaptureLead.ts",

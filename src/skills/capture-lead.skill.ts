@@ -97,9 +97,10 @@ async function appendToSheets(
       title,
       company,
       email,
+      date: new Date().toISOString(),          // Date (agent-sent ISO)
+      roleEvaluated: scoringResult.role_title, // Role Evaluated
       score: scoringResult.score,
-      path: scoringResult.recommended_cta === 'lua' ? 'Lua' : 'Talent Safari',
-      jobTitle: scoringResult.role_title,
+      ctaClicked: 'No',                        // initial CTA Clicked — flips on submit_cta
     }),
   });
   if (!response.ok) throw new Error(`Sheets webhook error ${response.status}`);
