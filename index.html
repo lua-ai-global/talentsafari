@@ -1140,6 +1140,8 @@ async function callScoreApi() {
 
 // ─── enrichment chat ──────────────────────────────────────────────────────────
 const enrichHistory = [];  // [{role,content}]
+const ENRICH_DONE = '[[ENRICH_DONE]]';   // completion token Ada emits when ready
+const ENRICH_MAX_ANSWERS = 4;            // hard cap — advance after this many user replies
 
 function startEnrichChat() {
   enrichHistory.length = 0;
@@ -1148,10 +1150,34 @@ function startEnrichChat() {
   document.getElementById('enrichInput').value = '';
 
   const jdPreview = state.jdText ? `"${state.jdText.slice(0, 200).trim()}${state.jdText.length > 200 ? '…' : ''}"` : '(no description provided)';
-  const seed = `The user wants to evaluate a role for automation fit but only gave a very vague description: ${jdPreview}. Ask them at most 2 short questions — combine what you need into as few questions as possible (e.g. "What are the main day-to-day tasks, and roughly how many does the role handle per day?"). Use any information already given without asking for it again. After at most 2 exchanges, synthesize everything into a role description and call score_jd to score it. Do your best with limited information rather than asking more questions. Start with your first (and ideally only) question now — keep it brief.`;
+  const seed = `The user wants to evaluate a role for automation fit but only gave a brief description: ${jdPreview}. Ask at most 4 short questions to understand the day-to-day tasks and rough daily volume — keep each question brief and ask them one at a time. Use any information already given without re-asking. IMPORTANT: do NOT call any tools, do NOT score the role, and do NOT send any email or message — a separate step handles scoring. Once the user has answered and you have a basic sense of the role, reply with one short sentence confirming you have enough, ending with the exact token ${ENRICH_DONE} on its own line. Start with your first question now — keep it brief, and do NOT include the token in this first message.`;
 
   enrichHistory.push({ role: 'user', content: seed });
   callEnrichApi(true);
+}
+
+// Assemble an enriched JD from the original short description + the user's
+// answers in the enrichment chat, so the scoring step has full context.
+function buildEnrichedJd() {
+  const base = (state.jdText || '').trim();
+  // Skip the seed prompt (first entry) and Ada's questions; keep user answers.
+  const answers = enrichHistory
+    .slice(1)
+    .filter(m => m.role === 'user')
+    .map(m => m.content.trim())
+    .filter(Boolean);
+  if (!answers.length) return base;
+  return `${base}\n\nAdditional details provided:\n${answers.map(a => `- ${a}`).join('\n')}`.trim();
+}
+
+// Complete the enrichment chat: fold the gathered answers into the JD and
+// continue the normal funnel at Step 2 (the clarifying questions).
+function finishEnrich(messageText) {
+  appendEnrichMsg('ada', messageText || 'Great — a few quick calibration questions next.');
+  const enrichedJd = buildEnrichedJd();
+  state.jdText = enrichedJd;
+  document.getElementById('jd').value = enrichedJd;
+  setTimeout(() => go('s-questions'), 1500);
 }
 
 function enrichEnterSend(e) {
@@ -1197,36 +1223,30 @@ async function callEnrichApi(isFirst) {
 
     const data = await res.json();
 
-    // Check if Ada called score_jd — if so, capture result and navigate
-    const allToolResults = data?.steps?.flatMap(s => s.toolResults || []) || [];
-    const scoringMatch = allToolResults.filter(r => {
-      const name = r.payload?.toolName || r.toolName || '';
-      return name.includes('score_jd') || name.includes('score_role');
-    }).slice().reverse().find(r => {
-      const res = r.payload?.result ?? r.result;
-      return res && !res.error && typeof res.score === 'number' && res.score >= 10 && res.score <= 100;
-    });
+    // Enrichment only gathers context — no scoring here. Detect completion via
+    // the token Ada emits, with a hard cap on answers so we can never get stuck.
+    let replyText = (data?.text || '').trim();
+    const done = replyText.includes(ENRICH_DONE);
+    replyText = replyText.replace(ENRICH_DONE, '').trim();
+    const userAnswers = enrichHistory.filter(m => m.role === 'user').length - 1; // exclude seed
 
-    if (scoringMatch) {
-      const raw = scoringMatch.payload?.result ?? scoringMatch.result;
-      const parsed = typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : raw;
-      if (parsed && parsed.verdict) {
-        appendEnrichMsg('ada', 'Perfect — I have everything I need. Taking you to your results now…');
-        state.result = parsed;
-        // Brief delay so user reads the message
-        setTimeout(() => {
-          drawn = false;
-          go('s-result');
-        }, 1800);
-        return;
-      }
+    if (!isFirst && done) {
+      finishEnrich(replyText || 'Perfect — I have enough to go on.');
+      return;
+    }
+    if (!isFirst && userAnswers >= ENRICH_MAX_ANSWERS) {
+      finishEnrich('Great — a few quick calibration questions next.');
+      return;
     }
 
-    // Ada's text reply — show it and continue conversation
-    const replyText = (data?.text || '').trim();
+    // Otherwise show Ada's next question and continue the conversation.
     if (replyText) {
       appendEnrichMsg('ada', replyText);
       enrichHistory.push({ role: 'assistant', content: replyText });
+    } else if (!isFirst) {
+      // No usable reply but not flagged done — advance rather than dead-end.
+      finishEnrich('Thanks — a few quick calibration questions next.');
+      return;
     }
   } catch(e) {
     typing.remove();
