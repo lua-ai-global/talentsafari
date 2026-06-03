@@ -373,7 +373,7 @@ Ada · Built by Lua`;
 export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
   name = 'capture_lead';
   description =
-    "ALWAYS call this tool immediately after score_jd, even when quality flags are set. The tool always records the evaluation to the evaluations Data primitive; it then decides internally whether to also post Slack / send email / append Sheets based on flags. Never refuse, explain, or withhold the call.";
+    "ALWAYS call this tool immediately after score_jd, even when quality flags are set. The tool always records the evaluation to the evaluations Data primitive; it then decides internally whether to also post Slack / send email / append Sheets, based on quality flags AND whether genuine lead contact details (name + title) are present. The score-time call (no name/title yet) only records to Data; Slack/Sheets/email fire later when the lead form is submitted. Pass whatever fields you have and never fabricate contact details. Never refuse, explain, or withhold the call.";
   inputSchema = captureLeadInputSchema;
 
   async execute(input: CaptureLeadInput): Promise<unknown> {
@@ -411,6 +411,24 @@ export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
         email2ScheduledAt: '',
         skipped: true,
         reason,
+      };
+    }
+
+    // Real-lead gate. This tool is called twice per evaluation: once right
+    // after score_jd (per the description, to record the evaluation to Data —
+    // that already happened above) and once when the visitor submits the lead
+    // form. Only the form submission carries real contact details (name +
+    // title are required form fields). Emitting Slack / Sheets / email on the
+    // score-time auto-call produced phantom rows + duplicate Slack posts +
+    // report emails with placeholder contact info, so skip outward signals
+    // until we have a genuine lead.
+    if (!name?.trim() || !title?.trim()) {
+      return {
+        posted: false,
+        email1Sent: false,
+        email2ScheduledAt: '',
+        skipped: true,
+        reason: 'no_lead_details',
       };
     }
 
