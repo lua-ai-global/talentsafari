@@ -4,14 +4,16 @@
 // as the Lua agent env var SHEETS_WEBHOOK_URL.
 //
 // Contract (POST JSON):
-//   { action:'append', name, title, company, email, date, roleEvaluated, score, ctaClicked }
+//   { action:'append', name, title, company, email, date, roleEvaluated, score,
+//     ctaClicked, verdict, recommendedCta, jd, analysis }
 //   { action:'updateCta', email, ctaClicked }   // ctaClicked: 'Lua' | 'Talent Safari'
 //
 // Columns: Name · Title · Company · Email · Date · Role Evaluated · Score · CTA Clicked
+//          · Verdict · Recommended CTA · JD · Analysis
 // CTA Clicked starts 'No' on append, flips to 'Lua'/'Talent Safari' on updateCta
 // (matched by email, last matching row wins).
 
-const HEADERS = ['Name', 'Title', 'Company', 'Email', 'Date', 'Role Evaluated', 'Score', 'CTA Clicked'];
+const HEADERS = ['Name', 'Title', 'Company', 'Email', 'Date', 'Role Evaluated', 'Score', 'CTA Clicked', 'Verdict', 'Recommended CTA', 'JD', 'Analysis'];
 const EMAIL_COL = 4; // 1-based column index of "Email"
 const CTA_COL = 8;   // 1-based column index of "CTA Clicked"
 
@@ -33,6 +35,10 @@ function doPost(e) {
         body.roleEvaluated || '',
         body.score != null ? body.score : '',
         body.ctaClicked || 'No',
+        body.verdict || '',
+        body.recommendedCta || '',
+        body.jd || '',
+        body.analysis || '',
       ]);
       return json_({ ok: true, action: 'append' });
     }

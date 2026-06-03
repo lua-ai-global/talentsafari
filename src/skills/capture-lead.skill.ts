@@ -33,14 +33,14 @@ const captureLeadInputSchema = z.object({
       human_candidate: z.object({
         salary_range: z.string(),
         time_to_productive: z.string(),
-      }),
+      }).passthrough(),
       agent_candidate: z.object({
         name: z.string(),
         role_title: z.string(),
         monthly_cost: z.string(),
         start_date: z.string(),
         throughput: z.string().optional(),
-      }),
+      }).passthrough(),
       recommended_cta: z.enum(['lua', 'tech_safari']),
       flags: z.object({
         short_jd: z.boolean(),
@@ -48,6 +48,7 @@ const captureLeadInputSchema = z.object({
         suspected_fake: z.boolean(),
       }),
     })
+    .passthrough()
     .describe('The full scoring result from score_jd'),
 });
 
@@ -63,6 +64,95 @@ function slugify(text: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+// HTML-escape model/user text before injection into email markup.
+function esc(v: unknown): string {
+  return String(v ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Render the full evaluation report as inline-styled HTML (email-client safe).
+function renderReportHtml(s: ScoringResult): string {
+  const verdictColor =
+    s.verdict === 'strong_agent' ? '#0a7d4a' :
+    s.verdict === 'human_led_agent_assist' ? '#a86600' :
+    '#1a5fb4';
+
+  const dimRows = (s.dimensions ?? [])
+    .slice()
+    .sort((a, b) => b.weight - a.weight)
+    .map(
+      (d) => `<tr>
+            <td style="padding:10px 12px;border-bottom:1px solid #ececec;font-weight:600;color:#1a1a1a;vertical-align:top">${esc(d.label)}</td>
+            <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#1a1a1a;vertical-align:top">${esc(d.score)}/10</td>
+            <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#666;vertical-align:top">${esc(d.weight)}×</td>
+            <td style="padding:10px 12px;border-bottom:1px solid #ececec;color:#555;line-height:1.5;vertical-align:top">${esc(d.rationale)}</td>
+          </tr>`,
+    )
+    .join('');
+
+  const dimsBlock = dimRows
+    ? `<h3 style="margin:28px 0 10px;font-size:16px;color:#1a1a1a;font-weight:600">Seven-dimension breakdown</h3>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;font-size:14px;border:1px solid #ececec;border-radius:8px;overflow:hidden">
+          <tr style="background:#f7f7f5">
+            <th style="padding:10px 12px;text-align:left;color:#666;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Dimension</th>
+            <th style="padding:10px 12px;text-align:center;color:#666;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Score</th>
+            <th style="padding:10px 12px;text-align:center;color:#666;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Weight</th>
+            <th style="padding:10px 12px;text-align:left;color:#666;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Why</th>
+          </tr>
+          ${dimRows}
+        </table>`
+    : '';
+
+  const h = s.human_candidate;
+  const a = s.agent_candidate;
+  const cards = `<h3 style="margin:28px 0 10px;font-size:16px;color:#1a1a1a;font-weight:600">Human vs Agent</h3>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:separate;border-spacing:8px 0;font-size:14px">
+          <tr>
+            <td style="vertical-align:top;padding:16px;background:#faf7f2;border-radius:10px;width:50%;border:1px solid #efe9dc">
+              <div style="font-size:12px;color:#8a7547;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:6px">Human hire</div>
+              ${h.salary_range ? `<div style="margin:6px 0;color:#1a1a1a"><strong>Salary:</strong> ${esc(h.salary_range)}</div>` : ''}
+              <div style="margin:6px 0;color:#1a1a1a"><strong>Time to productive:</strong> ${esc(h.time_to_productive)}</div>
+            </td>
+            <td style="vertical-align:top;padding:16px;background:#f2f6fa;border-radius:10px;width:50%;border:1px solid #dde7f0">
+              <div style="font-size:12px;color:#1a5fb4;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:6px">${esc(a.name)} · Lua agent</div>
+              <div style="margin:6px 0;color:#1a1a1a"><strong>Monthly cost:</strong> ${esc(a.monthly_cost)}</div>
+              <div style="margin:6px 0;color:#1a1a1a"><strong>Live:</strong> ${esc(a.start_date)}${a.throughput ? ` · ${esc(a.throughput)}` : ''}</div>
+            </td>
+          </tr>
+        </table>`;
+
+  const ctaLine = s.recommended_cta === 'lua'
+    ? 'Recommended next step: talk to Lua about building this agent.'
+    : 'Recommended next step: brief Talent Safari to source the human hire.';
+
+  return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your Human or Agent? report</title></head>
+<body style="margin:0;padding:0;background:#f4f3ef;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f4f3ef;padding:24px 0">
+<tr><td align="center">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;width:100%;background:#ffffff;border-radius:14px;padding:32px;color:#1a1a1a;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+    <tr><td>
+      <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Human or Agent? · Evaluation</div>
+      <h1 style="margin:0 0 4px;font-size:24px;font-weight:700;color:#1a1a1a">${esc(s.role_title)}</h1>
+      <div style="margin:14px 0 0;padding:14px 16px;background:#f7f7f5;border-left:4px solid ${verdictColor};border-radius:6px">
+        <div style="font-size:18px;font-weight:600;color:${verdictColor}">${esc(s.verdict_line)}</div>
+        <div style="font-size:14px;color:#555;margin-top:4px">Overall score: <strong style="color:#1a1a1a">${esc(s.score)}/100</strong></div>
+      </div>
+      <p style="font-size:15px;line-height:1.6;color:#333;margin:20px 0 0">${esc(s.rationale)}</p>
+      ${dimsBlock}
+      ${cards}
+      <div style="margin-top:28px;padding:16px;background:#1a1a1a;color:#ffffff;border-radius:10px;font-size:15px;text-align:center">${esc(ctaLine)}</div>
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid #ececec;color:#888;font-size:13px;text-align:center">— Ada · Built by Lua</div>
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body></html>`;
 }
 
 // Compose the agent's analysis into a readable string for the evaluations record.
@@ -87,6 +177,7 @@ async function appendToSheets(
   company: string,
   email: string,
   scoringResult: ScoringResult,
+  jdText: string,
 ): Promise<void> {
   const response = await fetch(webhookUrl, {
     method: 'POST',
@@ -97,10 +188,14 @@ async function appendToSheets(
       title,
       company,
       email,
-      date: new Date().toISOString(),          // Date (agent-sent ISO)
-      roleEvaluated: scoringResult.role_title, // Role Evaluated
+      date: new Date().toISOString(),                 // Date (agent-sent ISO)
+      roleEvaluated: scoringResult.role_title,        // Role Evaluated
       score: scoringResult.score,
-      ctaClicked: 'No',                        // initial CTA Clicked — flips on submit_cta
+      ctaClicked: 'No',                               // initial CTA Clicked — flips on submit_cta
+      verdict: scoringResult.verdict,                 // raw enum
+      recommendedCta: scoringResult.recommended_cta,  // raw: 'lua' | 'tech_safari'
+      jd: jdText,                                     // full JD text
+      analysis: buildAnalysis(scoringResult),         // composed analysis
     }),
   });
   if (!response.ok) throw new Error(`Sheets webhook error ${response.status}`);
@@ -185,9 +280,7 @@ async function sendEmail1(
   resendApiKey: string,
   fromEmail: string,
   toEmail: string,
-  roleTitle: string,
-  verdictLine: string,
-  score: number,
+  scoringResult: ScoringResult,
 ): Promise<void> {
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -198,8 +291,8 @@ async function sendEmail1(
     body: JSON.stringify({
       from: fromEmail,
       to: [toEmail],
-      subject: `Your Human or Agent? report — ${roleTitle}`,
-      html: `<p>Here's your full evaluation for <strong>${roleTitle}</strong>.</p><p>Verdict: ${verdictLine} (Score: ${score}/100)</p><p>The full seven-dimension breakdown is attached. Use it to brief Talent Safari or Lua.</p><p>— Ada · Built by Lua</p>`,
+      subject: `Your Human or Agent? report — ${scoringResult.role_title}`,
+      html: renderReportHtml(scoringResult),
     }),
   });
 
@@ -280,7 +373,7 @@ Ada · Built by Lua`;
 export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
   name = 'capture_lead';
   description =
-    "Post an evaluation result to Slack #leads, send the report delivery email to the lead, and schedule Ada's follow-up note (~2h later). Skips silently if any quality flag is set.";
+    "ALWAYS call this tool immediately after score_jd, even when quality flags are set. The tool always records the evaluation to the evaluations Data primitive; it then decides internally whether to also post Slack / send email / append Sheets based on flags. Never refuse, explain, or withhold the call.";
   inputSchema = captureLeadInputSchema;
 
   async execute(input: CaptureLeadInput): Promise<unknown> {
@@ -332,7 +425,7 @@ export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
     const sheetsUrl = env('SHEETS_WEBHOOK_URL') ?? '';
     if (sheetsUrl) {
       try {
-        await appendToSheets(sheetsUrl, name ?? '', title ?? '', company, email, scoringResult);
+        await appendToSheets(sheetsUrl, name ?? '', title ?? '', company, email, scoringResult, jdText ?? '');
       } catch { /* non-fatal */ }
     }
 
@@ -341,7 +434,7 @@ export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
     let email2ScheduledAt = '';
     if (resendKey && fromEmail) {
       try {
-        await sendEmail1(resendKey, fromEmail, email, scoringResult.role_title, scoringResult.verdict_line, scoringResult.score);
+        await sendEmail1(resendKey, fromEmail, email, scoringResult);
         email1Sent = true;
       } catch { /* non-fatal */ }
       try {
@@ -365,13 +458,12 @@ export const captureLeadSkill = new LuaSkill({
   name: 'capture-lead',
   description:
     'Captures a qualified lead by posting the evaluation result to Slack and delivering the report and follow-up emails.',
-  context: `Use the capture_lead tool immediately after a successful score_jd call — pass the full scoringResult along with the lead's email and company name.
+  context: `Use the capture_lead tool immediately after every successful score_jd call — pass the full scoringResult along with the lead's email and company name. ALWAYS call it, even if you believe a flag (short_jd, non_english, suspected_fake) is set. Never reply with text in place of the call; never explain the flag instead of calling the tool. The tool itself handles flag-based skipping.
 
 The tool will:
-1. Skip silently (skipped: true) if any flag is set (short_jd, non_english, suspected_fake) — do not retry or explain.
-2. Post a rich Block Kit notification to Slack #leads with human vs Ada comparison and routing buttons.
-3. Send the evaluation report to the lead's email via Resend.
-4. Schedule Ada's personalised follow-up email to fire ~2 hours later.
+1. ALWAYS record the evaluation to the evaluations Data primitive (regardless of flags).
+2. If any flag is set → return { skipped: true, reason } and skip Slack/Sheets/email. This is internal; you still MUST call it.
+3. Otherwise → post Slack Block Kit, append Google Sheets row, send Resend report email, schedule 2h follow-up.
 
 Returns: { posted, email1Sent, email2ScheduledAt } on success, or { skipped: true, reason } when flagged.`,
   tools: [new captureLeadTool()],

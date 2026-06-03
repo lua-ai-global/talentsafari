@@ -1,6 +1,6 @@
 {
-  "lastHash": "1dd182cf65e468eaced6998d61d14365cf4ce95477e5fc359643a2b067ac28c9",
-  "lastPushedAt": "2026-06-02T19:13:29.747Z",
+  "lastHash": "98565e5836e69fb6e6d0aee51a9233c9843428093b6ac59f58f9273f31d39e04",
+  "lastPushedAt": "2026-06-03T14:04:31.416Z",
   "files": [
     {
       "relativePath": "api/_lib/origin.js",
@@ -32,11 +32,19 @@
     },
     {
       "relativePath": "changes.md",
-      "hash": "7ca74dd43a3326f1"
+      "hash": "ab0053249cdcc724"
     },
     {
       "relativePath": "dev-server.mjs",
       "hash": "7ae969c564777cae"
+    },
+    {
+      "relativePath": "docs/fixes/fix_ada_flow.md",
+      "hash": "ad90abab37102255"
+    },
+    {
+      "relativePath": "email-preview.html",
+      "hash": "0764486966fc58c5"
     },
     {
       "relativePath": "env.example",
@@ -44,11 +52,11 @@
     },
     {
       "relativePath": "index.html",
-      "hash": "194b7f3924380145"
+      "hash": "460e0882479aa247"
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "f62656a4003306b6"
+      "hash": "34f135b9e89ca758"
     },
     {
       "relativePath": "netlify.toml",
@@ -88,7 +96,7 @@
     },
     {
       "relativePath": "sheets-apps-script.gs",
-      "hash": "332cdc231c8b56b6"
+      "hash": "634b71f65a75a8e5"
     },
     {
       "relativePath": "src/index.ts",
@@ -104,7 +112,7 @@
     },
     {
       "relativePath": "src/skills/capture-lead.skill.ts",
-      "hash": "20052c9f9e4129ab"
+      "hash": "6680cb426df85443"
     },
     {
       "relativePath": "src/skills/score-role.skill.ts",
@@ -133,6 +141,14 @@
     {
       "relativePath": "test-ada-chat-input.json",
       "hash": "9b1ccd64078183c1"
+    },
+    {
+      "relativePath": "test-capture-lead.json",
+      "hash": "1dcd676f881e7bd5"
+    },
+    {
+      "relativePath": "test-sheets.mjs",
+      "hash": "4cf0c67988491447"
     },
     {
       "relativePath": "tsconfig.json",
