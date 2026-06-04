@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- redeploy marker: rolled back to pre-PR#4 state (revert d1f3d9a7) -->
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -484,19 +483,23 @@
     .ana-right { position:static; }
   }
 
-  /* ── enrichment chat ──────────────────────────────────────────── */
-  .enrich-wrap {
-    max-width: 640px; margin: 0 auto;
+  /* ── enrichment chat (chat-first hero) ────────────────────────── */
+  .hero-chat { max-width: 720px; margin: 0 auto; text-align: left; }
+  .chat-row { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
+  .chat-row .ava {
+    flex-shrink: 0;
+    width: 40px; height: 40px; border-radius: 50%; background: var(--forest); color: var(--green);
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 17px;
+    font-family: 'Space Grotesk', sans-serif;
   }
-  .enrich-wrap h2 { margin-bottom: 6px; }
-  .enrich-wrap > p { color: var(--ink-soft); font-size: 15px; margin-bottom: 24px; }
   .enrich-msgs {
+    flex: 1; min-width: 0;
     background: var(--paper); border: 1.5px solid var(--line); border-radius: 18px;
-    padding: 20px; min-height: 200px; max-height: 380px; overflow-y: auto;
-    display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px;
+    padding: 24px; height: 440px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 14px;
   }
   .emsg {
-    max-width: 85%; padding: 11px 15px; border-radius: 14px; font-size: 14px; line-height: 1.55;
+    max-width: 85%; padding: 12px 16px; border-radius: 14px; font-size: 15px; line-height: 1.6;
     white-space: pre-wrap;
   }
   .emsg.ada {
@@ -506,21 +509,40 @@
     background: #E8F5EE; color: var(--ink); align-self: flex-end; border-bottom-right-radius: 4px;
   }
   .emsg.typing { opacity: .55; font-style: italic; }
-  .enrich-input-row {
-    display: flex; gap: 10px; align-items: flex-end;
+  /* The composer is the bordered text box; tools and Send live inside it,
+     so the box spans the full width of the Ada chat panel above. */
+  .enrich-input-row { display: block; }
+  .composer { position: relative; width: 100%; }
+  .composer textarea {
+    width: 100%; box-sizing: border-box; border: 1.5px solid var(--line); border-radius: 14px;
+    padding: 13px 16px 56px; font-family: inherit; font-size: 15px; outline: 0;
+    background: var(--cream); resize: none; min-height: 120px; max-height: 240px;
   }
-  .enrich-input-row textarea {
-    flex: 1; border: 1.5px solid var(--line); border-radius: 14px;
-    padding: 11px 14px; font-family: inherit; font-size: 14px; outline: 0;
-    background: var(--cream); resize: none; min-height: 48px; max-height: 120px;
+  .composer textarea:focus { border-color: var(--green); }
+  /* Icon-only tool buttons, anchored at the bottom-left inside the text box. */
+  .composer-tools { position: absolute; left: 10px; bottom: 10px; display: flex; gap: 8px; z-index: 2; }
+  .tool-btn {
+    display: inline-flex; align-items: center; height: 34px; padding: 0 9px;
+    border: 1.5px solid var(--line); background: var(--paper); color: var(--ink);
+    border-radius: 17px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600;
+    white-space: nowrap; transition: background .2s ease, border-color .2s ease;
   }
-  .enrich-input-row textarea:focus { border-color: var(--green); }
-  .enrich-input-row button {
+  .tool-btn:hover { background: var(--cream); border-color: var(--green); }
+  .tool-ico { font-size: 14px; line-height: 1; }
+  .tool-label {
+    max-width: 0; opacity: 0; overflow: hidden; margin-left: 0;
+    transition: max-width .28s ease, opacity .2s ease, margin-left .28s ease;
+  }
+  .tool-btn:hover .tool-label, .tool-btn:focus-visible .tool-label {
+    max-width: 160px; opacity: 1; margin-left: 6px;
+  }
+  #enrichSendBtn {
+    position: absolute; right: 10px; bottom: 10px; z-index: 2;
     background: var(--green); color: var(--forest); border: 0;
-    border-radius: 12px; padding: 0 20px; height: 48px;
-    font-weight: 700; font-size: 15px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    border-radius: 12px; padding: 0 18px; height: 40px;
+    font-weight: 700; font-size: 14px; cursor: pointer; white-space: nowrap;
   }
-  .enrich-input-row button:disabled { opacity: .5; cursor: default; }
+  #enrichSendBtn:disabled { opacity: .5; cursor: default; }
 </style>
 <!-- LinkedIn Insight Tag -->
 <script type="text/javascript">
@@ -567,24 +589,31 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
     <div class="hero">
       <span class="eyebrow">Free · No signup</span>
       <h1 class="display">Should your next hire be<br/><span class="swap">human or AI?</span></h1>
-      <p class="sub">Paste a job description below. In 15 seconds you'll get an Agent Fit Score across 7 dimensions — and a clear verdict on what this role actually needs.</p>
+      <p class="sub">Paste a job description or describe the role. Ada scores it in about 15 seconds.</p>
 
-      <div class="dropzone">
-        <div id="textWrap">
-          <textarea id="jd" placeholder="Paste a job description here…"></textarea>
+      <!-- Hidden compatibility store for the JD text (kept in sync by the chat). -->
+      <textarea id="jd" hidden></textarea>
+      <input type="file" id="pdfInput" accept=".pdf" style="display:none" onchange="handlePdfUpload(event)" />
+
+      <!-- Chat-first intake — Ada leads from the first message. -->
+      <div class="hero-chat">
+        <div class="chat-row">
+          <span class="ava">A</span>
+          <div class="enrich-msgs" id="enrichMsgs"></div>
         </div>
-        <div class="other-roles" id="otherRoles">
-          <p id="orTitle"></p>
-          <div id="orChips"></div>
-        </div>
-        <div class="dz-sep" id="dzSep"></div>
-        <div class="dz-foot">
-          <input type="file" id="pdfInput" accept=".pdf" style="display:none" onchange="handlePdfUpload(event)" />
-          <div class="dz-chips">
-            <span class="chip" onclick="loadSample()">▲ Try a sample JD</span>
-            <span class="chip pdf-chip" onclick="document.getElementById('pdfInput').click()">📄 Upload PDF</span>
+        <div class="enrich-input-row">
+          <div class="composer">
+            <textarea id="enrichInput" placeholder="Paste the job description, or describe the role…" rows="3" onkeydown="enrichEnterSend(event)"></textarea>
+            <div class="composer-tools">
+              <button type="button" class="tool-btn" onclick="loadSample()" aria-label="Try a sample JD" title="Try a sample JD">
+                <span class="tool-ico">▲</span><span class="tool-label">Try a sample JD</span>
+              </button>
+              <button type="button" class="tool-btn" onclick="document.getElementById('pdfInput').click()" aria-label="Upload PDF" title="Upload PDF">
+                <span class="tool-ico">📄</span><span class="tool-label">Upload PDF</span>
+              </button>
+            </div>
+            <button id="enrichSendBtn" onclick="sendHeroMessage()">Send →</button>
           </div>
-          <button class="btn btn-primary" id="heroBtn" onclick="handleScoreClick()">Score this role →</button>
         </div>
       </div>
 
@@ -631,21 +660,6 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
       </div>
     </div>
     <button class="btn btn-primary btn-block" style="max-width:680px;margin-top:8px" onclick="runAnalysis()">Run the analysis →</button>
-  </section>
-
-  <!-- SCREEN 2b — ENRICHMENT CHAT (short JD path) -->
-  <section class="screen" id="s-enrich">
-    <button class="back-link" onclick="goBack()">← Back</button>
-    <div class="enrich-wrap">
-      <span class="eyebrow">A few quick questions</span>
-      <h2 class="display" style="font-size:26px">Help Ada give you a sharper verdict.</h2>
-      <p>The role description is a bit brief. Ada will ask a few quick questions about how the role actually works, then score it automatically.</p>
-      <div class="enrich-msgs" id="enrichMsgs"></div>
-      <div class="enrich-input-row">
-        <textarea id="enrichInput" placeholder="Type your reply…" rows="2" onkeydown="enrichEnterSend(event)"></textarea>
-        <button id="enrichSendBtn" onclick="sendEnrichMessage()">Send →</button>
-      </div>
-    </div>
   </section>
 
   <!-- SCREEN 3 — ANALYSIS -->
@@ -847,6 +861,8 @@ function renderScreen(id) {
   document.querySelectorAll('#rail i').forEach((bar,i) => {
     bar.className = i<=n ? (i===3?'on lua':'on') : '';
   });
+  // Returning to the hero (browser Back / restart) resets the chat to Ada's greeting.
+  if (id === 's-hero') initHeroChat();
   if (id === 's-result') drawResult();
   if (id === 's-brief') initCtaScreen('ts');
   if (id === 's-connect') { initCtaScreen('lua'); initConnectScreen(); }
@@ -885,8 +901,11 @@ if (window.pdfjsLib) {
 async function handlePdfUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
-  const jdEl = document.getElementById('jd');
-  jdEl.value = 'Extracting text from PDF…';
+  // Extracted text lands in the composer (not auto-sent) so the user can review
+  // it before hitting Send.
+  const input = document.getElementById('enrichInput');
+  input.value = 'Extracting text from PDF…';
+  input.disabled = true;
   try {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -896,39 +915,24 @@ async function handlePdfUpload(event) {
       const content = await page.getTextContent();
       text += content.items.map(s => s.str).join(' ') + '\n';
     }
-    jdEl.value = text.trim();
+    input.value = text.trim();
+    input.disabled = false;
+    input.focus();
     document.getElementById('pdfInput').value = '';
   } catch (e) {
-    jdEl.value = '';
+    input.value = '';
+    input.disabled = false;
     alert('Could not read PDF. Please paste the JD text directly.');
   }
 }
 
-function handleScoreClick() {
-  const jdVal = document.getElementById('jd').value.trim();
-  const wordCount = jdVal.split(/\s+/).filter(Boolean).length;
-  const btn = document.getElementById('heroBtn');
-  btn.disabled = true;
-  btn.textContent = 'Preparing…';
-  setTimeout(() => {
-    btn.disabled = false;
-    btn.textContent = 'Score this role →';
-    if (wordCount < 20) {
-      state.jdText = jdVal;
-      startEnrichChat();
-      go('s-enrich');
-    } else {
-      go('s-questions');
-    }
-  }, 700);
-}
-
 function loadSample() {
-  document.getElementById('jd').value =
+  document.getElementById('enrichInput').value =
     "Tier 1 Customer Support Specialist — Northwind Co.\n\n" +
     "Respond to inbound customer emails and chats, resolve common order, billing and shipping questions, " +
     "triage and tag tickets, escalate edge cases, and keep the CRM up to date. High ticket volume. " +
     "Playbook-driven. Customer-facing. Reports to the Support Lead.";
+  sendHeroMessage();
 }
 
 function pick(el, key, value) {
@@ -1145,6 +1149,64 @@ const enrichHistory = [];  // [{role,content}]
 const ENRICH_DONE = '[[ENRICH_DONE]]';   // completion token Ada emits when ready
 const ENRICH_MAX_ANSWERS = 4;            // hard cap — advance after this many user replies
 
+// Ada opens the hero chat with this — invites paste-or-describe. The four
+// high-leverage dimension questions only appear later, on the thin-JD branch.
+const HERO_GREETING = `Hi, I'm Ada. Paste a job description below, or describe the role in a sentence or two, and I'll tell you whether it's a human or an agent hire.`;
+let heroStage = 'awaiting_jd';   // 'awaiting_jd' | 'enriching'
+
+// Reset the hero chat to Ada's greeting (on first load and on Back/restart).
+function initHeroChat() {
+  heroStage = 'awaiting_jd';
+  enrichHistory.length = 0;
+  const msgs = document.getElementById('enrichMsgs');
+  if (msgs) msgs.innerHTML = '';
+  const input = document.getElementById('enrichInput');
+  if (input) { input.value = ''; input.disabled = false; }
+  const btn = document.getElementById('enrichSendBtn');
+  if (btn) btn.disabled = false;
+  appendEnrichMsg('ada', HERO_GREETING);
+  if (msgs) msgs.scrollTop = 0;
+}
+
+// The hero composer's Send. First message = the role description; later
+// messages (once enriching) are answers handed to the existing enrichment loop.
+function sendHeroMessage() {
+  const input = document.getElementById('enrichInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  // Subsequent turns are enrichment answers — defer to the existing loop.
+  if (heroStage === 'enriching') {
+    appendEnrichMsg('user', text);
+    enrichHistory.push({ role: 'user', content: text });
+    callEnrichApi(false);
+    return;
+  }
+
+  // First message = the role description. Populate both stores before branching.
+  appendEnrichMsg('user', text);
+  state.jdText = text;
+  document.getElementById('jd').value = text;
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+  const btn = document.getElementById('enrichSendBtn');
+
+  if (wordCount >= 20) {
+    // Enough detail — quick ack, then hand off to the calibration questions.
+    btn.disabled = true;
+    const typing = appendEnrichMsg('ada', 'Ada is reading the role…', true);
+    setTimeout(() => {
+      typing.remove();
+      appendEnrichMsg('ada', "Got it, that's plenty to work with. Three quick calibrations and I'll score it.");
+      setTimeout(() => { btn.disabled = false; go('s-questions'); }, 1200);
+    }, 700);
+  } else {
+    // Thin description — hand to the 4-dimension intake brain (single seed source).
+    heroStage = 'enriching';
+    startEnrichChat();
+  }
+}
+
 function startEnrichChat() {
   enrichHistory.length = 0;
   state.enrichUrl = adaSessionUrl('enrich');
@@ -1191,17 +1253,7 @@ function finishEnrich(messageText) {
 }
 
 function enrichEnterSend(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendEnrichMessage(); }
-}
-
-function sendEnrichMessage() {
-  const input = document.getElementById('enrichInput');
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  appendEnrichMsg('user', text);
-  enrichHistory.push({ role: 'user', content: text });
-  callEnrichApi(false);
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendHeroMessage(); }
 }
 
 function appendEnrichMsg(role, text, isTyping) {
@@ -1699,10 +1751,13 @@ function restart() {
   state.leadSubmitted = false;
   state.leadCaptured = false;
   document.getElementById('jd').value = '';
-  document.getElementById('otherRoles').style.display = 'none';
   const _ov = document.getElementById('overlay'); if (_ov) _ov.classList.remove('show');
   go('s-hero');
 }
+
+// s-hero is statically active and the initial history entry doesn't route
+// through renderScreen, so paint Ada's greeting once on first load.
+initHeroChat();
 </script>
 </body>
 </html>
