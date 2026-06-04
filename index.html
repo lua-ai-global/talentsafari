@@ -92,10 +92,10 @@
   .back-link:hover { color: var(--forest); }
 
   /* hero */
-  .hero { text-align: center; padding-top: 14px; }
-  .hero h1 { font-size: clamp(38px,6.4vw,74px); line-height: 1.03; margin: 6px auto 18px; max-width: 14ch; color: var(--forest); }
+  .hero { text-align: center; padding-top: 0; margin-top: -40px; }
+  .hero h1 { font-size: clamp(38px,6.4vw,74px); line-height: 1.03; margin: 0 auto 14px; max-width: 14ch; color: var(--forest); }
   .hero h1 .swap { background: linear-gradient(110deg,var(--green-deep) 25%,var(--lua) 95%); -webkit-background-clip:text; background-clip:text; color:transparent; }
-  .hero p.sub { font-size: clamp(15px,1.7vw,18px); color: var(--ink-soft); max-width: 52ch; margin: 0 auto 30px; }
+  .hero p.sub { font-size: clamp(15px,1.7vw,18px); color: var(--ink-soft); max-width: 52ch; margin: 0 auto 20px; }
 
   .dropzone {
     max-width: 680px; margin: 0 auto; background: var(--paper);
@@ -485,6 +485,8 @@
 
   /* ── enrichment chat (chat-first hero) ────────────────────────── */
   .hero-chat { max-width: 720px; margin: 0 auto; text-align: left; }
+  /* Avatar sits on the left; the chat panel is ONE box holding the scrolling
+     messages on top and the composer at the bottom (split by a divider). */
   .chat-row { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
   .chat-row .ava {
     flex-shrink: 0;
@@ -492,10 +494,14 @@
     display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 17px;
     font-family: 'Space Grotesk', sans-serif;
   }
-  .enrich-msgs {
+  .chat-panel {
     flex: 1; min-width: 0;
     background: var(--paper); border: 1.5px solid var(--line); border-radius: 18px;
-    padding: 24px; height: 440px; overflow-y: auto;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .enrich-msgs {
+    flex: none; height: 300px;
+    padding: 24px; overflow-y: auto;
     display: flex; flex-direction: column; gap: 14px;
   }
   .emsg {
@@ -509,20 +515,25 @@
     background: #E8F5EE; color: var(--ink); align-self: flex-end; border-bottom-right-radius: 4px;
   }
   .emsg.typing { opacity: .55; font-style: italic; }
-  /* The composer is the bordered text box; tools and Send live inside it,
-     so the box spans the full width of the Ada chat panel above. */
-  .enrich-input-row { display: block; }
-  .composer { position: relative; width: 100%; }
-  .composer textarea {
-    width: 100%; box-sizing: border-box; border: 1.5px solid var(--line); border-radius: 14px;
-    padding: 13px 16px 56px; font-family: inherit; font-size: 15px; outline: 0;
-    background: var(--cream); resize: none; min-height: 120px; max-height: 240px;
+  /* The composer is a rounded pill that floats inside the chat panel near the
+     bottom: tool icons on the left, the text input in the middle, and a round
+     up-arrow Send button on the right. */
+  .composer {
+    flex-shrink: 0; display: flex; align-items: flex-end; gap: 6px;
+    margin: 6px 16px 16px; padding: 6px 6px 6px 10px;
+    border: 1.5px solid var(--line); border-radius: 26px; background: var(--cream);
   }
-  .composer textarea:focus { border-color: var(--green); }
-  /* Icon-only tool buttons, anchored at the bottom-left inside the text box. */
-  .composer-tools { position: absolute; left: 10px; bottom: 10px; display: flex; gap: 8px; z-index: 2; }
+  .composer textarea {
+    flex: 1; min-width: 0; box-sizing: border-box; border: 0; outline: 0;
+    padding: 8px 4px; font-family: inherit; font-size: 15px; line-height: 1.4;
+    background: transparent; resize: none; min-height: 24px; max-height: 120px;
+  }
+  /* Tool buttons inside the pill: round icon by default, expand to show their
+     label on hover/focus. */
+  .composer-tools { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
   .tool-btn {
-    display: inline-flex; align-items: center; height: 34px; padding: 0 9px;
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 34px; padding: 0 9px;
     border: 1.5px solid var(--line); background: var(--paper); color: var(--ink);
     border-radius: 17px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600;
     white-space: nowrap; transition: background .2s ease, border-color .2s ease;
@@ -537,10 +548,10 @@
     max-width: 160px; opacity: 1; margin-left: 6px;
   }
   #enrichSendBtn {
-    position: absolute; right: 10px; bottom: 10px; z-index: 2;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px; padding: 0; border-radius: 50%;
     background: var(--green); color: var(--forest); border: 0;
-    border-radius: 12px; padding: 0 18px; height: 40px;
-    font-weight: 700; font-size: 14px; cursor: pointer; white-space: nowrap;
+    font-size: 19px; font-weight: 700; line-height: 1; cursor: pointer;
   }
   #enrichSendBtn:disabled { opacity: .5; cursor: default; }
 </style>
@@ -587,7 +598,6 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
   <!-- SCREEN 1 — HERO -->
   <section class="screen active" id="s-hero">
     <div class="hero">
-      <span class="eyebrow">Free · No signup</span>
       <h1 class="display">Should your next hire be<br/><span class="swap">human or AI?</span></h1>
       <p class="sub">Paste a job description or describe the role. Ada scores it in about 15 seconds.</p>
 
@@ -599,20 +609,21 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
       <div class="hero-chat">
         <div class="chat-row">
           <span class="ava">A</span>
-          <div class="enrich-msgs" id="enrichMsgs"></div>
-        </div>
-        <div class="enrich-input-row">
-          <div class="composer">
-            <textarea id="enrichInput" placeholder="Paste the job description, or describe the role…" rows="3" onkeydown="enrichEnterSend(event)"></textarea>
-            <div class="composer-tools">
-              <button type="button" class="tool-btn" onclick="loadSample()" aria-label="Try a sample JD" title="Try a sample JD">
-                <span class="tool-ico">▲</span><span class="tool-label">Try a sample JD</span>
-              </button>
-              <button type="button" class="tool-btn" onclick="document.getElementById('pdfInput').click()" aria-label="Upload PDF" title="Upload PDF">
-                <span class="tool-ico">📄</span><span class="tool-label">Upload PDF</span>
-              </button>
+          <!-- One unified box: messages on top, composer at the bottom. -->
+          <div class="chat-panel">
+            <div class="enrich-msgs" id="enrichMsgs"></div>
+            <div class="composer">
+              <div class="composer-tools">
+                <button type="button" class="tool-btn" onclick="loadSample()" aria-label="Try a sample JD" title="Try a sample JD">
+                  <span class="tool-ico">▲</span><span class="tool-label">Try a sample JD</span>
+                </button>
+                <button type="button" class="tool-btn" onclick="document.getElementById('pdfInput').click()" aria-label="Upload PDF" title="Upload PDF">
+                  <span class="tool-ico">📄</span><span class="tool-label">Upload PDF</span>
+                </button>
+              </div>
+              <textarea id="enrichInput" placeholder="Paste the job description, or describe the role…" rows="1" oninput="autoGrowComposer(this)" onkeydown="enrichEnterSend(event)"></textarea>
+              <button id="enrichSendBtn" onclick="sendHeroMessage()" aria-label="Send" title="Send">↑</button>
             </div>
-            <button id="enrichSendBtn" onclick="sendHeroMessage()">Send →</button>
           </div>
         </div>
       </div>
@@ -918,6 +929,7 @@ async function handlePdfUpload(event) {
     input.value = text.trim();
     input.disabled = false;
     input.focus();
+    autoGrowComposer(input);   // grow the pill to fit the extracted text (up to the cap)
     document.getElementById('pdfInput').value = '';
   } catch (e) {
     input.value = '';
@@ -1153,6 +1165,16 @@ const ENRICH_MAX_ANSWERS = 4;            // hard cap — advance after this many
 // high-leverage dimension questions only appear later, on the thin-JD branch.
 const HERO_GREETING = `Hi, I'm Ada. Paste a job description below, or describe the role in a sentence or two, and I'll tell you whether it's a human or an agent hire.`;
 let heroStage = 'awaiting_jd';   // 'awaiting_jd' | 'enriching'
+const COMPOSER_MAX_H = 120;      // px — the pill grows with the text up to here, then scrolls
+
+// Grow the composer textarea to fit its content (line by line) up to a cap;
+// beyond the cap it scrolls. Pass null/no-content to reset to one line.
+function autoGrowComposer(el) {
+  el = el || document.getElementById('enrichInput');
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, COMPOSER_MAX_H) + 'px';
+}
 
 // Reset the hero chat to Ada's greeting (on first load and on Back/restart).
 function initHeroChat() {
@@ -1161,7 +1183,7 @@ function initHeroChat() {
   const msgs = document.getElementById('enrichMsgs');
   if (msgs) msgs.innerHTML = '';
   const input = document.getElementById('enrichInput');
-  if (input) { input.value = ''; input.disabled = false; }
+  if (input) { input.value = ''; input.disabled = false; autoGrowComposer(input); }
   const btn = document.getElementById('enrichSendBtn');
   if (btn) btn.disabled = false;
   appendEnrichMsg('ada', HERO_GREETING);
@@ -1175,6 +1197,7 @@ function sendHeroMessage() {
   const text = input.value.trim();
   if (!text) return;
   input.value = '';
+  autoGrowComposer(input);   // collapse the pill back to one line
 
   // Subsequent turns are enrichment answers — defer to the existing loop.
   if (heroStage === 'enriching') {
