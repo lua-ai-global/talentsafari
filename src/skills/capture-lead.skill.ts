@@ -380,7 +380,38 @@ export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
     const { email, name, title, company, jdText, scoringResult } = input;
     const { flags } = scoringResult;
 
-    // Always store to Data regardless of flags
+    // Flag short-circuit — no Slack, no email
+    if (flags.short_jd || flags.non_english || flags.suspected_fake) {
+      const reason = Object.keys(flags).find((k) => flags[k as keyof typeof flags]);
+      return {
+        posted: false,
+        email1Sent: false,
+        email2ScheduledAt: '',
+        skipped: true,
+        reason,
+      };
+    }
+
+    // Real-lead gate. This tool is called twice per evaluation: once right
+    // after score_jd (the score-time auto-call) and once when the visitor
+    // submits the lead form. Only the form submission carries real contact
+    // details (name + title are required form fields). The score-time call has
+    // no genuine lead, so skip everything below — including the Data write — to
+    // avoid phantom evaluation records, Sheets rows, Slack posts, and report
+    // emails with placeholder contact info.
+    if (!name?.trim() || !title?.trim()) {
+      return {
+        posted: false,
+        email1Sent: false,
+        email2ScheduledAt: '',
+        skipped: true,
+        reason: 'no_lead_details',
+      };
+    }
+
+    // Record the evaluation to Data — genuine leads only (this runs after the
+    // real-lead gate, so score-time auto-calls no longer create placeholder
+    // records).
     try {
       await Data.create(
         'evaluations',
@@ -401,36 +432,6 @@ export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
         `${scoringResult.role_title} ${scoringResult.verdict} ${company} ${jdText ?? ''}`.slice(0, 2000),
       );
     } catch { /* non-fatal */ }
-
-    // Flag short-circuit — no Slack, no email
-    if (flags.short_jd || flags.non_english || flags.suspected_fake) {
-      const reason = Object.keys(flags).find((k) => flags[k as keyof typeof flags]);
-      return {
-        posted: false,
-        email1Sent: false,
-        email2ScheduledAt: '',
-        skipped: true,
-        reason,
-      };
-    }
-
-    // Real-lead gate. This tool is called twice per evaluation: once right
-    // after score_jd (per the description, to record the evaluation to Data —
-    // that already happened above) and once when the visitor submits the lead
-    // form. Only the form submission carries real contact details (name +
-    // title are required form fields). Emitting Slack / Sheets / email on the
-    // score-time auto-call produced phantom rows + duplicate Slack posts +
-    // report emails with placeholder contact info, so skip outward signals
-    // until we have a genuine lead.
-    if (!name?.trim() || !title?.trim()) {
-      return {
-        posted: false,
-        email1Sent: false,
-        email2ScheduledAt: '',
-        skipped: true,
-        reason: 'no_lead_details',
-      };
-    }
 
     const slackUrl = env('SLACK_LEADS_WEBHOOK_URL') ?? '';
     const resendKey = env('RESEND_API_KEY') ?? '';
