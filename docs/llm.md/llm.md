@@ -429,7 +429,12 @@ questions (which overlap the MCQs).
 - **Trigger unchanged:** still only the thin-JD path. The 3 Step-2 MCQs are **kept**; the Ada step
   is additive (thin JD → `s-enrich` (4 Qs) → `s-questions` (MCQs) → analysis). Long JDs are untouched.
 - **`index.html`:** rewrote the enrichment **seed** (`startEnrichChat`) to present all four questions
-  as one **numbered batch** in the first message and re-ask only the gaps; `buildEnrichedJd()` now
+  as one **numbered batch** in the first message and re-ask only the gaps. **Conditional 5th question:**
+  Ada first checks whether the brief description already names a **job title** (e.g. nurse, software
+  engineer); if not, question 1 becomes "What is the job title you are looking to hire for?" and the
+  four dimension questions follow as 2–5 (five total) — otherwise just the four. Ada judges this from
+  the JD preview (no JS detection). The 4-reply cap is unaffected (it counts turns, not questions).
+  `buildEnrichedJd()` now
   prefixes the folded block `Clarifying answers (judgment, regulation, relationships, systems):`
   so the rubric can bind answers to dimensions; refreshed `s-enrich` copy; and `appendEnrichMsg`
   now renders Ada messages with **preserved line breaks** (`white-space:pre-wrap`) and safe

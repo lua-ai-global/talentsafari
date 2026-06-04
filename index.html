@@ -484,7 +484,7 @@
   }
 
   /* ── enrichment chat (chat-first hero) ────────────────────────── */
-  .hero-chat { max-width: 720px; margin: 0 auto; text-align: left; }
+  .hero-chat { max-width: 720px; margin: 0 auto; text-align: left; transform: translateX(-30px); }
   /* Avatar sits on the left; the chat panel is ONE box holding the scrolling
      messages on top and the composer at the bottom (split by a divider). */
   .chat-row { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
@@ -1237,15 +1237,17 @@ function startEnrichChat() {
   document.getElementById('enrichInput').value = '';
 
   const jdPreview = state.jdText ? `"${state.jdText.slice(0, 200).trim()}${state.jdText.length > 200 ? '…' : ''}"` : '(no description provided)';
-  const seed = `The user wants to evaluate a role for automation fit but only gave a brief description: ${jdPreview}. Your job is to gather the context that the description does not make clear, by asking the four questions below. Ask all four together in your first message as a short numbered list, with one warm sentence of intro. Do NOT ask about how structured the work is, daily volume, or who they interact with; a separate step covers those.
+  const seed = `The user wants to evaluate a role for automation fit but only gave a brief description: ${jdPreview}. Your job is to gather the context that the description does not make clear, by asking the questions below in one warm numbered list, with one short sentence of intro. Do NOT ask about how structured the work is, daily volume, or who they interact with; a separate step covers those.
 
-The four questions (ask these, lightly reworded in your own voice):
-1. When something unexpected or ambiguous comes up, does this role decide independently using deep expertise, or follow set policies and escalate to a senior person?
-2. Does the work legally require a licensed or certified human to sign off (for example compliance, legal, medical, or financial advice)?
-3. Does this person own long-term relationships (a named book of clients over months), or handle one-off, transactional interactions?
-4. How much of the day is spent in software tools, APIs, and data, versus coordinating with people across teams and meetings?
+FIRST decide whether the description already makes the job title clear (for example nurse, software engineer, support rep, account manager). If the job title is NOT clear, your question 1 MUST be: "What is the job title you are looking to hire for (for example nurse or software engineer)?" and then the four dimension questions follow as 2 to 5, for FIVE questions total. If the title IS already clear, skip that and ask only the four dimension questions. Number whatever you ask sequentially in a single list.
 
-After the user replies, decide whether each of the four is now sufficiently answered. Re-ask ONLY the ones still vague or unanswered, briefly. Once all four are reasonably covered, reply with one short sentence confirming you have enough, ending with the exact token ${ENRICH_DONE} on its own line. IMPORTANT: do NOT call any tools, do NOT score the role, and do NOT send any email or message; a separate step handles scoring. Use any detail already given without re-asking. Start now with the numbered list of all four questions, and do NOT include the token in this first message.`;
+The four dimension questions (always ask these, lightly reworded in your own voice):
+- When something unexpected or ambiguous comes up, does this role decide independently using deep expertise, or follow set policies and escalate to a senior person?
+- Does the work legally require a licensed or certified human to sign off (for example compliance, legal, medical, or financial advice)?
+- Does this person own long-term relationships (a named book of clients over months), or handle one-off, transactional interactions?
+- How much of the day is spent in software tools, APIs, and data, versus coordinating with people across teams and meetings?
+
+After the user replies, decide whether each question you asked (including the job title, if you asked it) is now sufficiently answered. Re-ask ONLY the ones still vague or unanswered, briefly. Once they are reasonably covered, reply with one short sentence confirming you have enough, ending with the exact token ${ENRICH_DONE} on its own line. IMPORTANT: do NOT call any tools, do NOT score the role, and do NOT send any email or message; a separate step handles scoring. Use any detail already given without re-asking. Start now with the numbered list of questions, and do NOT include the token in this first message.`;
 
   enrichHistory.push({ role: 'user', content: seed });
   callEnrichApi(true);
