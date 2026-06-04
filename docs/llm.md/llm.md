@@ -134,9 +134,14 @@ Defined in `src/index.ts`: `name:"Ada"`, `model:"anthropic/claude-sonnet-4-6"`, 
    context); the tool runs the full structured evaluation internally and returns the verdict.
    **Ada does NOT score by hand.** Returns the full result object (below) or a quality-flagged /
    error payload.
-2. **`capture_lead`** (`capture-lead.skill.ts`) — posts the evaluation to **Slack #leads**, sends
-   the report-delivery email, and schedules Ada's follow-up note (~2h later). Skipped if any
-   quality flag is set.
+2. **`capture_lead`** (`capture-lead.skill.ts`) — records the evaluation to the **`evaluations`
+   Data primitive**, posts to **Slack #leads**, appends a **Google Sheets** row, sends the
+   report-delivery email, and schedules Ada's follow-up note (~2h later). **All of this is gated
+   to genuine lead-form submissions only** (real `name` **and** `title` present, no quality flags).
+   `capture_lead` is called twice per evaluation — once at score time (placeholder/no contact →
+   returns `{ skipped, reason:'no_lead_details' }`, does nothing) and once on form submit (real
+   data → full effects). Quality flags (`short_jd`/`non_english`/`suspected_fake`) also short-
+   circuit to `{ skipped }`. **See §13 for the bug this gating fixed.**
 3. **`submit_cta`** (`submit-cta.skill.ts`) — CTA form submissions (Talent Safari brief or Lua
    intro) → Slack + confirmation email.
 4. **`ada_chat`** (`ada-chat.skill.ts`) — follow-up Q&A after a score (auxiliary).
@@ -348,3 +353,45 @@ PR #4 (`2be603ca`, chat-first hero) was merged into `review/latest-updates` (mer
    fresh production build. This deployed successfully and is the **current live state** (the
    original pre-PR#4 flow). The marker comment is harmless; remove it when the redesign is
    re-shipped.
+
+---
+
+## 13. The `capture_lead` phantom-lead fix (2026-06-03) — `capture-lead` v1.0.34 + v1.0.35
+
+Full writeup: **`docs/fixes/bug_fix.md`**. Summary for context:
+
+**Bug.** After the "extended sheets schema" change (skill **v1.0.29**, the then-live version), the
+Google Sheet got a **phantom row before every real lead**: no name, empty title, company `Lua`,
+email `rares@heylua.ai`, same role+score as the real lead ~25s later. It also **double-posted to
+Slack** and **emailed the report to `rares@heylua.ai`** on every evaluation, and wrote a placeholder
+record to the **`evaluations` Data primitive**.
+
+**Root cause.** `capture_lead`'s instruction said *"ALWAYS call immediately after `score_jd`,"* so
+the agent called it **at score time** — before the visitor filled the lead form. With no real lead,
+it **fabricated** the required `email`/`company` from its own builder identity (name `Lua`, company
+`Lua`, email `rares@heylua.ai` — a Lua contact it had in context; **not hardcoded**, confirmed via
+`lua logs`). `execute()` then ran all side-effects anyway. (Essentially a re-run of the §8 premature-
+`capture_lead` issue.)
+
+**Fix (two versions, both live):**
+- **v1.0.34** — added a **real-lead gate** in `execute()` after the flag short-circuit: if
+  `!name?.trim() || !title?.trim()` → return `{ skipped, reason:'no_lead_details' }`. Only the
+  lead-form submission has both `name` and `title` (required form fields); the score-time call has
+  neither. This stopped the phantom **Slack / Sheets / email**.
+- **v1.0.35** — moved the `Data.create('evaluations', …)` call from the top of `execute()` (where it
+  ran unconditionally) to **below** the real-lead gate, so the score-time/flagged calls no longer
+  write placeholder records to the **`evaluations` Data primitive**. The tool description + skill
+  `context` were updated to match (score-time/flagged → records nothing; only genuine leads are
+  recorded + notified). **Side effect:** flagged evaluations are no longer stored to Data either.
+
+**Discriminator note:** the gate keys on **`title`** (and `name`), not on the email — logs showed the
+fabricated calls used name `"Lua"` (non-empty) but **no `title`**, while real leads always have both.
+
+**Deploy.** Shipped via the gated `/lua-deploy` flow. Note `capture-lead` versions 1.0.30–1.0.33
+existed on the server but were never deployed; **1.0.29 was the buggy live version**, then
+**v1.0.34**, now **v1.0.35** is live. Remember the Lua agent deploy is independent of the Vercel
+frontend deploy — and Vercel's dedup (§10) does not apply to `lua deploy`.
+
+**These fixes are committed on `review/latest-updates`** (local commits `043dd176`, `a6b52ff9`, +
+follow-ups) and are **already live on the Lua platform** via `lua deploy`, regardless of whether the
+git branch has been pushed.
