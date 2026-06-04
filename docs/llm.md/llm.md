@@ -127,6 +127,9 @@ Defined in `src/index.ts`: `name:"Ada"`, `model:"anthropic/claude-sonnet-4-6"`, 
     `score_jd` **every time** (memory of a prior score does NOT exempt re-calling).
   - `Call the capture_lead tool …` → call `capture_lead` with exact values.
   - `Call the submit_cta tool …` → call `submit_cta` with exact values.
+  - **ONE exception — intake/clarification mode:** when a message is *not* one of the triggers above
+    and explicitly asks Ada to gather context by questioning the user (and forbids tools), Ada may
+    ask a short batch of questions, no tools (this is the enrichment/intake path — see §8 / §14).
 - Signs off as **"Ada · Built by Lua"**. Never reveals it's powered by Claude.
 
 ### Skills
@@ -262,6 +265,12 @@ no tools, no scoring, no email. Ada asks up to **4** short questions and signals
 in the normal funnel. Verified live: ~3–4s/turn, zero tool calls. Full writeup:
 `docs/fixes/fix_ada_flow.md`.
 
+> **Update (§14):** this enrichment chat was later **repurposed** to ask four specific,
+> high-leverage dimension questions (judgment / regulatory / relationship / systems) as one
+> numbered batch, instead of generic "tasks & volume" questions. The mechanics below (no tools,
+> `[[ENRICH_DONE]]` token, 4-answer cap, fold-into-JD) are unchanged — only the seed content,
+> the rendering, and Ada's persona changed. See §14.
+
 ---
 
 ## 9. Local development
@@ -305,7 +314,11 @@ npm run dev            # → http://localhost:3000  (serves index.html + /api/* 
 
 ---
 
-## 11. Chat-first hero redesign — on `yash/fixes`, NOT deployed (commit `2be603ca`)
+## 11. Chat-first hero redesign — original commit `2be603ca` (superseded by §15)
+
+> **Update (§15):** the chat-first hero was **re-shipped** on branch `feat/ui_changes`, this time
+> wired to the current 4-dimension intake brain and with a redesigned single-panel "pill" composer.
+> The section below describes the *original* `2be603ca` build for history; for the live re-ship see §15.
 
 A reworked, conversational hero exists on **`origin/yash/fixes`** (commit `2be603ca`,
 "feat(hero): chat-first intake with Ada leading the conversation"). It was merged to
@@ -395,3 +408,99 @@ frontend deploy — and Vercel's dedup (§10) does not apply to `lua deploy`.
 **These fixes are committed on `review/latest-updates`** (local commits `043dd176`, `a6b52ff9`, +
 follow-ups) and are **already live on the Lua platform** via `lua deploy`, regardless of whether the
 git branch has been pushed.
+
+---
+
+## 14. Ada intake-mode questions — the 4 high-leverage dimensions (2026-06-04)
+
+Full writeup / plan: **`docs/fixes/ada_persona.md`**.
+
+**Why.** `score_jd` scores 7 weighted dimensions, but the user only supplied direct signal for 3
+of them via the Step-2 MCQs (`task_structure`, `volume_scale`, and a blunt `exposure` answer). The
+four hardest-to-infer, highest-leverage dimensions got **no direct signal** and were guessed from
+the JD text alone: `judgment_complexity` (weight **2.0**, the single biggest score lever),
+`regulatory_burden` (1.5), `relationship_depth` (1.3), `system_integration` (1.0). On a thin JD
+those guesses are weakest — yet that path's enrichment chat only asked vague "tasks & volume"
+questions (which overlap the MCQs).
+
+**What changed.** The existing **enrichment chat** (`s-enrich`, thin-JD-only `<20` words) was
+**repurposed** to ask those four dimensions. No new screen, no control-flow change — it reuses the
+`[[ENRICH_DONE]]` token + `ENRICH_MAX_ANSWERS=4` cap + fold-into-JD machinery from §8.
+- **Trigger unchanged:** still only the thin-JD path. The 3 Step-2 MCQs are **kept**; the Ada step
+  is additive (thin JD → `s-enrich` (4 Qs) → `s-questions` (MCQs) → analysis). Long JDs are untouched.
+- **`index.html`:** rewrote the enrichment **seed** (`startEnrichChat`) to present all four questions
+  as one **numbered batch** in the first message and re-ask only the gaps; `buildEnrichedJd()` now
+  prefixes the folded block `Clarifying answers (judgment, regulation, relationships, systems):`
+  so the rubric can bind answers to dimensions; refreshed `s-enrich` copy; and `appendEnrichMsg`
+  now renders Ada messages with **preserved line breaks** (`white-space:pre-wrap`) and safe
+  **`**bold**`** (HTML-escaped, then `**…**` → `<strong>`). No change to `score-role.skill.ts`
+  (rubric/schema) — answers reach scoring purely as JD context.
+- **`src/index.ts` (persona):** added a scoped **"Intake / clarification mode (the ONE exception)"**
+  section legitimizing the questioning; the `score_jd` / `capture_lead` / `submit_cta` hard triggers
+  and their "never ask" rules are **unchanged** (the exception applies only to the enrichment prompt,
+  which starts with none of those triggers). See §4.
+
+**Deploy.** Two independent paths (as always):
+- **Persona → Lua platform, live as v37.** Drift surfaced at the deploy sync gate (local persona ≠
+  server); resolved with `lua sync --push` (created server **v36**), then the gated `/lua-deploy`
+  staged + promoted **v37**.
+- **Frontend → Vercel.** Committed as `c90e4c61` and pushed to `review/latest-updates` (auto-deploy).
+  ⚠️ **Process note:** that push was a **direct push to the production branch** and carried **9
+  commits** (the branch was 9 ahead of origin — the 8 §13 capture-lead/docs commits had never been
+  pushed). Only `c90e4c61` changes site behavior; the other 8 touched `docs/`, `lua.skill.yaml`,
+  `.lua/`, and `src/skills/capture-lead.skill.ts` (no `index.html`/`api/`). Going forward, land
+  changes via a **PR from a feature branch**, not a direct push — and check
+  `git log origin/<branch>..<branch>` before pushing to a production branch.
+
+---
+
+## 15. Chat-first hero re-ship + pill-composer redesign (2026-06-04) — branch `feat/ui_changes`
+
+Full plan: **`docs/fixes/UI_change.md`**. This re-ships the §11 chat-first hero (Ada on the first
+screen) but, crucially, **merges it with the current 4-dimension intake brain** (§14) instead of the
+older generic enrichment that shipped with `2be603ca`. Branch `feat/ui_changes` (off
+`review/latest-updates`); two commits: `fe5b1a5d` (re-ship) + `008d867d` (UI refinements). All
+changes are in **`index.html`** — no `api/`, no `src/` (persona/skills) change.
+
+**Why a merge, not a revert-the-revert.** `2be603ca` carried its own *generic* enrichment (an
+inline 3-topic seed in `sendHeroMessage`, plain-`textContent` rendering, a "Additional details
+provided:" fold). Reverting the revert would have resurrected the hero **and clobbered** the §14
+intake work. So the §14 brain **wins**: `startEnrichChat()` (the 4-dimension numbered batch),
+`appendEnrichMsg()` (HTML-escape + `**bold**` + pre-wrap), and `buildEnrichedJd()` ("Clarifying
+answers (judgment, regulation, relationships, systems):") are the single source of truth.
+
+**What changed (`index.html`):**
+- **`s-hero` is the Ada chat; the separate `s-enrich` screen is deleted.** `sendHeroMessage()` is the
+  hero composer's Send: first message = the role (sets `state.jdText` **and** the hidden `#jd`);
+  **≥ 20 words** → quick ack bubble → `go('s-questions')`; **< 20 words** → `heroStage='enriching'`
+  then **calls `startEnrichChat()`** (so the seed stays the §14 single source — preserves the
+  `enrichHistory[0] == seed` invariant that `buildEnrichedJd().slice(1)` / `callEnrichApi` rely on).
+  Subsequent turns push the answer and call `callEnrichApi(false)`.
+- **New JS:** `HERO_GREETING` (minimal paste-or-describe greeting; does **not** pre-ask the 4
+  dimensions), `heroStage`, `initHeroChat()` (resets chat to the greeting — called from
+  `renderScreen('s-hero')` on Back/restart and once at boot, since the static `active` hero +
+  initial `replaceState` don't route through `renderScreen`).
+- **Removed dead code:** old `handleScoreClick()` (paste-box `#heroBtn` handler) and
+  `sendEnrichMessage()`; `enrichEnterSend()` now calls `sendHeroMessage`. `loadSample()` /
+  `handlePdfUpload()` retarget the composer (`#enrichInput`); PDF text lands in the composer
+  (not auto-sent) so the user can review.
+- **Single-panel "pill" composer (UI redesign).** Messages + input live in **one** bordered
+  `.chat-panel` (avatar "A" on the left). The input is a rounded **pill that floats inside** the
+  panel near the bottom: round **hover-expand** tool icons (sample / PDF) on the left, the textarea
+  in the middle, and a circular **up-arrow (↑)** Send button on the right (replaces the "Send →"
+  text button). The reply area is a fixed-height scroll region (currently `.enrich-msgs` `height:
+  300px`); the input ~90px below it. **Gotcha fixed:** `.enrich-msgs` must use `flex: none` +
+  explicit `height` — `flex: 1` resolves to `flex-basis: 0%` and collapses the reply area in an
+  auto-height panel.
+- **Auto-grow composer:** `autoGrowComposer(el)` sets the textarea height to `min(scrollHeight,
+  COMPOSER_MAX_H=120)` on input — the pill grows line-by-line up to the cap, then scrolls. Reset on
+  send / Back / restart; grown to fit PDF-extracted text.
+- **Copy/layout:** removed the "Free · No signup" eyebrow, trimmed the sub-headline, shifted the
+  whole hero block up (`.hero { margin-top: -40px }`). Dropped the §12 **redeploy marker** comment
+  (re-shipping the redesign supersedes it) and the `restart()` `#otherRoles` null-ref (that element
+  no longer exists).
+
+**Deploy.** Frontend-only → Vercel. Land via **PR from `feat/ui_changes` into `review/latest-updates`**
+(preview deploy on the PR is the real-browser check — no headless browser was available locally;
+verification so far is syntax + serve + structural greps). Per §12, once this is live the §11/§12
+"reverted, not deployed" framing is obsolete.
