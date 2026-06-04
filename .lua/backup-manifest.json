@@ -1,6 +1,6 @@
 {
-  "lastHash": "5433df95fbd18b0d046f58e168d85bf08e0f84cdff59db664ab3b6ec90a77497",
-  "lastPushedAt": "2026-06-03T19:28:11.932Z",
+  "lastHash": "e2bd9fee69af243bf071177a4af25c38551d23965a648ef365d044bf1e867b75",
+  "lastPushedAt": "2026-06-04T03:58:56.519Z",
   "files": [
     {
       "relativePath": "api/_lib/origin.js",
@@ -39,6 +39,10 @@
       "hash": "7ae969c564777cae"
     },
     {
+      "relativePath": "docs/fixes/bug_fix.md",
+      "hash": "1c3e603419b8449d"
+    },
+    {
       "relativePath": "docs/fixes/fix_ada_flow.md",
       "hash": "c6f46dc6c54420db"
     },
@@ -60,7 +64,7 @@
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "be3de2c1cedbadef"
+      "hash": "be9cda64e3a7ae0b"
     },
     {
       "relativePath": "netlify.toml",
@@ -116,7 +120,7 @@
     },
     {
       "relativePath": "src/skills/capture-lead.skill.ts",
-      "hash": "3775cb24addc2e06"
+      "hash": "7b68798e3f62f3f0"
     },
     {
       "relativePath": "src/skills/score-role.skill.ts",

@@ -1,8 +1,8 @@
 # Bug fix: phantom `rares@heylua.ai` lead rows
 
-**Status:** ✅ Fixed — `capture-lead` **v1.0.34** live (Slack/Sheets/email gate, 2026-06-03). A
-follow-up that also stops placeholder records in the `evaluations` Data primitive is committed and
-**pending deploy as v1.0.35** (see "Follow-up" below).
+**Status:** ✅ Fully fixed and live — `capture-lead` **v1.0.35** (2026-06-03). v1.0.34 added the
+Slack/Sheets/email gate; v1.0.35 also stops placeholder records entering the `evaluations` Data
+primitive (see "Follow-up" below).
 **Affected:** Lua agent skill `capture-lead` (`src/skills/capture-lead.skill.ts`)
 **Severity:** Medium — data pollution + duplicate notifications, no data loss
 
@@ -91,7 +91,7 @@ that Slack/Sheets/email fire later on form submission — and to never fabricate
 
 ---
 
-## Follow-up: stop placeholder records in the `evaluations` Data primitive (v1.0.35)
+## Follow-up: stop placeholder records in the `evaluations` Data primitive (v1.0.35, live)
 
 v1.0.34 stopped the phantom **Sheets rows, Slack posts, and emails**, but the `Data.create('evaluations', …)`
 call sat at the **top** of `execute()` and ran *unconditionally* — before both guards. So the
