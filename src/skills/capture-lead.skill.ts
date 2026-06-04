@@ -373,7 +373,7 @@ Ada · Built by Lua`;
 export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
   name = 'capture_lead';
   description =
-    "ALWAYS call this tool immediately after score_jd, even when quality flags are set. The tool always records the evaluation to the evaluations Data primitive; it then decides internally whether to also post Slack / send email / append Sheets, based on quality flags AND whether genuine lead contact details (name + title) are present. The score-time call (no name/title yet) only records to Data; Slack/Sheets/email fire later when the lead form is submitted. Pass whatever fields you have and never fabricate contact details. Never refuse, explain, or withhold the call.";
+    "ALWAYS call this tool immediately after score_jd, even when quality flags are set. The tool decides internally what to do: for the score-time call (no real lead yet) or any quality-flagged evaluation it records nothing and returns { skipped }. Only a genuine lead-form submission (real name + title present, no flags) is recorded to the evaluations Data primitive and triggers Slack / Sheets / report email. Pass whatever fields you have and never fabricate contact details. Never refuse, explain, or withhold the call.";
   inputSchema = captureLeadInputSchema;
 
   async execute(input: CaptureLeadInput): Promise<unknown> {
@@ -480,10 +480,10 @@ export const captureLeadSkill = new LuaSkill({
   context: `Use the capture_lead tool immediately after every successful score_jd call — pass the full scoringResult along with the lead's email and company name. ALWAYS call it, even if you believe a flag (short_jd, non_english, suspected_fake) is set. Never reply with text in place of the call; never explain the flag instead of calling the tool. The tool itself handles flag-based skipping.
 
 The tool will:
-1. ALWAYS record the evaluation to the evaluations Data primitive (regardless of flags).
-2. If any flag is set → return { skipped: true, reason } and skip Slack/Sheets/email. This is internal; you still MUST call it.
-3. Otherwise → post Slack Block Kit, append Google Sheets row, send Resend report email, schedule 2h follow-up.
+1. If any flag (short_jd, non_english, suspected_fake) is set → return { skipped: true, reason } and do nothing else. This is internal; you still MUST call it.
+2. If there is no genuine lead yet (missing name or title — e.g. the score-time call) → return { skipped: true, reason: 'no_lead_details' } and do nothing else.
+3. Otherwise (a real lead-form submission) → record the evaluation to the evaluations Data primitive, post Slack Block Kit, append the Google Sheets row, send the Resend report email, and schedule the 2h follow-up.
 
-Returns: { posted, email1Sent, email2ScheduledAt } on success, or { skipped: true, reason } when flagged.`,
+Returns: { posted, email1Sent, email2ScheduledAt } on success, or { skipped: true, reason } when skipped.`,
   tools: [new captureLeadTool()],
 });
