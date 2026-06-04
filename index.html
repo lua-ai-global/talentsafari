@@ -497,6 +497,7 @@
   }
   .emsg {
     max-width: 85%; padding: 11px 15px; border-radius: 14px; font-size: 14px; line-height: 1.55;
+    white-space: pre-wrap;
   }
   .emsg.ada {
     background: var(--forest); color: #fff; align-self: flex-start; border-bottom-left-radius: 4px;
@@ -638,7 +639,7 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
     <div class="enrich-wrap">
       <span class="eyebrow">A few quick questions</span>
       <h2 class="display" style="font-size:26px">Help Ada give you a sharper verdict.</h2>
-      <p>The role description is a bit brief. Ada will ask you 3–4 quick questions, then score it automatically.</p>
+      <p>The role description is a bit brief. Ada will ask a few quick questions about how the role actually works, then score it automatically.</p>
       <div class="enrich-msgs" id="enrichMsgs"></div>
       <div class="enrich-input-row">
         <textarea id="enrichInput" placeholder="Type your reply…" rows="2" onkeydown="enrichEnterSend(event)"></textarea>
@@ -1151,7 +1152,15 @@ function startEnrichChat() {
   document.getElementById('enrichInput').value = '';
 
   const jdPreview = state.jdText ? `"${state.jdText.slice(0, 200).trim()}${state.jdText.length > 200 ? '…' : ''}"` : '(no description provided)';
-  const seed = `The user wants to evaluate a role for automation fit but only gave a brief description: ${jdPreview}. Ask at most 4 short questions to understand the day-to-day tasks and rough daily volume — keep each question brief and ask them one at a time. Use any information already given without re-asking. IMPORTANT: do NOT call any tools, do NOT score the role, and do NOT send any email or message — a separate step handles scoring. Once the user has answered and you have a basic sense of the role, reply with one short sentence confirming you have enough, ending with the exact token ${ENRICH_DONE} on its own line. Start with your first question now — keep it brief, and do NOT include the token in this first message.`;
+  const seed = `The user wants to evaluate a role for automation fit but only gave a brief description: ${jdPreview}. Your job is to gather the context that the description does not make clear, by asking the four questions below. Ask all four together in your first message as a short numbered list, with one warm sentence of intro. Do NOT ask about how structured the work is, daily volume, or who they interact with; a separate step covers those.
+
+The four questions (ask these, lightly reworded in your own voice):
+1. When something unexpected or ambiguous comes up, does this role decide independently using deep expertise, or follow set policies and escalate to a senior person?
+2. Does the work legally require a licensed or certified human to sign off (for example compliance, legal, medical, or financial advice)?
+3. Does this person own long-term relationships (a named book of clients over months), or handle one-off, transactional interactions?
+4. How much of the day is spent in software tools, APIs, and data, versus coordinating with people across teams and meetings?
+
+After the user replies, decide whether each of the four is now sufficiently answered. Re-ask ONLY the ones still vague or unanswered, briefly. Once all four are reasonably covered, reply with one short sentence confirming you have enough, ending with the exact token ${ENRICH_DONE} on its own line. IMPORTANT: do NOT call any tools, do NOT score the role, and do NOT send any email or message; a separate step handles scoring. Use any detail already given without re-asking. Start now with the numbered list of all four questions, and do NOT include the token in this first message.`;
 
   enrichHistory.push({ role: 'user', content: seed });
   callEnrichApi(true);
@@ -1168,7 +1177,7 @@ function buildEnrichedJd() {
     .map(m => m.content.trim())
     .filter(Boolean);
   if (!answers.length) return base;
-  return `${base}\n\nAdditional details provided:\n${answers.map(a => `- ${a}`).join('\n')}`.trim();
+  return `${base}\n\nClarifying answers (judgment, regulation, relationships, systems):\n${answers.map(a => `- ${a}`).join('\n')}`.trim();
 }
 
 // Complete the enrichment chat: fold the gathered answers into the JD and
@@ -1199,7 +1208,14 @@ function appendEnrichMsg(role, text, isTyping) {
   const msgs = document.getElementById('enrichMsgs');
   const div = document.createElement('div');
   div.className = `emsg ${role}${isTyping ? ' typing' : ''}`;
-  div.textContent = text;
+  if (isTyping) {
+    div.textContent = text;
+  } else {
+    // Minimal safe markdown: escape HTML first, then render **bold**. Newlines
+    // (e.g. the numbered question list) are preserved via white-space:pre-wrap.
+    const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    div.innerHTML = esc.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  }
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
   return div;
