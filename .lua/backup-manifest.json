@@ -1,6 +1,6 @@
 {
-  "lastHash": "e2bd9fee69af243bf071177a4af25c38551d23965a648ef365d044bf1e867b75",
-  "lastPushedAt": "2026-06-04T03:58:56.519Z",
+  "lastHash": "d891fdbd36c967a98819b2c622aa1e4bc1ac4e6636e78c7860efcc8a16d34273",
+  "lastPushedAt": "2026-06-05T14:43:24.913Z",
   "files": [
     {
       "relativePath": "api/_lib/origin.js",
@@ -32,27 +32,35 @@
     },
     {
       "relativePath": "changes.md",
-      "hash": "7ca74dd43a3326f1"
+      "hash": "001ebaabc0f049c9"
     },
     {
       "relativePath": "dev-server.mjs",
       "hash": "7ae969c564777cae"
     },
     {
+      "relativePath": "docs/fixes/ada_persona.md",
+      "hash": "68c8cab666ced769"
+    },
+    {
       "relativePath": "docs/fixes/bug_fix.md",
-      "hash": "1c3e603419b8449d"
+      "hash": "07df360e65a9a31a"
     },
     {
       "relativePath": "docs/fixes/fix_ada_flow.md",
       "hash": "c6f46dc6c54420db"
     },
     {
+      "relativePath": "docs/fixes/UI_change.md",
+      "hash": "1511b4efa823e5cf"
+    },
+    {
       "relativePath": "docs/llm.md/llm.md",
-      "hash": "b3061663bb864f85"
+      "hash": "fcd49fb3510ebb68"
     },
     {
       "relativePath": "email-preview.html",
-      "hash": "0764486966fc58c5"
+      "hash": "3d541bd6f57a64fa"
     },
     {
       "relativePath": "env.example",
@@ -60,11 +68,11 @@
     },
     {
       "relativePath": "index.html",
-      "hash": "b4f4416c14e0dab4"
+      "hash": "c27047560bef8dbb"
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "be9cda64e3a7ae0b"
+      "hash": "652756b07ff3e980"
     },
     {
       "relativePath": "netlify.toml",
@@ -91,6 +99,46 @@
       "hash": "d56bbe348b9f62fd"
     },
     {
+      "relativePath": "plan.md",
+      "hash": "e2ed46d402b4ed4b"
+    },
+    {
+      "relativePath": "public/lua-logo-full.png",
+      "hash": "eed9c85376590bff"
+    },
+    {
+      "relativePath": "public/lua-logo.png",
+      "hash": "0af27ad79ca12ed3"
+    },
+    {
+      "relativePath": "public/lua-logo.svg",
+      "hash": "74f974fe0c331daf"
+    },
+    {
+      "relativePath": "public/social-facebook.png",
+      "hash": "9070f98432588ddd"
+    },
+    {
+      "relativePath": "public/social-instagram.png",
+      "hash": "d83c19d486196643"
+    },
+    {
+      "relativePath": "public/social-linkedin.png",
+      "hash": "c3c32e06e79f35ac"
+    },
+    {
+      "relativePath": "public/talent-safari-logo.jpg",
+      "hash": "1802a5db225825a5"
+    },
+    {
+      "relativePath": "public/talent-safari-logo.png",
+      "hash": "bd44edad815d44bf"
+    },
+    {
+      "relativePath": "public/talent-safari-logo1.jpg",
+      "hash": "b2f21158b02085a1"
+    },
+    {
       "relativePath": "public/talentsafari_logo.jpg",
       "hash": "69247c0277b5bc33"
     },
@@ -108,7 +156,7 @@
     },
     {
       "relativePath": "src/index.ts",
-      "hash": "e922ab12a33db3fb"
+      "hash": "e96c585c90fbeb4d"
     },
     {
       "relativePath": "src/skills/ada-chat.skill.ts",
@@ -120,7 +168,11 @@
     },
     {
       "relativePath": "src/skills/capture-lead.skill.ts",
-      "hash": "7b68798e3f62f3f0"
+      "hash": "fea1652d9b341d83"
+    },
+    {
+      "relativePath": "src/skills/email-assets.ts",
+      "hash": "fe0b285247485488"
     },
     {
       "relativePath": "src/skills/score-role.skill.ts",
@@ -132,7 +184,7 @@
     },
     {
       "relativePath": "src/skills/submit-cta.skill.ts",
-      "hash": "c19368b4f0b7a90c"
+      "hash": "dc40341bc7b3999e"
     },
     {
       "relativePath": "src/skills/tools/CaptureLead.ts",
