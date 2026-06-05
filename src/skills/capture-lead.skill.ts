@@ -1,5 +1,6 @@
 import { LuaSkill, LuaTool, Jobs, Data, env } from 'lua-cli';
 import { z } from 'zod';
+import { TS_LOGO_B64, LUA_LOGO_B64, SOCIAL_FB_B64, SOCIAL_LI_B64, SOCIAL_IG_B64 } from './email-assets';
 
 // ---------------------------------------------------------------------------
 // Input schema
@@ -165,8 +166,8 @@ function renderReportHtml(s: ScoringResult, ctx: EmailCtx = {}): string {
 
     <tr><td align="center" style="padding:26px 40px;border-bottom:1px solid #eceae5">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr>
-        <td style="vertical-align:middle;padding-right:24px"><img src="${ASSET_BASE}/talent-safari-logo.png" alt="Talent Safari" height="60" style="display:block;border:0"></td>
-        <td style="vertical-align:middle"><img src="${ASSET_BASE}/lua-logo.png" alt="" height="46" style="vertical-align:middle;border:0"><span style="font-size:36px;font-weight:700;color:#0B0B0F;vertical-align:middle;margin-left:9px;letter-spacing:-0.5px">Lua</span></td>
+        <td style="vertical-align:middle;padding-right:24px"><img src="cid:ts-logo" alt="Talent Safari" height="60" style="display:block;border:0"></td>
+        <td style="vertical-align:middle"><img src="cid:lua-logo" alt="" height="46" style="vertical-align:middle;border:0"><span style="font-size:36px;font-weight:700;color:#0B0B0F;vertical-align:middle;margin-left:9px;letter-spacing:-0.5px">Lua</span></td>
       </tr></table>
     </td></tr>
 
@@ -209,13 +210,13 @@ function renderReportHtml(s: ScoringResult, ctx: EmailCtx = {}): string {
 
     <tr><td align="center" style="padding:32px 40px;text-align:center;border-top:1px solid #eceae5">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr>
-        <td style="vertical-align:middle;padding-right:20px"><img src="${ASSET_BASE}/talent-safari-logo.png" alt="Talent Safari" height="46" style="display:block;border:0"></td>
-        <td style="vertical-align:middle"><img src="${ASSET_BASE}/lua-logo.png" alt="" height="34" style="vertical-align:middle;border:0"><span style="font-size:26px;font-weight:700;color:#0B0B0F;vertical-align:middle;margin-left:7px;letter-spacing:-0.5px">Lua</span></td>
+        <td style="vertical-align:middle;padding-right:20px"><img src="cid:ts-logo" alt="Talent Safari" height="46" style="display:block;border:0"></td>
+        <td style="vertical-align:middle"><img src="cid:lua-logo" alt="" height="34" style="vertical-align:middle;border:0"><span style="font-size:26px;font-weight:700;color:#0B0B0F;vertical-align:middle;margin-left:7px;letter-spacing:-0.5px">Lua</span></td>
       </tr></table>
       <p style="margin:18px 0 0;font-size:13.5px;line-height:1.55;color:#3a443d"><strong>Human or Agent?</strong> — a Talent Safari &times; Lua collaboration.</p>
       <p style="margin:6px 0 0;font-size:13px;line-height:1.55;color:#9aa39c">Talent Safari sources the humans · Lua builds the agents.</p>
       <p style="margin:14px 0 0;font-size:14px"><a href="https://www.talentsafari.io" target="_blank" rel="noopener" style="color:#15241B;text-decoration:underline;font-weight:600">talentsafari.io</a><span style="color:#d2d2cc">&nbsp;·&nbsp;</span><a href="https://www.heylua.ai" target="_blank" rel="noopener" style="color:#7a5cff;text-decoration:underline;font-weight:600">heylua.ai</a></p>
-      <p style="margin:16px 0 0"><a href="https://www.facebook.com/p/Lua-AI-61569665392939/" target="_blank" rel="noopener"><img src="${ASSET_BASE}/social-facebook.png" alt="Facebook" height="22" style="border:0;vertical-align:middle"></a>&nbsp;&nbsp;<a href="https://www.linkedin.com/company/lua-ai" target="_blank" rel="noopener"><img src="${ASSET_BASE}/social-linkedin.png" alt="LinkedIn" height="22" style="border:0;vertical-align:middle"></a>&nbsp;&nbsp;<a href="https://www.instagram.com/heylua.ai/" target="_blank" rel="noopener"><img src="${ASSET_BASE}/social-instagram.png" alt="Instagram" height="22" style="border:0;vertical-align:middle"></a></p>
+      <p style="margin:16px 0 0"><a href="https://www.facebook.com/p/Lua-AI-61569665392939/" target="_blank" rel="noopener"><img src="cid:social-fb" alt="Facebook" height="22" style="border:0;vertical-align:middle"></a>&nbsp;&nbsp;<a href="https://www.linkedin.com/company/lua-ai" target="_blank" rel="noopener"><img src="cid:social-li" alt="LinkedIn" height="22" style="border:0;vertical-align:middle"></a>&nbsp;&nbsp;<a href="https://www.instagram.com/heylua.ai/" target="_blank" rel="noopener"><img src="cid:social-ig" alt="Instagram" height="22" style="border:0;vertical-align:middle"></a></p>
       <p style="margin:18px 0 0;font-size:11px;line-height:1.5;color:#b3b8b3">3 Germany Drive, Unit 4 #1816 · Wilmington, Delaware 19804, USA</p>
     </td></tr>
 
@@ -363,6 +364,38 @@ async function sendEmail1(
       to: [toEmail],
       subject: `Your Human or Agent? report — ${scoringResult.role_title}`,
       html: renderReportHtml(scoringResult, { email: toEmail, ...ctx }),
+      attachments: [
+        {
+          filename: 'talent-safari-logo.png',
+          content: TS_LOGO_B64,
+          content_id: 'ts-logo',
+          disposition: 'inline',
+        },
+        {
+          filename: 'lua-logo.png',
+          content: LUA_LOGO_B64,
+          content_id: 'lua-logo',
+          disposition: 'inline',
+        },
+        {
+          filename: 'social-facebook.png',
+          content: SOCIAL_FB_B64,
+          content_id: 'social-fb',
+          disposition: 'inline',
+        },
+        {
+          filename: 'social-linkedin.png',
+          content: SOCIAL_LI_B64,
+          content_id: 'social-li',
+          disposition: 'inline',
+        },
+        {
+          filename: 'social-instagram.png',
+          content: SOCIAL_IG_B64,
+          content_id: 'social-ig',
+          disposition: 'inline',
+        },
+      ],
     }),
   });
 
