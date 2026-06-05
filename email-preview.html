@@ -1,92 +1,207 @@
-<!--
-  Preview of the Phase 3 evaluation email rendered by renderReportHtml()
-  in src/skills/capture-lead.skill.ts. Sample data — does not hit Resend.
-  Open in any browser to inspect the design.
--->
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your Human or Agent? report</title></head>
-<body style="margin:0;padding:0;background:#f4f3ef;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f4f3ef;padding:24px 0">
-<tr><td align="center">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;width:100%;background:#ffffff;border-radius:14px;padding:32px;color:#1a1a1a;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
-    <tr><td>
-      <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Human or Agent? · Evaluation</div>
-      <h1 style="margin:0 0 4px;font-size:24px;font-weight:700;color:#1a1a1a">Senior Customer Success Manager</h1>
-      <div style="margin:14px 0 0;padding:14px 16px;background:#f7f7f5;border-left:4px solid #a86600;border-radius:6px">
-        <div style="font-size:18px;font-weight:600;color:#a86600">Hire a human, augment with an agent</div>
-        <div style="font-size:14px;color:#555;margin-top:4px">Overall score: <strong style="color:#1a1a1a">64/100</strong></div>
-      </div>
-      <p style="font-size:15px;line-height:1.6;color:#333;margin:20px 0 0">This role blends deep customer empathy, executive-level relationship management, and judgment-heavy renewal negotiations with a long tail of repetitive operational work — health-check reviews, QBR prep, churn-signal triage. A human lead is essential for the qualitative direction-setting and trust-building, but a Lua agent can reliably take 40–60% of the operational load and free the human to focus on the high-stakes moments.</p>
-      <h3 style="margin:28px 0 10px;font-size:16px;color:#1a1a1a;font-weight:600">Seven-dimension breakdown</h3>
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;font-size:14px;border:1px solid #ececec;border-radius:8px;overflow:hidden">
-        <tr style="background:#f7f7f5">
-          <th style="padding:10px 12px;text-align:left;color:#666;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Dimension</th>
-          <th style="padding:10px 12px;text-align:center;color:#666;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Score</th>
-          <th style="padding:10px 12px;text-align:center;color:#666;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Weight</th>
-          <th style="padding:10px 12px;text-align:left;color:#666;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Why</th>
-        </tr>
-        <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;font-weight:600;color:#1a1a1a;vertical-align:top">Relationship depth</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#1a1a1a;vertical-align:top">3/10</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#666;vertical-align:top">3×</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;color:#555;line-height:1.5;vertical-align:top">Executive sponsors expect a named human counterpart for renewals. Agents can support but cannot lead the relationship.</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;font-weight:600;color:#1a1a1a;vertical-align:top">Judgment complexity</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#1a1a1a;vertical-align:top">4/10</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#666;vertical-align:top">3×</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;color:#555;line-height:1.5;vertical-align:top">Churn-risk calls and pricing trade-offs require contextual judgment outside the agent's reliable competence band.</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;font-weight:600;color:#1a1a1a;vertical-align:top">Task repeatability</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#1a1a1a;vertical-align:top">8/10</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#666;vertical-align:top">2×</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;color:#555;line-height:1.5;vertical-align:top">QBR prep, usage reports, health checks, and follow-up scheduling follow stable patterns the agent can own end-to-end.</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;font-weight:600;color:#1a1a1a;vertical-align:top">Data tractability</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#1a1a1a;vertical-align:top">9/10</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#666;vertical-align:top">2×</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;color:#555;line-height:1.5;vertical-align:top">Product telemetry, CRM, and support data already live in queryable systems. Agent retrieval is reliable.</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;font-weight:600;color:#1a1a1a;vertical-align:top">Tool coverage</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#1a1a1a;vertical-align:top">7/10</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#666;vertical-align:top">2×</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;color:#555;line-height:1.5;vertical-align:top">Salesforce, Gainsight, Slack, and Gmail all have stable APIs. Some HubSpot edges require minor custom tooling.</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;font-weight:600;color:#1a1a1a;vertical-align:top">Throughput need</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#1a1a1a;vertical-align:top">7/10</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#666;vertical-align:top">2×</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;color:#555;line-height:1.5;vertical-align:top">120+ accounts on the book — manual ops would consume the human's entire week.</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;font-weight:600;color:#1a1a1a;vertical-align:top">Brand exposure</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#1a1a1a;vertical-align:top">5/10</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#666;vertical-align:top">1×</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #ececec;color:#555;line-height:1.5;vertical-align:top">Customer-facing surface is moderate. Agent comms acceptable when clearly attributed to a named CSM.</td>
-        </tr>
-      </table>
-      <h3 style="margin:28px 0 10px;font-size:16px;color:#1a1a1a;font-weight:600">Human vs Agent</h3>
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:separate;border-spacing:8px 0;font-size:14px">
-        <tr>
-          <td style="vertical-align:top;padding:16px;background:#faf7f2;border-radius:10px;width:50%;border:1px solid #efe9dc">
-            <div style="font-size:12px;color:#8a7547;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:6px">Human hire</div>
-            <div style="margin:6px 0;color:#1a1a1a"><strong>Salary:</strong> $95k–$135k base + variable</div>
-            <div style="margin:6px 0;color:#1a1a1a"><strong>Time to productive:</strong> 8–12 weeks</div>
-          </td>
-          <td style="vertical-align:top;padding:16px;background:#f2f6fa;border-radius:10px;width:50%;border:1px solid #dde7f0">
-            <div style="font-size:12px;color:#1a5fb4;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:6px">CS Co-Pilot · Lua agent</div>
-            <div style="margin:6px 0;color:#1a1a1a"><strong>Monthly cost:</strong> $1,800</div>
-            <div style="margin:6px 0;color:#1a1a1a"><strong>Live:</strong> 2 weeks · 120 accounts/week</div>
-          </td>
-        </tr>
-      </table>
-      <div style="margin-top:28px;padding:16px;background:#1a1a1a;color:#ffffff;border-radius:10px;font-size:15px;text-align:center">Recommended next step: brief Talent Safari to source the human hire.</div>
-      <div style="margin-top:24px;padding-top:16px;border-top:1px solid #ececec;color:#888;font-size:13px;text-align:center">— Ada · Built by Lua</div>
+<!-- PREVIEW — Talent Safari × Lua evaluation email (design-system pass).
+     System: neutral ink/grey base; ONE functional accent = the verdict color;
+     logos are the only brand-color moments, balanced 50/50; CTA wears the brand
+     of the recommended action (TS green here, Lua gradient when verdict=strong_agent).
+     Verdict band (sample = 48 → assist → amber). Production uses absolute URLs:
+       https://agent.talentsafari.io/talent-safari-logo.png · /lua-logo.png · /social-*.png
+     Sample data; not wired to the skill. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Talent Safari × Lua — evaluation</title>
+</head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#15241B">
+<!-- preheader: inbox preview snippet, hidden -->
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#ffffff;opacity:0">Program temporary support assistant scored 48/100 — human-led, agent-assisted. Your full 7-dimension breakdown inside.</div>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#ffffff"><tr><td align="center">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="max-width:720px;width:100%;background:#ffffff">
+
+    <!-- HEADER — co-brand centered, both logos a touch bigger -->
+    <tr><td align="center" style="padding:26px 40px;border-bottom:1px solid #eceae5">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr>
+        <td style="vertical-align:middle;padding-right:24px">
+          <img src="./public/talent-safari-logo.png" alt="Talent Safari" height="60" style="display:block;border:0">
+        </td>
+        <td style="vertical-align:middle">
+          <img src="./public/lua-logo.png" alt="" height="46" style="vertical-align:middle;border:0">
+          <span style="font-size:36px;font-weight:700;color:#0B0B0F;vertical-align:middle;margin-left:9px;letter-spacing:-0.5px">Lua</span>
+        </td>
+      </tr></table>
     </td></tr>
+
+    <!-- BODY -->
+    <tr><td style="padding:36px 40px 40px">
+      <div style="font-size:12px;color:#9aa39c;text-transform:uppercase;letter-spacing:1.4px;margin-bottom:10px;text-align:center">Human or Agent? · Evaluation</div>
+      <p style="margin:0 0 14px;font-size:15.5px;line-height:1.6;color:#3a443d;text-align:center">Hey Sarah, here&rsquo;s your evaluation for the <strong>Program temporary support assistant</strong> role at Acme Corp.</p>
+      <h1 style="margin:0 0 22px;font-size:27px;font-weight:700;color:#15241B;letter-spacing:-0.5px;line-height:1.18;text-align:center">Program temporary support assistant</h1>
+
+      <!-- SCORE + GAUGE (owns the number) -->
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+        <td style="vertical-align:middle;width:120px;white-space:nowrap;padding-right:22px">
+          <span style="font-size:46px;font-weight:800;color:#15241B;letter-spacing:-1px">48</span><span style="font-size:18px;color:#9aa39c;font-weight:600">/100</span>
+        </td>
+        <td style="vertical-align:middle">
+          <span style="display:inline-block;padding:5px 12px;border-radius:999px;background:#fbf1df;color:#8a5616;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Human-led, agent-assisted</span>
+          <!-- gauge: zones at real thresholds 40 & 65 → 33.3% / 61.1% on a 10–100 scale -->
+          <div style="margin-top:12px;height:10px;border-radius:6px;background:#e9e9e9;background:linear-gradient(90deg,#2E9E5B 0%,#2E9E5B 33.3%,#E8A33D 33.3%,#E8A33D 61.1%,#2C8FE0 61.1%,#2C8FE0 100%)"></div>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:2px"><tr>
+            <td width="42%"></td><td style="text-align:left;color:#8a5616;font-size:13px;line-height:1">&#9650;</td>
+          </tr></table>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="font-size:10.5px;color:#9aa39c;text-transform:uppercase;letter-spacing:.4px"><tr>
+            <td align="left">Needs human</td><td align="center">Agent-assisted</td><td align="right">Strong agent</td>
+          </tr></table>
+        </td>
+      </tr></table>
+
+      <p style="font-size:15.5px;line-height:1.65;color:#3a443d;margin:24px 0 0">This role needs significant human oversight, but an AI agent could substantially augment it — handling the structured, data-intensive tasks. A human should own the relationship and edge cases; an agent can absorb the throughput: triage, data entry, status updates, and first-pass drafting.</p>
+
+      <!-- DIMENSIONS -->
+      <h3 style="margin:34px 0 12px;font-size:13px;color:#9aa39c;font-weight:700;text-transform:uppercase;letter-spacing:1px">Seven-dimension breakdown</h3>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;font-size:14px">
+        <!-- each dimension: label + bar/score/weight on top line, rationale below -->
+        <tr><td style="padding:14px 0;border-bottom:1px solid #eceae5">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+            <td style="font-weight:600;color:#15241B;vertical-align:middle">Judgment complexity</td>
+            <td style="vertical-align:middle;text-align:right;white-space:nowrap">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right"><tr>
+                <td style="width:80px;height:6px;background:#eee;border-radius:3px"><div style="height:6px;width:40%;background:#2E9E5B;border-radius:3px"></div></td>
+                <td style="padding-left:10px;color:#15241B;font-size:13px;font-weight:600">4/10</td>              </tr></table>
+            </td>
+          </tr></table>
+          <div style="margin-top:7px;color:#6b756d;font-size:13.5px;line-height:1.5">Real discretion on exceptions and escalations — the cases that don't fit the playbook need a person.</div>
+        </td></tr>
+
+        <tr><td style="padding:14px 0;border-bottom:1px solid #eceae5">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+            <td style="font-weight:600;color:#15241B;vertical-align:middle">Task structure</td>
+            <td style="vertical-align:middle;text-align:right;white-space:nowrap">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right"><tr>
+                <td style="width:80px;height:6px;background:#eee;border-radius:3px"><div style="height:6px;width:60%;background:#E8A33D;border-radius:3px"></div></td>
+                <td style="padding-left:10px;color:#15241B;font-size:13px;font-weight:600">6/10</td>              </tr></table>
+            </td>
+          </tr></table>
+          <div style="margin-top:7px;color:#6b756d;font-size:13.5px;line-height:1.5">Mostly repeatable with documented playbooks, so a large share of the work is automatable.</div>
+        </td></tr>
+
+        <tr><td style="padding:14px 0;border-bottom:1px solid #eceae5">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+            <td style="font-weight:600;color:#15241B;vertical-align:middle">Volume &amp; scale</td>
+            <td style="vertical-align:middle;text-align:right;white-space:nowrap">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right"><tr>
+                <td style="width:80px;height:6px;background:#eee;border-radius:3px"><div style="height:6px;width:70%;background:#2C8FE0;border-radius:3px"></div></td>
+                <td style="padding-left:10px;color:#15241B;font-size:13px;font-weight:600">7/10</td>              </tr></table>
+            </td>
+          </tr></table>
+          <div style="margin-top:7px;color:#6b756d;font-size:13.5px;line-height:1.5">Steady, high-throughput support load — exactly where an agent's unmetered capacity pays off.</div>
+        </td></tr>
+
+        <tr><td style="padding:14px 0;border-bottom:1px solid #eceae5">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+            <td style="font-weight:600;color:#15241B;vertical-align:middle">Regulatory burden</td>
+            <td style="vertical-align:middle;text-align:right;white-space:nowrap">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right"><tr>
+                <td style="width:80px;height:6px;background:#eee;border-radius:3px"><div style="height:6px;width:50%;background:#E8A33D;border-radius:3px"></div></td>
+                <td style="padding-left:10px;color:#15241B;font-size:13px;font-weight:600">5/10</td>              </tr></table>
+            </td>
+          </tr></table>
+          <div style="margin-top:7px;color:#6b756d;font-size:13.5px;line-height:1.5">No licensed sign-off required, but some oversight expected on sensitive actions.</div>
+        </td></tr>
+
+        <tr><td style="padding:14px 0;border-bottom:1px solid #eceae5">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+            <td style="font-weight:600;color:#15241B;vertical-align:middle">Relationship depth</td>
+            <td style="vertical-align:middle;text-align:right;white-space:nowrap">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right"><tr>
+                <td style="width:80px;height:6px;background:#eee;border-radius:3px"><div style="height:6px;width:70%;background:#2C8FE0;border-radius:3px"></div></td>
+                <td style="padding-left:10px;color:#15241B;font-size:13px;font-weight:600">7/10</td>              </tr></table>
+            </td>
+          </tr></table>
+          <div style="margin-top:7px;color:#6b756d;font-size:13.5px;line-height:1.5">Episodic, transactional contact rather than sustained relationship ownership — well within agent range.</div>
+        </td></tr>
+
+        <tr><td style="padding:14px 0;border-bottom:1px solid #eceae5">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+            <td style="font-weight:600;color:#15241B;vertical-align:middle">System integration</td>
+            <td style="vertical-align:middle;text-align:right;white-space:nowrap">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right"><tr>
+                <td style="width:80px;height:6px;background:#eee;border-radius:3px"><div style="height:6px;width:70%;background:#2C8FE0;border-radius:3px"></div></td>
+                <td style="padding-left:10px;color:#15241B;font-size:13px;font-weight:600">7/10</td>              </tr></table>
+            </td>
+          </tr></table>
+          <div style="margin-top:7px;color:#6b756d;font-size:13.5px;line-height:1.5">CRM and ticketing tool-heavy — an agent operates these via API rather than cross-team handoffs.</div>
+        </td></tr>
+
+        <tr><td style="padding:14px 0">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+            <td style="font-weight:600;color:#15241B;vertical-align:middle">Data sensitivity</td>
+            <td style="vertical-align:middle;text-align:right;white-space:nowrap">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right"><tr>
+                <td style="width:80px;height:6px;background:#eee;border-radius:3px"><div style="height:6px;width:60%;background:#E8A33D;border-radius:3px"></div></td>
+                <td style="padding-left:10px;color:#15241B;font-size:13px;font-weight:600">6/10</td>              </tr></table>
+            </td>
+          </tr></table>
+          <div style="margin-top:7px;color:#6b756d;font-size:13.5px;line-height:1.5">Light PII in an unregulated domain — standard business-data handling, no special constraints.</div>
+        </td></tr>
+      </table>
+
+      <!-- HUMAN vs AGENT — neutral cards, single divider -->
+      <h3 style="margin:34px 0 12px;font-size:13px;color:#9aa39c;font-weight:700;text-transform:uppercase;letter-spacing:1px;text-align:center">Human vs Agent</h3>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:separate;border-spacing:14px 0;font-size:14px">
+        <tr>
+          <td style="vertical-align:top;padding:18px;background:#f7f7f5;border-radius:12px;width:50%">
+            <div style="font-weight:700;color:#15241B;margin-bottom:8px">Human hire</div>
+            <span style="color:#6b756d">Salary</span> $35k–$48k<br>
+            <span style="color:#6b756d">Productive in</span> 4–6 weeks
+          </td>
+          <td style="vertical-align:top;padding:18px;background:#f7f7f5;border-radius:12px;width:50%">
+            <div style="font-weight:700;color:#15241B;margin-bottom:8px">Lua (AI agent)</div>
+            <span style="color:#6b756d">Cost</span> $1,200/mo<br>
+            <span style="color:#6b756d">Live</span> Today · Unmetered
+          </td>
+        </tr>
+      </table>
+
+      <!-- CTA — primary = recommended action (big); secondary = alternative (smaller).
+           Sample verdict 48 → recommended tech_safari, so TS is primary, Lua is the alt. -->
+      <div style="text-align:center;margin-top:34px">
+        <a href="https://agent.talentsafari.io/?cta=tech_safari" target="_blank" rel="noopener" style="display:inline-block;padding:16px 40px;border-radius:12px;background:#15241B;background:linear-gradient(135deg,#1f4231 0%,#15241B 100%);color:#ffffff;font-weight:700;font-size:16px;letter-spacing:.2px;text-decoration:none;box-shadow:0 8px 22px rgba(21,36,27,.28)">Brief Talent Safari for this role <span style="color:#C7F04A">&rarr;</span></a>
+        <div style="margin-top:16px">
+          <a href="https://agent.talentsafari.io/?cta=lua" target="_blank" rel="noopener" style="display:inline-block;padding:10px 22px;border-radius:10px;border:1.5px solid #d9c7ff;background:#f7f3ff;color:#6b3fd4;font-weight:700;font-size:13px;text-decoration:none">Prefer an AI agent? Talk to Lua &rarr;</a>
+        </div>
+      </div>
+    </td></tr>
+
+    <!-- FOOTER — centered co-brand, working links, address inline -->
+    <tr><td align="center" style="padding:32px 40px;text-align:center;border-top:1px solid #eceae5">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr>
+        <td style="vertical-align:middle;padding-right:20px"><img src="./public/talent-safari-logo.png" alt="Talent Safari" height="46" style="display:block;border:0"></td>
+        <td style="vertical-align:middle">
+          <img src="./public/lua-logo.png" alt="" height="34" style="vertical-align:middle;border:0">
+          <span style="font-size:26px;font-weight:700;color:#0B0B0F;vertical-align:middle;margin-left:7px;letter-spacing:-0.5px">Lua</span>
+        </td>
+      </tr></table>
+      <p style="margin:18px 0 0;font-size:13.5px;line-height:1.55;color:#3a443d"><strong>Human or Agent?</strong> — a Talent Safari × Lua collaboration.</p>
+      <p style="margin:6px 0 0;font-size:13px;line-height:1.55;color:#9aa39c">Talent Safari sources the humans · Lua builds the agents.</p>
+      <p style="margin:14px 0 0;font-size:14px">
+        <a href="https://www.talentsafari.io" target="_blank" rel="noopener" style="color:#15241B;text-decoration:underline;font-weight:600">talentsafari.io</a>
+        <span style="color:#d2d2cc">&nbsp;·&nbsp;</span>
+        <a href="https://www.heylua.ai" target="_blank" rel="noopener" style="color:#7a5cff;text-decoration:underline;font-weight:600">heylua.ai</a>
+      </p>
+      <p style="margin:16px 0 0">
+        <a href="https://www.facebook.com/p/Lua-AI-61569665392939/" target="_blank" rel="noopener"><img src="./public/social-facebook.png" alt="Facebook" height="22" style="border:0;vertical-align:middle"></a>
+        &nbsp;&nbsp;
+        <a href="https://www.linkedin.com/company/lua-ai" target="_blank" rel="noopener"><img src="./public/social-linkedin.png" alt="LinkedIn" height="22" style="border:0;vertical-align:middle"></a>
+        &nbsp;&nbsp;
+        <a href="https://www.instagram.com/heylua.ai/" target="_blank" rel="noopener"><img src="./public/social-instagram.png" alt="Instagram" height="22" style="border:0;vertical-align:middle"></a>
+      </p>
+      <p style="margin:18px 0 0;font-size:11px;line-height:1.5;color:#b3b8b3">3 Germany Drive, Unit 4 #1816 · Wilmington, Delaware 19804, USA</p>
+    </td></tr>
+
   </table>
-</td></tr>
-</table>
-</body></html>
+</td></tr></table>
+</body>
+</html>

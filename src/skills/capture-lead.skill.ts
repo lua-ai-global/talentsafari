@@ -1,5 +1,6 @@
 import { LuaSkill, LuaTool, Jobs, Data, env } from 'lua-cli';
 import { z } from 'zod';
+import { TS_LOGO_B64, LUA_LOGO_B64, SOCIAL_FB_B64, SOCIAL_LI_B64, SOCIAL_IG_B64 } from './email-assets';
 
 // ---------------------------------------------------------------------------
 // Input schema
@@ -75,83 +76,152 @@ function esc(v: unknown): string {
     .replace(/"/g, '&quot;');
 }
 
-// Render the full evaluation report as inline-styled HTML (email-client safe).
-function renderReportHtml(s: ScoringResult): string {
-  const verdictColor =
-    s.verdict === 'strong_agent' ? '#0a7d4a' :
-    s.verdict === 'human_led_agent_assist' ? '#a86600' :
-    '#1a5fb4';
+// Hosted assets (public/ served by Vercel) + site origin for CTA deep-links.
+const ASSET_BASE = 'https://agent.talentsafari.io';
+const SITE_BASE = 'https://agent.talentsafari.io';
 
-  const dimRows = (s.dimensions ?? [])
-    .slice()
-    .sort((a, b) => b.weight - a.weight)
-    .map(
-      (d) => `<tr>
-            <td style="padding:10px 12px;border-bottom:1px solid #ececec;font-weight:600;color:#1a1a1a;vertical-align:top">${esc(d.label)}</td>
-            <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#1a1a1a;vertical-align:top">${esc(d.score)}/10</td>
-            <td style="padding:10px 12px;border-bottom:1px solid #ececec;text-align:center;color:#666;vertical-align:top">${esc(d.weight)}×</td>
-            <td style="padding:10px 12px;border-bottom:1px solid #ececec;color:#555;line-height:1.5;vertical-align:top">${esc(d.rationale)}</td>
-          </tr>`,
-    )
-    .join('');
+type EmailCtx = { email?: string; name?: string; company?: string };
 
-  const dimsBlock = dimRows
-    ? `<h3 style="margin:28px 0 10px;font-size:16px;color:#1a1a1a;font-weight:600">Seven-dimension breakdown</h3>
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;font-size:14px;border:1px solid #ececec;border-radius:8px;overflow:hidden">
-          <tr style="background:#f7f7f5">
-            <th style="padding:10px 12px;text-align:left;color:#666;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Dimension</th>
-            <th style="padding:10px 12px;text-align:center;color:#666;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Score</th>
-            <th style="padding:10px 12px;text-align:center;color:#666;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Weight</th>
-            <th style="padding:10px 12px;text-align:left;color:#666;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Why</th>
-          </tr>
-          ${dimRows}
-        </table>`
-    : '';
+// Verdict → single functional accent (AA-safe text + graphic) + band label.
+function verdictTheme(verdict: string): { text: string; chipBg: string; label: string } {
+  switch (verdict) {
+    case 'needs_human':  return { text: '#1F7A45', chipBg: '#e9f5ee', label: 'Needs human' };
+    case 'strong_agent': return { text: '#1E6FB0', chipBg: '#e7f2fc', label: 'Strong agent fit' };
+    default:             return { text: '#8a5616', chipBg: '#fbf1df', label: 'Human-led, agent-assisted' };
+  }
+}
 
+// Dimension bar color along the human↔agent spectrum.
+function dimBarColor(score: number): string {
+  if (score <= 4) return '#2E9E5B';
+  if (score <= 6) return '#E8A33D';
+  return '#2C8FE0';
+}
+
+// CTA url that opens the matching in-app screen, carrying context for prefill.
+function ctaUrl(path: 'tech_safari' | 'lua', s: ScoringResult, ctx: EmailCtx): string {
+  const q = new URLSearchParams({
+    cta: path,
+    rec: s.recommended_cta,
+    role: s.role_title ?? '',
+    score: String(s.score ?? ''),
+  });
+  if (ctx.email) q.set('email', ctx.email);
+  if (ctx.name) q.set('name', ctx.name);
+  if (ctx.company) q.set('company', ctx.company);
+  return `${SITE_BASE}/?${q.toString()}`;
+}
+
+// 7-dimension breakdown — label + bar + score on one line, rationale below.
+function renderDimensions(dims: ScoringResult['dimensions']): string {
+  if (!dims || dims.length === 0) return '';
+  const rows = dims.map((d, i) => {
+    const last = i === dims.length - 1;
+    const w = Math.max(0, Math.min(100, Math.round(d.score * 10)));
+    const border = last ? '' : 'border-bottom:1px solid #eceae5;';
+    return `<tr><td style="padding:14px 0;${border}">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+            <td style="font-weight:600;color:#15241B;vertical-align:middle">${esc(d.label)}</td>
+            <td style="vertical-align:middle;text-align:right;white-space:nowrap"><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right"><tr>
+              <td style="width:80px;height:6px;background:#eee;border-radius:3px"><div style="height:6px;width:${w}%;background:${dimBarColor(d.score)};border-radius:3px"></div></td>
+              <td style="padding-left:10px;color:#15241B;font-size:13px;font-weight:600">${esc(d.score)}/10</td>
+            </tr></table></td>
+          </tr></table>
+          <div style="margin-top:7px;color:#6b756d;font-size:13.5px;line-height:1.5">${esc(d.rationale)}</div>
+        </td></tr>`;
+  }).join('');
+  return `<h3 style="margin:34px 0 12px;font-size:13px;color:#9aa39c;font-weight:700;text-transform:uppercase;letter-spacing:1px;text-align:center">Seven-dimension breakdown</h3>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;font-size:14px">${rows}</table>`;
+}
+
+// Render the full co-branded evaluation report as inline-styled HTML (email-safe).
+function renderReportHtml(s: ScoringResult, ctx: EmailCtx = {}): string {
+  const theme = verdictTheme(s.verdict);
+  const markerPct = Math.round(Math.min(100, Math.max(0, ((s.score - 10) / 90) * 100)));
   const h = s.human_candidate;
   const a = s.agent_candidate;
-  const cards = `<h3 style="margin:28px 0 10px;font-size:16px;color:#1a1a1a;font-weight:600">Human vs Agent</h3>
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:separate;border-spacing:8px 0;font-size:14px">
-          <tr>
-            <td style="vertical-align:top;padding:16px;background:#faf7f2;border-radius:10px;width:50%;border:1px solid #efe9dc">
-              <div style="font-size:12px;color:#8a7547;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:6px">Human hire</div>
-              ${h.salary_range ? `<div style="margin:6px 0;color:#1a1a1a"><strong>Salary:</strong> ${esc(h.salary_range)}</div>` : ''}
-              <div style="margin:6px 0;color:#1a1a1a"><strong>Time to productive:</strong> ${esc(h.time_to_productive)}</div>
-            </td>
-            <td style="vertical-align:top;padding:16px;background:#f2f6fa;border-radius:10px;width:50%;border:1px solid #dde7f0">
-              <div style="font-size:12px;color:#1a5fb4;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:6px">${esc(a.name)} · Lua agent</div>
-              <div style="margin:6px 0;color:#1a1a1a"><strong>Monthly cost:</strong> ${esc(a.monthly_cost)}</div>
-              <div style="margin:6px 0;color:#1a1a1a"><strong>Live:</strong> ${esc(a.start_date)}${a.throughput ? ` · ${esc(a.throughput)}` : ''}</div>
-            </td>
-          </tr>
-        </table>`;
 
-  const ctaLine = s.recommended_cta === 'lua'
-    ? 'Recommended next step: talk to Lua about building this agent.'
-    : 'Recommended next step: brief Talent Safari to source the human hire.';
+  // Quick personal intro line. "Hey [name], here's your evaluation for the [role] role at [company]."
+  const hey = ctx.name && ctx.name.trim() ? `Hey ${esc(ctx.name.trim())},` : 'Hey,';
+  const atCompany = ctx.company && ctx.company.trim() ? ` at ${esc(ctx.company.trim())}` : '';
+  const intro = `${hey} here&rsquo;s your evaluation for the <strong>${esc(s.role_title)}</strong> role${atCompany}.`;
+
+  // Primary CTA = recommended action (bigger); alternative = the other path (smaller).
+  const primaryTs = s.recommended_cta !== 'lua';
+  // Primary = brand-colored solid (TS forest-green gradient + lime arrow; Lua brand gradient + glow).
+  const primary = primaryTs
+    ? { href: ctaUrl('tech_safari', s, ctx), label: 'Brief Talent Safari for this role', arrow: '#C7F04A', style: 'background:#15241B;background:linear-gradient(135deg,#1f4231 0%,#15241B 100%);color:#ffffff;box-shadow:0 8px 22px rgba(21,36,27,.28)' }
+    : { href: ctaUrl('lua', s, ctx), label: 'Brief Lua for this role', arrow: '#ffffff', style: 'background:#9B4DFF;background:linear-gradient(135deg,#FF2D78 0%,#9B4DFF 50%,#3BA5FF 100%);color:#ffffff;box-shadow:0 8px 22px rgba(155,77,255,.30)' };
+  // Alternative = tinted to its destination brand (Lua purple / TS green), never neutral gray.
+  const alt = primaryTs
+    ? { href: ctaUrl('lua', s, ctx), label: 'Prefer an AI agent? Talk to Lua', style: 'border:1.5px solid #d9c7ff;background:#f7f3ff;color:#6b3fd4' }
+    : { href: ctaUrl('tech_safari', s, ctx), label: 'Prefer a human hire? Brief Talent Safari', style: 'border:1.5px solid #cbe0d2;background:#f2f9f5;color:#1f7a45' };
 
   return `<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your Human or Agent? report</title></head>
-<body style="margin:0;padding:0;background:#f4f3ef;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f4f3ef;padding:24px 0">
-<tr><td align="center">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;width:100%;background:#ffffff;border-radius:14px;padding:32px;color:#1a1a1a;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
-    <tr><td>
-      <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Human or Agent? · Evaluation</div>
-      <h1 style="margin:0 0 4px;font-size:24px;font-weight:700;color:#1a1a1a">${esc(s.role_title)}</h1>
-      <div style="margin:14px 0 0;padding:14px 16px;background:#f7f7f5;border-left:4px solid ${verdictColor};border-radius:6px">
-        <div style="font-size:18px;font-weight:600;color:${verdictColor}">${esc(s.verdict_line)}</div>
-        <div style="font-size:14px;color:#555;margin-top:4px">Overall score: <strong style="color:#1a1a1a">${esc(s.score)}/100</strong></div>
-      </div>
-      <p style="font-size:15px;line-height:1.6;color:#333;margin:20px 0 0">${esc(s.rationale)}</p>
-      ${dimsBlock}
-      ${cards}
-      <div style="margin-top:28px;padding:16px;background:#1a1a1a;color:#ffffff;border-radius:10px;font-size:15px;text-align:center">${esc(ctaLine)}</div>
-      <div style="margin-top:24px;padding-top:16px;border-top:1px solid #ececec;color:#888;font-size:13px;text-align:center">— Ada · Built by Lua</div>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><title>Talent Safari × Lua — evaluation</title></head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#15241B">
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#ffffff;opacity:0">${esc(s.role_title)} scored ${esc(s.score)}/100 — ${esc(s.verdict_line)}. Your full 7-dimension breakdown inside.</div>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#ffffff"><tr><td align="center">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="max-width:720px;width:100%;background:#ffffff">
+
+    <tr><td align="center" style="padding:26px 40px;border-bottom:1px solid #eceae5">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr>
+        <td style="vertical-align:middle;padding-right:24px"><img src="cid:ts-logo" alt="Talent Safari" height="60" style="display:block;border:0"></td>
+        <td style="vertical-align:middle"><img src="cid:lua-logo" alt="" height="46" style="vertical-align:middle;border:0"><span style="font-size:36px;font-weight:700;color:#0B0B0F;vertical-align:middle;margin-left:9px;letter-spacing:-0.5px">Lua</span></td>
+      </tr></table>
     </td></tr>
+
+    <tr><td style="padding:36px 40px 40px">
+      <div style="font-size:12px;color:#9aa39c;text-transform:uppercase;letter-spacing:1.4px;margin-bottom:10px;text-align:center">Human or Agent? · Evaluation</div>
+      <p style="margin:0 0 14px;font-size:15.5px;line-height:1.6;color:#3a443d;text-align:center">${intro}</p>
+      <h1 style="margin:0 0 22px;font-size:27px;font-weight:700;color:#15241B;letter-spacing:-0.5px;line-height:1.18;text-align:center">${esc(s.role_title)}</h1>
+
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+        <td style="vertical-align:middle;width:120px;white-space:nowrap;padding-right:22px"><span style="font-size:46px;font-weight:800;color:#15241B;letter-spacing:-1px">${esc(s.score)}</span><span style="font-size:18px;color:#9aa39c;font-weight:600">/100</span></td>
+        <td style="vertical-align:middle">
+          <span style="display:inline-block;padding:5px 12px;border-radius:999px;background:${theme.chipBg};color:${theme.text};font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">${esc(s.verdict_line || theme.label)}</span>
+          <div style="margin-top:12px;height:10px;border-radius:6px;background:#e9e9e9;background:linear-gradient(90deg,#2E9E5B 0%,#2E9E5B 33.3%,#E8A33D 33.3%,#E8A33D 61.1%,#2C8FE0 61.1%,#2C8FE0 100%)"></div>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:2px"><tr><td width="${markerPct}%"></td><td style="text-align:left;color:${theme.text};font-size:13px;line-height:1">&#9650;</td></tr></table>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="font-size:10.5px;color:#9aa39c;text-transform:uppercase;letter-spacing:.4px"><tr><td align="left">Needs human</td><td align="center">Agent-assisted</td><td align="right">Strong agent</td></tr></table>
+        </td>
+      </tr></table>
+
+      <p style="font-size:15.5px;line-height:1.65;color:#3a443d;margin:24px 0 0">${esc(s.rationale)}</p>
+
+      ${renderDimensions(s.dimensions)}
+
+      <h3 style="margin:34px 0 12px;font-size:13px;color:#9aa39c;font-weight:700;text-transform:uppercase;letter-spacing:1px;text-align:center">Human vs Agent</h3>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:separate;border-spacing:14px 0;font-size:14px"><tr>
+        <td style="vertical-align:top;padding:18px;background:#f7f7f5;border-radius:12px;width:50%">
+          <div style="font-weight:700;color:#15241B;margin-bottom:8px">Human hire</div>
+          ${h.salary_range ? `<span style="color:#6b756d">Salary</span> ${esc(h.salary_range)}<br>` : ''}<span style="color:#6b756d">Productive in</span> ${esc(h.time_to_productive)}
+        </td>
+        <td style="vertical-align:top;padding:18px;background:#f7f7f5;border-radius:12px;width:50%">
+          <div style="font-weight:700;color:#15241B;margin-bottom:8px">${esc(a.name)} (AI agent)</div>
+          <span style="color:#6b756d">Cost</span> ${esc(a.monthly_cost)}<br><span style="color:#6b756d">Live</span> ${esc(a.start_date)}${a.throughput ? ` · ${esc(a.throughput)}` : ''}
+        </td>
+      </tr></table>
+
+      <div style="text-align:center;margin-top:34px">
+        <a href="${primary.href}" target="_blank" rel="noopener" style="display:inline-block;padding:16px 40px;border-radius:12px;${primary.style};font-weight:700;font-size:16px;letter-spacing:.2px;text-decoration:none">${esc(primary.label)} <span style="color:${primary.arrow}">&rarr;</span></a>
+        <div style="margin-top:16px"><a href="${alt.href}" target="_blank" rel="noopener" style="display:inline-block;padding:10px 22px;border-radius:10px;${alt.style};font-weight:700;font-size:13px;text-decoration:none">${esc(alt.label)} &rarr;</a></div>
+      </div>
+    </td></tr>
+
+    <tr><td align="center" style="padding:32px 40px;text-align:center;border-top:1px solid #eceae5">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr>
+        <td style="vertical-align:middle;padding-right:20px"><img src="cid:ts-logo" alt="Talent Safari" height="46" style="display:block;border:0"></td>
+        <td style="vertical-align:middle"><img src="cid:lua-logo" alt="" height="34" style="vertical-align:middle;border:0"><span style="font-size:26px;font-weight:700;color:#0B0B0F;vertical-align:middle;margin-left:7px;letter-spacing:-0.5px">Lua</span></td>
+      </tr></table>
+      <p style="margin:18px 0 0;font-size:13.5px;line-height:1.55;color:#3a443d"><strong>Human or Agent?</strong> — a Talent Safari &times; Lua collaboration.</p>
+      <p style="margin:6px 0 0;font-size:13px;line-height:1.55;color:#9aa39c">Talent Safari sources the humans · Lua builds the agents.</p>
+      <p style="margin:14px 0 0;font-size:14px"><a href="https://www.talentsafari.io" target="_blank" rel="noopener" style="color:#15241B;text-decoration:underline;font-weight:600">talentsafari.io</a><span style="color:#d2d2cc">&nbsp;·&nbsp;</span><a href="https://www.heylua.ai" target="_blank" rel="noopener" style="color:#7a5cff;text-decoration:underline;font-weight:600">heylua.ai</a></p>
+      <p style="margin:16px 0 0"><a href="https://www.facebook.com/p/Lua-AI-61569665392939/" target="_blank" rel="noopener"><img src="cid:social-fb" alt="Facebook" height="22" style="border:0;vertical-align:middle"></a>&nbsp;&nbsp;<a href="https://www.linkedin.com/company/lua-ai" target="_blank" rel="noopener"><img src="cid:social-li" alt="LinkedIn" height="22" style="border:0;vertical-align:middle"></a>&nbsp;&nbsp;<a href="https://www.instagram.com/heylua.ai/" target="_blank" rel="noopener"><img src="cid:social-ig" alt="Instagram" height="22" style="border:0;vertical-align:middle"></a></p>
+      <p style="margin:18px 0 0;font-size:11px;line-height:1.5;color:#b3b8b3">3 Germany Drive, Unit 4 #1816 · Wilmington, Delaware 19804, USA</p>
+    </td></tr>
+
   </table>
-</td></tr>
-</table>
+</td></tr></table>
 </body></html>`;
 }
 
@@ -281,6 +351,7 @@ async function sendEmail1(
   fromEmail: string,
   toEmail: string,
   scoringResult: ScoringResult,
+  ctx: EmailCtx = {},
 ): Promise<void> {
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -292,7 +363,39 @@ async function sendEmail1(
       from: fromEmail,
       to: [toEmail],
       subject: `Your Human or Agent? report — ${scoringResult.role_title}`,
-      html: renderReportHtml(scoringResult),
+      html: renderReportHtml(scoringResult, { email: toEmail, ...ctx }),
+      attachments: [
+        {
+          filename: 'talent-safari-logo.png',
+          content: TS_LOGO_B64,
+          content_id: 'ts-logo',
+          disposition: 'inline',
+        },
+        {
+          filename: 'lua-logo.png',
+          content: LUA_LOGO_B64,
+          content_id: 'lua-logo',
+          disposition: 'inline',
+        },
+        {
+          filename: 'social-facebook.png',
+          content: SOCIAL_FB_B64,
+          content_id: 'social-fb',
+          disposition: 'inline',
+        },
+        {
+          filename: 'social-linkedin.png',
+          content: SOCIAL_LI_B64,
+          content_id: 'social-li',
+          disposition: 'inline',
+        },
+        {
+          filename: 'social-instagram.png',
+          content: SOCIAL_IG_B64,
+          content_id: 'social-ig',
+          disposition: 'inline',
+        },
+      ],
     }),
   });
 
@@ -453,7 +556,7 @@ export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
     let email2ScheduledAt = '';
     if (resendKey && fromEmail) {
       try {
-        await sendEmail1(resendKey, fromEmail, email, scoringResult);
+        await sendEmail1(resendKey, fromEmail, email, scoringResult, { name: name ?? '', company });
         email1Sent = true;
       } catch { /* non-fatal */ }
       try {

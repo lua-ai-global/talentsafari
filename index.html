@@ -902,7 +902,9 @@ window.addEventListener('popstate', (e) => {
 });
 
 // Seed the initial entry so the very first Back has a screen to return to.
-history.replaceState({ screen: 's-hero' }, '', URL_MAP['s-hero']);
+// Preserve the current query string — a ?cta= report-email deep-link is read by
+// initCtaDeepLink() at boot, so we must not strip it back to '/' here.
+history.replaceState({ screen: 's-hero' }, '', location.search ? location.pathname + location.search : URL_MAP['s-hero']);
 
 // ─── PDF upload ───────────────────────────────────────────────────────────────
 if (window.pdfjsLib) {
@@ -1428,6 +1430,34 @@ function prefillCtaForms() {
   });
 }
 
+// ─── CTA email deep-link ──────────────────────────────────────────────────────
+// Query-param CONTRACT with the report email (capture-lead.skill.ts ctaUrl):
+//   cta=lua|tech_safari   (required)  → which screen to land on
+//   name, email, company  (optional)  → prefill the lead
+//   role, score           (optional)  → submit_cta Slack-ping context
+//   rec                   (emitted, intentionally UNUSED here — Option A)
+// On load we read `cta`, prefill the lead, and land directly on the matching CTA
+// screen — Lua → s-connect, Talent Safari → s-brief — skipping the hero/funnel.
+// Returns true when a deep-link was handled so boot can skip the hero greeting.
+function initCtaDeepLink() {
+  const q = new URLSearchParams(location.search);
+  const cta = q.get('cta');
+  const screen = cta === 'lua' ? 's-connect' : cta === 'tech_safari' ? 's-brief' : null;
+  if (!screen) return false;
+
+  // Hydrate the lead from the URL — leave blank if a param is missing.
+  state.leadName    = q.get('name')    || '';
+  state.leadEmail   = q.get('email')   || '';
+  state.leadCompany = q.get('company') || '';
+  // role/score give submit_cta's Slack ping context; rec is intentionally unused.
+  const role = q.get('role'), score = q.get('score');
+  if (role || score) state.result = { role_title: role || '', score: Number(score) || null };
+
+  history.replaceState({ screen }, '', location.pathname + location.search);
+  renderScreen(screen);
+  return true;
+}
+
 // ─── DEMO data ────────────────────────────────────────────────────────────────
 const DEMO = {
   role_title:'Tier 1 Customer Support Specialist', score:78,
@@ -1780,9 +1810,10 @@ function restart() {
   go('s-hero');
 }
 
-// s-hero is statically active and the initial history entry doesn't route
-// through renderScreen, so paint Ada's greeting once on first load.
-initHeroChat();
+// A report-email CTA link (?cta=…) lands directly on the matching CTA screen;
+// otherwise s-hero is statically active and the initial history entry doesn't
+// route through renderScreen, so paint Ada's greeting once on first load.
+if (!initCtaDeepLink()) initHeroChat();
 </script>
 </body>
 </html>
