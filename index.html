@@ -9,6 +9,22 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window,document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1022960976820763');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1022960976820763&ev=PageView&noscript=1"/></noscript>
+<!-- End Meta Pixel Code -->
 <style>
   :root {
     --cream:      #EAE4D5;
@@ -879,6 +895,18 @@ function renderScreen(id) {
   if (id === 's-connect') { initCtaScreen('lua'); initConnectScreen(); }
 }
 
+// ─── Meta Pixel event helpers ───────────────────────────────────────────────
+// The base pixel (PageView) is installed in <head>. Because this is a single-page
+// app, the pixel can't see our .screen transitions on its own — so we fire funnel
+// events from JS as the user advances. Guarded with typeof checks + try/catch so a
+// blocked/absent pixel script can never break the app.
+function fbTrack(event, params) {
+  if (typeof fbq === 'function') { try { fbq('track', event, params || {}); } catch(_) {} }
+}
+function fbTrackCustom(event, params) {
+  if (typeof fbq === 'function') { try { fbq('trackCustom', event, params || {}); } catch(_) {} }
+}
+
 function go(id) {
   // Reaching the result from the analysis theater replaces that transient
   // entry, so Back from the result skips analysis (as before) and lands on
@@ -981,6 +1009,9 @@ function runAnalysis() {
   let i = 0;
   steps[0].classList.add('run');
   const apiPromise = callScoreApi();
+  fbTrackCustom('StartEvaluation', {
+    jd_words: state.jdText ? state.jdText.split(/\s+/).filter(Boolean).length : 0,
+  });
   const tick = setInterval(() => {
     steps[i].className = 'step done';
     i++;
@@ -1000,6 +1031,10 @@ function runAnalysis() {
         state.apiDone = true;
         if (state.formDone) {
           drawn = false;
+          fbTrack('ViewContent', {
+            content_name: (state.result && state.result.verdict) || 'role_evaluation',
+            content_category: 'role_evaluation',
+          });
           setTimeout(() => go('s-result'), 600);
         }
       });
@@ -1025,6 +1060,10 @@ function submitAnalysisForm() {
 
   notifyLeadSubmit(name, title, company, email);
   if (typeof window.lintrk === 'function') window.lintrk('track', { conversion_id: 26416564 });
+  fbTrack('Lead', {
+    content_name: (state.result && state.result.verdict) || 'role_evaluation',
+    content_category: 'role_evaluation',
+  });
 
   // Swap form → success state
   document.getElementById('anaFormWrap').style.display = 'none';
@@ -1032,6 +1071,10 @@ function submitAnalysisForm() {
 
   if (state.apiDone) {
     drawn = false;
+    fbTrack('ViewContent', {
+      content_name: (state.result && state.result.verdict) || 'role_evaluation',
+      content_category: 'role_evaluation',
+    });
     setTimeout(() => go('s-result'), 800);
   }
 }
@@ -1395,6 +1438,12 @@ function submitCta(path) {
   // Show success immediately — don't wait for API
   if (formEl) formEl.style.display = 'none';
   if (successEl) successEl.style.display = 'block';
+
+  // Bottom-of-funnel conversion — which partner the lead chose (human vs agent).
+  fbTrackCustom(isTs ? 'BriefTalentSafari' : 'ConnectLua', {
+    content_name: (state.result && state.result.verdict) || 'role_evaluation',
+  });
+  fbTrack('Contact', { content_category: isTs ? 'talent_safari' : 'lua' });
 
   // Fire API in background (fire-and-forget)
   const { leadName: name, leadEmail: email, leadCompany: company, leadTitle: title } = state;
