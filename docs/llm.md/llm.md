@@ -143,8 +143,9 @@ Defined in `src/index.ts`: `name:"Ada"`, `model:"anthropic/claude-sonnet-4-6"`, 
    to genuine lead-form submissions only** (real `name` **and** `title` present, no quality flags).
    `capture_lead` is called twice per evaluation — once at score time (placeholder/no contact →
    returns `{ skipped, reason:'no_lead_details' }`, does nothing) and once on form submit (real
-   data → full effects). Quality flags (`short_jd`/`non_english`/`suspected_fake`) also short-
-   circuit to `{ skipped }`. **See §13 for the bug this gating fixed.**
+   data → full effects). **Spam flags only** (`non_english`/`suspected_fake`) short-circuit to
+   `{ skipped }`. **`short_jd` is NOT a blocker** — short but genuine leads are captured and tagged
+   (see §16). **See §13 for the phantom-lead gating fix, §16 for the short_jd fix.**
 3. **`submit_cta`** (`submit-cta.skill.ts`) — CTA form submissions (Talent Safari brief or Lua
    intro) → Slack + confirmation email.
 4. **`ada_chat`** (`ada-chat.skill.ts`) — follow-up Q&A after a score (auxiliary).
@@ -164,7 +165,9 @@ Each dimension is scored 1–10 (10 = "agent-friendly"); the weighted sum maps t
 | `data_sensitivity`   | 0.9    | regulated PII/constrained ↔ open/standard data |
 
 **Verdicts:** `needs_human` · `human_led_agent_assist` · `strong_agent`.
-**Quality flags** (block Slack/email, return early): `short_jd`, `non_english`, `suspected_fake`.
+**Quality flags:** `short_jd`, `non_english`, `suspected_fake`. Only `non_english` / `suspected_fake`
+block `capture_lead` (spam guard); `short_jd` is informational + deterministic (word count <80,
+computed in the `score_jd` wrapper) and does **not** block capture (see §16).
 Result object also includes `verdict_line`, `rationale`, per-dimension `rationale`,
 `human_candidate` & `agent_candidate` cards (incl. `monthly_cost`), `recommended_cta`,
 and `adjacent_agents`. The frontend gates `monthly_cost` visibility behind the email gate; the
@@ -301,7 +304,9 @@ npm run dev            # → http://localhost:3000  (serves index.html + /api/* 
   and an answer-count cap (see §8). Don't reintroduce `score_jd` into the enrichment path.
 - **Calibration bounds** (held in the persona/scoring): e.g. Tier-1 support JDs ~70–85,
   high-judgment leadership roles lower. Keep the ~40%-human honesty property.
-- **Never** post to Slack / send email when a quality flag is set.
+- **Never** post to Slack / send email when a **spam** flag (`non_english` / `suspected_fake`) is
+  set. `short_jd` is the exception — it no longer blocks capture (§16); short real leads are posted
+  and tagged `⚠️ short JD`.
 - **Secrets stay server-side** (proxy). Don't put keys in `index.html`.
 - `main` is stale — branch from / target `review/latest-updates` for live-bound work.
 - Single-file frontend: edit `index.html` directly; there's no bundler/build for the UI.
@@ -509,3 +514,55 @@ answers (judgment, regulation, relationships, systems):") are the single source 
 (preview deploy on the PR is the real-browser check — no headless browser was available locally;
 verification so far is syntax + serve + structural greps). Per §12, once this is live the §11/§12
 "reverted, not deployed" framing is obsolete.
+
+---
+
+## 16. The `short_jd` dropped-leads fix (2026-06-09) — `capture-lead` v1.0.38 + `score-role` v1.0.36 + persona v41
+
+**Bug.** Real visitors completed the funnel and submitted the lead form, but their leads were
+silently dropped: Slack showed only the browser-side "_New JD submitted — evaluation starting_"
+header ([index.html](../../index.html) → `notifyLeadSubmit()`) with **no** result body, and nothing
+landed in the `evaluations` Data primitive, Google Sheets, or Resend (no report/follow-up email).
+Confirmed in `lua logs` — e.g. Benjamin Muriuki / GG Mac (2026-06-09 00:40:55Z) returned
+`{"posted":false,"skipped":true,"reason":"short_jd"}`. Three leads lost in a few days
+(Benjamin 105w, Nick/SDR 80w, king/Discord-CM 55w).
+
+**Root cause.** `capture_lead`'s gate short-circuited on `flags.short_jd === true`
+(`capture-lead.skill.ts`, the flag arm of the early `return { skipped }`). `short_jd` is **LLM-judged**
+in the `score_jd` prompt (`score-role.skill.ts`, rubric "fewer than 80 words") and **misfired on
+borderline JDs** — a 105-word JD was tagged short. So genuine leads with short *or* borderline JDs
+never produced a Slack body / Sheets row / Data record / email. (The "evaluation starting" ping is a
+separate fire-and-forget browser call sent *before* Ada runs, so it always lands — hence header with
+no body.)
+
+**Fix (two parts, both live):**
+- **Fix #1 — drop `short_jd` from the gate** (`capture-lead.skill.ts`). The gate is now
+  `if (flags.non_english || flags.suspected_fake)` — spam guard only. Short but genuine leads
+  (real `name` + `title`) flow through to Data / Slack / Sheets / email. The `no_lead_details`
+  real-lead gate (§13) is **unchanged**, so score-time auto-calls still write nothing (no phantom
+  leads). `short_jd` is surfaced as a tag instead: Slack header gets `⚠️ short JD`, Sheets payload
+  gets a `shortJd` field (ignored unless the sheet maps a column).
+- **Fix #2 — make `short_jd` deterministic** (`score-role.skill.ts`). After the dimensions check,
+  the `score_jd` wrapper recomputes `flags.short_jd = jd_text.trim().split(/\s+/).length < 80` and
+  overwrites the LLM's value (mutating `raw.flags`, which covers all return paths). Kills the
+  borderline false positives.
+- Persona ([src/index.ts](../../src/index.ts)) + the `capture_lead` tool description + skill
+  `context` updated so "never post on a flag" now means **spam flags only**; `short_jd` explicitly
+  does not block.
+
+**Verification (sandbox, `lua test`).** Fix #2: 77-word JD → `short_jd:true`, 97-word JD →
+`short_jd:false` (the override runs). Fix #1 via a side-effect-free differential: `short_jd:true`
+fell through to `postToSlack()` (threw on the empty local webhook URL — proof it passed the gate),
+while `non_english:true` returned `{skipped, reason:'non_english'}` cleanly with no fetch (spam guard
+intact). **Note:** full Slack/Sheets/email *delivery* can't be exercised locally — the runtime
+webhook secrets (`SLACK_LEADS_WEBHOOK_URL`, `RESEND_API_KEY`, `FROM_EMAIL`, `SHEETS_WEBHOOK_URL`)
+are server-side on the Lua platform, not in local `.env` (which has only `LUA_AGENT_ID` /
+`LUA_API_KEY`). A `short_jd:true` sandbox test may have written one TEST record
+(`Customer Service Representative TEST` / `Lua TEST - please delete`) to the `evaluations` Data
+primitive — no Slack/Sheets/email went out.
+
+**Deploy.** Shipped via the gated `/lua-deploy` (`type=all`): persona drift resolved with
+`lua sync --push` (persona v40), then promoted — **capture-lead v1.0.38, score-role v1.0.36,
+persona v41** live; other primitives carried along by the `all` push unchanged. Post-deploy smoke
+test: 0 errors in 30 log entries. Committed on branch **`fix/short-jd-lead-capture`** (commit
+`f3daca2d`) — git push is independent of the `lua deploy`, which is already live.
