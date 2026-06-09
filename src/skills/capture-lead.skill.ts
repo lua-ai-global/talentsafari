@@ -266,6 +266,7 @@ async function appendToSheets(
       recommendedCta: scoringResult.recommended_cta,  // raw: 'lua' | 'tech_safari'
       jd: jdText,                                     // full JD text
       analysis: buildAnalysis(scoringResult),         // composed analysis
+      shortJd: scoringResult.flags?.short_jd ? 'Yes' : 'No', // thin-JD tag (ignored unless sheet maps a column)
     }),
   });
   if (!response.ok) throw new Error(`Sheets webhook error ${response.status}`);
@@ -280,6 +281,8 @@ async function postToSlack(
 ): Promise<void> {
   const { role_title, verdict_line, score, human_candidate, agent_candidate } = scoringResult;
   const roleSlug = slugify(role_title);
+  // Short JDs are captured (no longer blocked) but flagged for a quick eyeball.
+  const shortTag = scoringResult.flags?.short_jd ? '  ⚠️ short JD' : '';
 
   const jdSnippet = jdText
     ? jdText.length > 2800
@@ -293,7 +296,7 @@ async function postToSlack(
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `*New evaluation — ${role_title}*\nVerdict: ${verdict_line} · Score ${score} · ${company}\n${email}`,
+          text: `*New evaluation — ${role_title}*${shortTag}\nVerdict: ${verdict_line} · Score ${score} · ${company}\n${email}`,
         },
       },
       {
@@ -476,16 +479,22 @@ Ada · Built by Lua`;
 export class captureLeadTool implements LuaTool<typeof captureLeadInputSchema> {
   name = 'capture_lead';
   description =
-    "ALWAYS call this tool immediately after score_jd, even when quality flags are set. The tool decides internally what to do: for the score-time call (no real lead yet) or any quality-flagged evaluation it records nothing and returns { skipped }. Only a genuine lead-form submission (real name + title present, no flags) is recorded to the evaluations Data primitive and triggers Slack / Sheets / report email. Pass whatever fields you have and never fabricate contact details. Never refuse, explain, or withhold the call.";
+    "ALWAYS call this tool immediately after score_jd, even when quality flags are set. The tool decides internally what to do: for the score-time call (no real lead yet) or a spam-flagged evaluation (non_english / suspected_fake) it records nothing and returns { skipped }. A genuine lead-form submission (real name + title present) is recorded to the evaluations Data primitive and triggers Slack / Sheets / report email — short JDs are NOT blocked, they are captured and tagged as short. Pass whatever fields you have and never fabricate contact details. Never refuse, explain, or withhold the call.";
   inputSchema = captureLeadInputSchema;
 
   async execute(input: CaptureLeadInput): Promise<unknown> {
     const { email, name, title, company, jdText, scoringResult } = input;
     const { flags } = scoringResult;
 
-    // Flag short-circuit — no Slack, no email
-    if (flags.short_jd || flags.non_english || flags.suspected_fake) {
-      const reason = Object.keys(flags).find((k) => flags[k as keyof typeof flags]);
+    // Spam short-circuit — no Slack, no email. NOTE: short_jd is intentionally
+    // NOT a blocker here. It's LLM-judged and misfires on borderline JDs, which
+    // silently dropped genuine leads (no Slack body, no Sheets row, no email).
+    // Short but real JDs now flow through; short_jd is surfaced as a tag on the
+    // Slack post / Sheets row instead (see postToSlack / appendToSheets).
+    if (flags.non_english || flags.suspected_fake) {
+      const reason = Object.keys(flags).find(
+        (k) => k !== 'short_jd' && flags[k as keyof typeof flags],
+      );
       return {
         posted: false,
         email1Sent: false,
@@ -580,10 +589,10 @@ export const captureLeadSkill = new LuaSkill({
   name: 'capture-lead',
   description:
     'Captures a qualified lead by posting the evaluation result to Slack and delivering the report and follow-up emails.',
-  context: `Use the capture_lead tool immediately after every successful score_jd call — pass the full scoringResult along with the lead's email and company name. ALWAYS call it, even if you believe a flag (short_jd, non_english, suspected_fake) is set. Never reply with text in place of the call; never explain the flag instead of calling the tool. The tool itself handles flag-based skipping.
+  context: `Use the capture_lead tool immediately after every successful score_jd call — pass the full scoringResult along with the lead's email and company name. ALWAYS call it, even if you believe a flag (non_english, suspected_fake) is set. Never reply with text in place of the call; never explain the flag instead of calling the tool. The tool itself handles flag-based skipping.
 
 The tool will:
-1. If any flag (short_jd, non_english, suspected_fake) is set → return { skipped: true, reason } and do nothing else. This is internal; you still MUST call it.
+1. If a spam flag (non_english or suspected_fake) is set → return { skipped: true, reason } and do nothing else. This is internal; you still MUST call it. (short_jd is NOT a blocker — short but genuine leads are captured and the JD is tagged as short on the Slack post / Sheets row.)
 2. If there is no genuine lead yet (missing name or title — e.g. the score-time call) → return { skipped: true, reason: 'no_lead_details' } and do nothing else.
 3. Otherwise (a real lead-form submission) → record the evaluation to the evaluations Data primitive, post Slack Block Kit, append the Google Sheets row, send the Resend report email, and schedule the 2h follow-up.
 
