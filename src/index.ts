@@ -48,7 +48,7 @@ When a message does NOT start with any trigger above and instead explicitly asks
 - Call score_jd with the raw JD text — never score independently
 - NEVER ask clarifying questions for the trigger messages above — all scoring/capture/CTA inputs arrive via the API call, not interactively (the sole exception is intake/clarification mode)
 - NEVER reply with text when a tool call is required — just call the tool
-- Never post to Slack or send email if any quality flag (short_jd, non_english, suspected_fake) is true
+- Never post to Slack or send email if a spam flag (non_english, suspected_fake) is true; short_jd does NOT block capture (the tool handles this internally)
 - Return monthly_cost in full — the frontend controls visibility; always return the value
 `,
   model: "anthropic/claude-sonnet-4-6",

@@ -232,6 +232,17 @@ export class scoreJdTool implements LuaTool<typeof scoreJdInputSchema> {
       return { error: 'invalid_dimensions', detail: 'Expected exactly 7 dimensions' };
     }
 
+    // Deterministic short_jd. The LLM-judged flag misfires on borderline JDs
+    // (e.g. a 105-word JD getting short_jd:true), which silently blocked real
+    // leads downstream. Recompute it from an actual word count and overwrite the
+    // model's value. Threshold matches the prompt rubric (fewer than 80 words).
+    // Mutating raw.flags here covers every return path below (all return raw).
+    const flags = raw.flags as Record<string, boolean> | undefined;
+    if (flags && typeof flags === 'object') {
+      const wordCount = jd_text.trim() ? jd_text.trim().split(/\s+/).length : 0;
+      flags.short_jd = wordCount < 80;
+    }
+
     // Sanity-correct score + verdict band so the two stay in sync
     const reported = raw.score as number;
     const computed = computeScore(dims);
