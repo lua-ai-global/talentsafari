@@ -4,10 +4,27 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Human or Agent? — Talent Safari × Lua</title>
+<link rel="icon" type="image/jpeg" href="/public/talentsafari_logo.jpg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window,document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1022960976820763');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1022960976820763&ev=PageView&noscript=1"/></noscript>
+<!-- End Meta Pixel Code -->
 <style>
   :root {
     --cream:      #EAE4D5;
@@ -73,6 +90,7 @@
   .screen { display: none; max-width: 1080px; margin: 0 auto; animation: rise .5s cubic-bezier(.2,.7,.2,1); }
   .screen.active { display: block; }
   @keyframes rise { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes formPulse { 0%,100% { box-shadow:0 0 0 0 rgba(14,203,123,.4); } 50% { box-shadow:0 0 0 8px rgba(14,203,123,0); } }
   .eyebrow {
     display: inline-flex; align-items: center; gap: 8px;
     font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
@@ -90,10 +108,10 @@
   .back-link:hover { color: var(--forest); }
 
   /* hero */
-  .hero { text-align: center; padding-top: 14px; }
-  .hero h1 { font-size: clamp(38px,6.4vw,74px); line-height: 1.03; margin: 6px auto 18px; max-width: 14ch; color: var(--forest); }
+  .hero { text-align: center; padding-top: 0; margin-top: -40px; }
+  .hero h1 { font-size: clamp(38px,6.4vw,74px); line-height: 1.03; margin: 0 auto 14px; max-width: 14ch; color: var(--forest); }
   .hero h1 .swap { background: linear-gradient(110deg,var(--green-deep) 25%,var(--lua) 95%); -webkit-background-clip:text; background-clip:text; color:transparent; }
-  .hero p.sub { font-size: clamp(15px,1.7vw,18px); color: var(--ink-soft); max-width: 52ch; margin: 0 auto 30px; }
+  .hero p.sub { font-size: clamp(15px,1.7vw,18px); color: var(--ink-soft); max-width: 52ch; margin: 0 auto 20px; }
 
   .dropzone {
     max-width: 680px; margin: 0 auto; background: var(--paper);
@@ -116,14 +134,7 @@
   .chip:hover { border-color: var(--green-deep); color: var(--green-deep); transform: translateY(-1px); }
   .chip.active { background: var(--forest); color: var(--green); border-color: var(--forest); }
 
-  /* url mode */
-  .url-wrap { display: none; }
-  .url-wrap input {
-    width: 100%; border: 0; outline: 0; font-family: inherit; font-size: 15px;
-    color: var(--ink); background: transparent; padding: 4px 0; line-height: 1.6;
-  }
-  .url-wrap input::placeholder { color: #9AA39B; }
-  .scrape-err { font-size: 13px; font-weight: 600; color: #d6432f; margin-top: 6px; display: none; }
+  .scrape-err { display: none; }
   .other-roles {
     margin-top: 12px; padding: 12px 14px; background: var(--cream);
     border-radius: 12px; border: 1px solid rgba(14,203,123,.35); display: none;
@@ -293,6 +304,22 @@
   @media(max-width:560px) { .rec-split { grid-template-columns:1fr; } .cta-row { grid-template-columns:1fr; } }
 
   /* dual CTA */
+  .cta-section-head {
+    text-align: center; font-size: 11.5px; font-weight: 700;
+    letter-spacing: .11em; text-transform: uppercase;
+    color: var(--ink-soft); margin-top: 28px; margin-bottom: 14px;
+  }
+  .cta-brand-label {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .13em;
+    text-transform: uppercase; margin-bottom: 7px;
+  }
+  .cta-brand-label.ts-lbl { color: var(--green); }
+  .cta-brand-label.lua-lbl { color: var(--lua-glow); }
+  .cta-card.cta-ts { background: var(--forest); border-color: var(--forest-2); }
+  .cta-card.cta-ts h4 { color: var(--cream); }
+  .cta-card.cta-ts p { color: var(--cream); opacity: .75; }
+  .cta-ts-btn { background: var(--green) !important; color: var(--forest) !important; }
+
   .cta-row {
     margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
   }
@@ -383,8 +410,8 @@
   .bc-status { font-size: 12px; color: var(--green-deep); font-weight: 600; }
   .bc-summary { font-size: 13.5px; color: var(--ink-soft); margin-bottom: 16px; }
   .bc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-  .bc-box { background: white; border-radius: 14px; padding: 14px; border: 1px solid var(--line); }
-  .bc-lbl { font-size: 11px; font-weight: 700; letter-spacing: .05em; color: #9AA39B; text-transform: uppercase; margin-bottom: 8px; }
+  .bc-box { background: var(--paper); border-radius: 14px; padding: 14px; border: 1px solid var(--line); }
+  .bc-lbl { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--ink-soft); text-transform: uppercase; margin-bottom: 8px; }
   .bc-item { font-size: 13px; color: var(--ink); display: flex; gap: 7px; margin-bottom: 5px; }
   .bc-icon-g { color: var(--green-deep); font-weight: 800; }
   .bc-icon-p { color: var(--lua); }
@@ -424,46 +451,78 @@
   }
   .facts-ticker strong { color:var(--forest); font-weight:700; }
 
-  /* adjacent agents section */
+  /* adjacent agents section — colorful spectrum cards */
   .adjacent-section {
-    margin-top:22px; border-radius:20px; border:1px solid var(--lua-soft);
-    background:linear-gradient(135deg,rgba(108,76,240,.04),var(--paper));
-    overflow:hidden; box-shadow:var(--shadow-sm);
+    margin-top: 22px;
   }
-  .adjacent-header { padding:18px 24px; background:linear-gradient(135deg,var(--lua-soft),#fff); border-bottom:1px solid var(--line); }
-  .adjacent-header h3 { font-family:'Space Grotesk',sans-serif; font-size:18px; color:var(--ink); }
-  .adjacent-header p { font-size:13px; color:var(--ink-soft); margin-top:3px; }
-  .adjacent-agents { padding:18px 20px; display:flex; flex-direction:column; gap:12px; }
-  .agent-sug {
-    padding:14px 16px; background:var(--paper); border:1px solid var(--line);
-    border-radius:14px; display:flex; gap:14px; align-items:flex-start;
+  .adjacent-title {
+    font-size: 11px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+    color: var(--ink-soft); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
   }
-  .agent-sug-icon {
-    width:42px; height:42px; border-radius:11px; flex-shrink:0;
-    background:linear-gradient(140deg,var(--lua),var(--lua-2));
-    display:grid; place-items:center; font-size:20px;
+  .adjacent-title::before { content: ''; width: 20px; height: 2px; background: var(--lua); border-radius: 2px; }
+  .adjacent-title::after  { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .agent-cards {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
   }
-  .agent-sug-body h4 { font-size:14px; font-weight:700; color:var(--ink); margin-bottom:3px; }
-  .agent-sug-body p { font-size:13px; color:var(--ink-soft); line-height:1.5; }
-
+  .agent-card {
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 4px 16px -8px rgba(1,38,28,.12);
+    transition: transform .18s, box-shadow .18s;
+    display: flex; flex-direction: column;
+  }
+  .agent-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px -10px rgba(1,38,28,.18); }
+  .agent-card-accent {
+    height: 4px;
+    background: var(--accent-gradient);
+  }
+  .agent-card-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .agent-card-icon-row { display: flex; align-items: center; gap: 10px; }
+  .agent-card-icon {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    display: grid; place-items: center; font-size: 17px;
+    background: var(--accent-bg);
+  }
+  .agent-card-name { font-size: 13px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+  .agent-card-prop { font-size: 12.5px; color: var(--ink-soft); line-height: 1.55; flex: 1; }
+  .agent-card-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    padding: 4px 9px; border-radius: 999px;
+    background: var(--accent-bg); color: var(--accent-text);
+    align-self: flex-start; margin-top: 2px;
+  }
   @media (max-width: 760px) {
+    .agent-cards { grid-template-columns: 1fr; }
     .ana-split { grid-template-columns:1fr; }
     .ana-right { position:static; }
   }
 
-  /* ── enrichment chat ──────────────────────────────────────────── */
-  .enrich-wrap {
-    max-width: 640px; margin: 0 auto;
+  /* ── enrichment chat (chat-first hero) ────────────────────────── */
+  .hero-chat { max-width: 720px; margin: 0 auto; text-align: left; transform: translateX(-30px); }
+  /* Avatar sits on the left; the chat panel is ONE box holding the scrolling
+     messages on top and the composer at the bottom (split by a divider). */
+  .chat-row { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
+  .chat-row .ava {
+    flex-shrink: 0;
+    width: 40px; height: 40px; border-radius: 50%; background: var(--forest); color: var(--green);
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 17px;
+    font-family: 'Space Grotesk', sans-serif;
   }
-  .enrich-wrap h2 { margin-bottom: 6px; }
-  .enrich-wrap > p { color: var(--ink-soft); font-size: 15px; margin-bottom: 24px; }
-  .enrich-msgs {
+  .chat-panel {
+    flex: 1; min-width: 0;
     background: var(--paper); border: 1.5px solid var(--line); border-radius: 18px;
-    padding: 20px; min-height: 200px; max-height: 380px; overflow-y: auto;
-    display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .enrich-msgs {
+    flex: none; height: 300px;
+    padding: 24px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 14px;
   }
   .emsg {
-    max-width: 85%; padding: 11px 15px; border-radius: 14px; font-size: 14px; line-height: 1.55;
+    max-width: 85%; padding: 12px 16px; border-radius: 14px; font-size: 15px; line-height: 1.6;
+    white-space: pre-wrap;
   }
   .emsg.ada {
     background: var(--forest); color: #fff; align-self: flex-start; border-bottom-left-radius: 4px;
@@ -472,21 +531,45 @@
     background: #E8F5EE; color: var(--ink); align-self: flex-end; border-bottom-right-radius: 4px;
   }
   .emsg.typing { opacity: .55; font-style: italic; }
-  .enrich-input-row {
-    display: flex; gap: 10px; align-items: flex-end;
+  /* The composer is a rounded pill that floats inside the chat panel near the
+     bottom: tool icons on the left, the text input in the middle, and a round
+     up-arrow Send button on the right. */
+  .composer {
+    flex-shrink: 0; display: flex; align-items: flex-end; gap: 6px;
+    margin: 6px 16px 16px; padding: 6px 6px 6px 10px;
+    border: 1.5px solid var(--line); border-radius: 26px; background: var(--cream);
   }
-  .enrich-input-row textarea {
-    flex: 1; border: 1.5px solid var(--line); border-radius: 14px;
-    padding: 11px 14px; font-family: inherit; font-size: 14px; outline: 0;
-    background: var(--cream); resize: none; min-height: 48px; max-height: 120px;
+  .composer textarea {
+    flex: 1; min-width: 0; box-sizing: border-box; border: 0; outline: 0;
+    padding: 8px 4px; font-family: inherit; font-size: 15px; line-height: 1.4;
+    background: transparent; resize: none; min-height: 24px; max-height: 120px;
   }
-  .enrich-input-row textarea:focus { border-color: var(--green); }
-  .enrich-input-row button {
+  /* Tool buttons inside the pill: round icon by default, expand to show their
+     label on hover/focus. */
+  .composer-tools { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+  .tool-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 34px; padding: 0 9px;
+    border: 1.5px solid var(--line); background: var(--paper); color: var(--ink);
+    border-radius: 17px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600;
+    white-space: nowrap; transition: background .2s ease, border-color .2s ease;
+  }
+  .tool-btn:hover { background: var(--cream); border-color: var(--green); }
+  .tool-ico { font-size: 14px; line-height: 1; }
+  .tool-label {
+    max-width: 0; opacity: 0; overflow: hidden; margin-left: 0;
+    transition: max-width .28s ease, opacity .2s ease, margin-left .28s ease;
+  }
+  .tool-btn:hover .tool-label, .tool-btn:focus-visible .tool-label {
+    max-width: 160px; opacity: 1; margin-left: 6px;
+  }
+  #enrichSendBtn {
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px; padding: 0; border-radius: 50%;
     background: var(--green); color: var(--forest); border: 0;
-    border-radius: 12px; padding: 0 20px; height: 48px;
-    font-weight: 700; font-size: 15px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    font-size: 19px; font-weight: 700; line-height: 1; cursor: pointer;
   }
-  .enrich-input-row button:disabled { opacity: .5; cursor: default; }
+  #enrichSendBtn:disabled { opacity: .5; cursor: default; }
 </style>
 <!-- LinkedIn Insight Tag -->
 <script type="text/javascript">
@@ -531,32 +614,33 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
   <!-- SCREEN 1 — HERO -->
   <section class="screen active" id="s-hero">
     <div class="hero">
-      <span class="eyebrow">Free · No signup</span>
       <h1 class="display">Should your next hire be<br/><span class="swap">human or AI?</span></h1>
-      <p class="sub">Paste a job description or drop a link. In 15 seconds you'll get an Agent Fit Score across 7 dimensions — and a clear verdict on what this role actually needs.</p>
+      <p class="sub">Paste a job description or describe the role. Ada scores it in about 15 seconds.</p>
 
-      <div class="dropzone">
-        <div id="textWrap">
-          <textarea id="jd" placeholder="Paste a job description here…"></textarea>
-        </div>
-        <div class="url-wrap" id="urlWrap">
-          <div style="color:var(--ink-soft);font-size:14px;margin-bottom:6px;">Job posting URL</div>
-          <input id="urlInput" type="url" placeholder="https://www.linkedin.com/jobs/view/… or any job posting" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;font-family:inherit;font-size:15px;outline:0;background:transparent;color:var(--ink);" onfocus="this.style.borderColor='var(--green-deep)'" onblur="this.style.borderColor='var(--line)'" />
-          <div id="scrapeErr" class="scrape-err"></div>
-        </div>
-        <div class="other-roles" id="otherRoles">
-          <p id="orTitle"></p>
-          <div id="orChips"></div>
-        </div>
-        <div class="dz-sep" id="dzSep"></div>
-        <div class="dz-foot">
-          <input type="file" id="pdfInput" accept=".pdf" style="display:none" onchange="handlePdfUpload(event)" />
-          <div class="dz-chips">
-            <span class="chip" onclick="loadSample()">▲ Try a sample JD</span>
-            <span class="chip pdf-chip" onclick="document.getElementById('pdfInput').click()">📄 Upload PDF</span>
-            <span class="chip" id="urlChip" onclick="toggleUrlMode()">🔗 Paste link</span>
+      <!-- Hidden compatibility store for the JD text (kept in sync by the chat). -->
+      <textarea id="jd" hidden></textarea>
+      <input type="file" id="pdfInput" accept=".pdf" style="display:none" onchange="handlePdfUpload(event)" />
+
+      <!-- Chat-first intake — Ada leads from the first message. -->
+      <div class="hero-chat">
+        <div class="chat-row">
+          <span class="ava">A</span>
+          <!-- One unified box: messages on top, composer at the bottom. -->
+          <div class="chat-panel">
+            <div class="enrich-msgs" id="enrichMsgs"></div>
+            <div class="composer">
+              <div class="composer-tools">
+                <button type="button" class="tool-btn" onclick="loadSample()" aria-label="Try a sample JD" title="Try a sample JD">
+                  <span class="tool-ico">▲</span><span class="tool-label">Try a sample JD</span>
+                </button>
+                <button type="button" class="tool-btn" onclick="document.getElementById('pdfInput').click()" aria-label="Upload PDF" title="Upload PDF">
+                  <span class="tool-ico">📄</span><span class="tool-label">Upload PDF</span>
+                </button>
+              </div>
+              <textarea id="enrichInput" placeholder="Paste the job description, or describe the role…" rows="1" oninput="autoGrowComposer(this)" onkeydown="enrichEnterSend(event)"></textarea>
+              <button id="enrichSendBtn" onclick="sendHeroMessage()" aria-label="Send" title="Send">↑</button>
+            </div>
           </div>
-          <button class="btn btn-primary" id="heroBtn" onclick="handleScoreClick()">Score this role →</button>
         </div>
       </div>
 
@@ -605,21 +689,6 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
     <button class="btn btn-primary btn-block" style="max-width:680px;margin-top:8px" onclick="runAnalysis()">Run the analysis →</button>
   </section>
 
-  <!-- SCREEN 2b — ENRICHMENT CHAT (short JD path) -->
-  <section class="screen" id="s-enrich">
-    <button class="back-link" onclick="goBack()">← Back</button>
-    <div class="enrich-wrap">
-      <span class="eyebrow">A few quick questions</span>
-      <h2 class="display" style="font-size:26px">Help Ada give you a sharper verdict.</h2>
-      <p>The role description is a bit brief. Ada will ask you 3–4 quick questions, then score it automatically.</p>
-      <div class="enrich-msgs" id="enrichMsgs"></div>
-      <div class="enrich-input-row">
-        <textarea id="enrichInput" placeholder="Type your reply…" rows="2" onkeydown="enrichEnterSend(event)"></textarea>
-        <button id="enrichSendBtn" onclick="sendEnrichMessage()">Send →</button>
-      </div>
-    </div>
-  </section>
-
   <!-- SCREEN 3 — ANALYSIS -->
   <section class="screen" id="s-analysis">
     <div class="ana-split">
@@ -642,8 +711,10 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
         <div class="facts-ticker" id="factsTicker" style="display:none"></div>
       </div>
       <!-- Right: lead form -->
-      <div class="ana-right" id="anaFormWrap">
-        <div class="qn">YOUR DETAILS</div>
+      <div class="ana-right" id="anaFormWrap" style="border:2px solid var(--green);border-radius:18px;padding:22px;animation:formPulse 2s ease-in-out 3;">
+        <div class="qn" style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:18px">👈</span> YOUR DETAILS — fill this while we analyse
+        </div>
         <h3>Where should we send your results?</h3>
         <div class="modal-grid" style="margin-top:14px">
           <div class="field"><label>Full name *</label><input id="leadName" placeholder="Jordan Reyes" /></div>
@@ -700,23 +771,23 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
 
     <!-- Adjacent agents -->
     <div class="adjacent-section">
-      <div class="adjacent-header">
-        <h3>⚡ How else agents could help</h3>
-        <p>Other areas where Lua could add immediate value at your company</p>
-      </div>
-      <div class="adjacent-agents" id="adjacentAgents"></div>
+      <div class="adjacent-title">More ways Lua could help here</div>
+      <div id="adjacentAgents"></div>
     </div>
 
     <!-- Dual CTA -->
+    <div class="cta-section-head">What's your next move?</div>
     <div class="cta-row">
-      <div class="cta-card">
-        <h4>🧭 Brief Talent Safari</h4>
-        <p>Our recruiting team sources pre-vetted candidates for this role. Reply within one business day.</p>
-        <button class="btn btn-ts btn-block" onclick="go('s-brief')">Brief Talent Safari →</button>
+      <div class="cta-card cta-ts">
+        <div class="cta-brand-label ts-lbl">Talent Safari</div>
+        <h4>Hire the right person</h4>
+        <p>We source and vet pre-qualified candidates for this specific role. A specialist replies within one business day.</p>
+        <button class="btn btn-block cta-ts-btn" onclick="go('s-brief')">Brief Talent Safari →</button>
       </div>
       <div class="cta-card lua">
-        <h4>⚡ Talk to Lua</h4>
-        <p>Lua scopes, builds, and deploys the agent for this role. Typically live within a week.</p>
+        <div class="cta-brand-label lua-lbl">Lua</div>
+        <h4>Build an agent instead</h4>
+        <p>Lua scopes, builds, and deploys an agent for this exact role. Typically live within a week.</p>
         <button class="btn btn-block" onclick="go('s-connect')">Connect with Lua →</button>
       </div>
     </div>
@@ -788,44 +859,80 @@ s.parentNode.insertBefore(b, s);})(window.lintrk);
 const state = {
   jdText: '', volume: 'medium', stakes: 'low', taskFreq: 'medium',
   exposure: 'customer_unregulated', result: null,
-  urlMode: false,
   leadName: '', leadTitle: '', leadCompany: '', leadEmail: '',
-  leadSubmitted: false, apiDone: false, formDone: false,
+  leadSubmitted: false, leadCaptured: false, apiDone: false, formDone: false,
 };
 
 const railMap = { 's-hero':0,'s-questions':1,'s-analysis':2,'s-result':3,'s-brief':3,'s-connect':3 };
-const navHistory = ['s-hero'];
+// URLs kept for analytics / LinkedIn conversion tracking. Screens not listed
+// keep the current path but still get a history entry (via state) so the
+// browser back/forward buttons can move between them.
+const URL_MAP = { 's-result': '/results', 's-analysis': '/score', 's-hero': '/' };
+let currentScreen = 's-hero';
 
 // ─── navigation ───────────────────────────────────────────────────────────────
-function go(id) {
-  navHistory.push(id);
+// Browser history is the single source of truth: every go() records the target
+// screen in history.state, and popstate (back/forward, or our own goBack())
+// re-renders whatever screen that entry holds.
+
+// Swap the visible screen, update the rail, run per-screen side effects.
+// Pure render — never touches history.
+function renderScreen(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  currentScreen = id;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
   window.scrollTo({ top:0, behavior:'smooth' });
   const n = railMap[id];
   document.querySelectorAll('#rail i').forEach((bar,i) => {
     bar.className = i<=n ? (i===3?'on lua':'on') : '';
   });
-  if (id === 's-result') {
-    const anaIdx = navHistory.indexOf('s-analysis');
-    if (anaIdx !== -1) navHistory.splice(anaIdx, 1);
-    drawResult();
-  }
+  // Returning to the hero (browser Back / restart) resets the chat to Ada's greeting.
+  if (id === 's-hero') initHeroChat();
+  if (id === 's-result') drawResult();
   if (id === 's-brief') initCtaScreen('ts');
   if (id === 's-connect') { initCtaScreen('lua'); initConnectScreen(); }
 }
 
-function goBack() {
-  navHistory.pop(); // remove current
-  const prev = navHistory[navHistory.length - 1] || 's-hero';
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(prev).classList.add('active');
-  window.scrollTo({ top:0, behavior:'smooth' });
-  const n = railMap[prev];
-  document.querySelectorAll('#rail i').forEach((bar,i) => {
-    bar.className = i<=n ? (i===3?'on lua':'on') : '';
-  });
+// ─── Meta Pixel event helpers ───────────────────────────────────────────────
+// The base pixel (PageView) is installed in <head>. Because this is a single-page
+// app, the pixel can't see our .screen transitions on its own — so we fire funnel
+// events from JS as the user advances. Guarded with typeof checks + try/catch so a
+// blocked/absent pixel script can never break the app.
+function fbTrack(event, params) {
+  if (typeof fbq === 'function') { try { fbq('track', event, params || {}); } catch(_) {} }
 }
+function fbTrackCustom(event, params) {
+  if (typeof fbq === 'function') { try { fbq('trackCustom', event, params || {}); } catch(_) {} }
+}
+
+function go(id) {
+  // Reaching the result from the analysis theater replaces that transient
+  // entry, so Back from the result skips analysis (as before) and lands on
+  // the questions/enrich screen the user came from.
+  const replace = id === 's-result' && currentScreen === 's-analysis';
+  const url = URL_MAP[id] || location.pathname + location.search;
+  const entry = { screen: id };
+  if (replace) history.replaceState(entry, '', url);
+  else         history.pushState(entry, '', url);
+  renderScreen(id);
+}
+
+// In-app "← Back" buttons delegate to the browser so app nav and the browser
+// back/forward buttons stay in lockstep.
+function goBack() {
+  history.back();
+}
+
+window.addEventListener('popstate', (e) => {
+  renderScreen((e.state && e.state.screen) || 's-hero');
+});
+
+// Seed the initial entry so the very first Back has a screen to return to.
+// Preserve the current query string — a ?cta= report-email deep-link is read by
+// initCtaDeepLink() at boot, so we must not strip it back to '/' here.
+history.replaceState({ screen: 's-hero' }, '', location.search ? location.pathname + location.search : URL_MAP['s-hero']);
 
 // ─── PDF upload ───────────────────────────────────────────────────────────────
 if (window.pdfjsLib) {
@@ -835,8 +942,11 @@ if (window.pdfjsLib) {
 async function handlePdfUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
-  const jdEl = document.getElementById('jd');
-  jdEl.value = 'Extracting text from PDF…';
+  // Extracted text lands in the composer (not auto-sent) so the user can review
+  // it before hitting Send.
+  const input = document.getElementById('enrichInput');
+  input.value = 'Extracting text from PDF…';
+  input.disabled = true;
   try {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -846,72 +956,25 @@ async function handlePdfUpload(event) {
       const content = await page.getTextContent();
       text += content.items.map(s => s.str).join(' ') + '\n';
     }
-    jdEl.value = text.trim();
-    // Switch out of URL mode if active
-    if (state.urlMode) toggleUrlMode();
+    input.value = text.trim();
+    input.disabled = false;
+    input.focus();
+    autoGrowComposer(input);   // grow the pill to fit the extracted text (up to the cap)
     document.getElementById('pdfInput').value = '';
   } catch (e) {
-    jdEl.value = '';
+    input.value = '';
+    input.disabled = false;
     alert('Could not read PDF. Please paste the JD text directly.');
   }
 }
 
-// ─── URL mode ─────────────────────────────────────────────────────────────────
-function toggleUrlMode() {
-  state.urlMode = !state.urlMode;
-  document.getElementById('textWrap').style.display = state.urlMode ? 'none' : '';
-  document.getElementById('urlWrap').style.display = state.urlMode ? '' : 'none';
-  document.getElementById('dzSep').style.display = state.urlMode ? 'none' : '';
-  document.getElementById('urlChip').classList.toggle('active', state.urlMode);
-  document.getElementById('heroBtn').textContent = state.urlMode ? 'Fetch & score this role →' : 'Score this role →';
-  document.getElementById('scrapeErr').style.display = 'none';
-}
-
-async function fetchJD() {
-  const url = document.getElementById('urlInput').value.trim();
-  if (!url) { showScrapeErr('Please enter a URL.'); return; }
-  state.urlMode = false;
-  state.jdText = url;
-  document.getElementById('textWrap').style.display = '';
-  document.getElementById('urlWrap').style.display = 'none';
-  document.getElementById('dzSep').style.display = '';
-  document.getElementById('urlChip').classList.remove('active');
-  document.getElementById('jd').value = url;
-  go('s-questions');
-}
-
-function showScrapeErr(msg) {
-  const el = document.getElementById('scrapeErr');
-  el.textContent = msg; el.style.display = '';
-}
-
-function handleScoreClick() {
-  if (state.urlMode) { fetchJD(); return; }
-  const jdVal = document.getElementById('jd').value.trim();
-  const wordCount = jdVal.split(/\s+/).filter(Boolean).length;
-  const btn = document.getElementById('heroBtn');
-  btn.disabled = true;
-  btn.textContent = 'Preparing…';
-  setTimeout(() => {
-    btn.disabled = false;
-    btn.textContent = 'Score this role →';
-    if (wordCount < 20) {
-      state.jdText = jdVal;
-      startEnrichChat();
-      go('s-enrich');
-    } else {
-      go('s-questions');
-    }
-  }, 700);
-}
-
 function loadSample() {
-  if (state.urlMode) toggleUrlMode();
-  document.getElementById('jd').value =
+  document.getElementById('enrichInput').value =
     "Tier 1 Customer Support Specialist — Northwind Co.\n\n" +
     "Respond to inbound customer emails and chats, resolve common order, billing and shipping questions, " +
     "triage and tag tickets, escalate edge cases, and keep the CRM up to date. High ticket volume. " +
     "Playbook-driven. Customer-facing. Reports to the Support Lead.";
+  sendHeroMessage();
 }
 
 function pick(el, key, value) {
@@ -946,6 +1009,9 @@ function runAnalysis() {
   let i = 0;
   steps[0].classList.add('run');
   const apiPromise = callScoreApi();
+  fbTrackCustom('StartEvaluation', {
+    jd_words: state.jdText ? state.jdText.split(/\s+/).filter(Boolean).length : 0,
+  });
   const tick = setInterval(() => {
     steps[i].className = 'step done';
     i++;
@@ -964,6 +1030,11 @@ function runAnalysis() {
         stopFactsTicker();
         state.apiDone = true;
         if (state.formDone) {
+          drawn = false;
+          fbTrack('ViewContent', {
+            content_name: (state.result && state.result.verdict) || 'role_evaluation',
+            content_category: 'role_evaluation',
+          });
           setTimeout(() => go('s-result'), 600);
         }
       });
@@ -988,12 +1059,22 @@ function submitAnalysisForm() {
   state.formDone = true;
 
   notifyLeadSubmit(name, title, company, email);
+  if (typeof window.lintrk === 'function') window.lintrk('track', { conversion_id: 26416564 });
+  fbTrack('Lead', {
+    content_name: (state.result && state.result.verdict) || 'role_evaluation',
+    content_category: 'role_evaluation',
+  });
 
   // Swap form → success state
   document.getElementById('anaFormWrap').style.display = 'none';
   document.getElementById('anaSuccessWrap').style.display = '';
 
   if (state.apiDone) {
+    drawn = false;
+    fbTrack('ViewContent', {
+      content_name: (state.result && state.result.verdict) || 'role_evaluation',
+      content_category: 'role_evaluation',
+    });
     setTimeout(() => go('s-result'), 800);
   }
 }
@@ -1030,13 +1111,23 @@ function stopFactsTicker() {
 }
 
 // ─── API call ─────────────────────────────────────────────────────────────────
-const LUA_AGENT_ID   = 'baseAgent_agent_1779215133611_x0svb7j5d';
-const LUA_API_KEY    = 'api_403f64cd0f8b4e3b97c2c98443508e84';
-const SLACK_WEBHOOK  = 'https://hooks.slack.com/services/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';
+// All Lua/Slack calls route through Vercel serverless functions in /api so the
+// LUA_API_KEY and SLACK_LEADS_WEBHOOK_URL stay server-side (process.env on Vercel).
+const SLACK_NOTIFY_ENDPOINT = '/api/slack-notify';
+
+// Unique channel per call prevents contamination from prior failed tool calls
+// accumulating in Ada's session history. The /api/lua-chat proxy forwards this
+// query param to Lua's chat API after attaching the Bearer token server-side.
+function adaSessionUrl(prefix = 'eval') {
+  const id = typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+  return `/api/lua-chat?channel=${prefix}-${id}`;
+}
 
 async function notifyLeadSubmit(name, title, company, email) {
   try {
-    await fetch(SLACK_WEBHOOK, {
+    await fetch(SLACK_NOTIFY_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: `*New JD submitted — evaluation starting*\nLead: ${name} · ${title} · ${company}\nEmail: ${email}` }),
@@ -1044,97 +1135,209 @@ async function notifyLeadSubmit(name, title, company, email) {
   } catch {}
 }
 
-async function callScoreApi() {
-  const isUrl = /^https?:\/\//i.test(state.jdText.trim());
-  const prompt = isUrl
-    ? `Score this job posting: ${state.jdText.trim()}`
-    : `Score this job description:\n\n${state.jdText}\n\nContext: Task structure is ${state.volume}, task frequency is ${state.taskFreq} (low/medium/high volume per day), decision stakes are ${state.stakes}, exposure type is ${state.exposure}.`;
+// Score a JD via Ada. Retries once on a fresh channel if the first
+// attempt returns no tool result (handles Lua early-return edge cases).
+async function scoreViaAda(jdText) {
+  const prompt =
+    `Score this job description: ${jdText}\n\n` +
+    `Context: Task structure is ${state.volume}, ` +
+    `task frequency is ${state.taskFreq} (low/medium/high volume per day), ` +
+    `decision stakes are ${state.stakes}, ` +
+    `exposure type is ${state.exposure}.`;
 
+  const result1 = await _adaScoreFetch(adaSessionUrl('eval'), prompt);
+  if (result1) return result1;
+
+  console.log('[ada-score] attempt 1 returned no result — retrying on fresh channel in 3s…');
+  await new Promise(r => setTimeout(r, 3000));
+
+  return await _adaScoreFetch(adaSessionUrl('eval'), prompt);
+}
+
+async function _adaScoreFetch(url, text) {
   try {
-    const res = await fetch(
-      `https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LUA_API_KEY}` },
-        body: JSON.stringify({ messages: [{ type: 'text', text: prompt }], navigate: false }),
-      }
-    );
-    console.log('[Ada] status:', res.status);
-    if (!res.ok) { console.error('[Ada] non-OK', res.status); return; }
-    const data = await res.json();
-    console.log('[Ada] steps:', data?.steps?.length, '| preview:', (data?.text||'').slice(0,80));
-
-    const allToolResults = data?.steps?.flatMap(s => s.toolResults || []) || [];
-    // Find the LAST successful score_jd result (first attempt may fail score_mismatch, Ada retries)
-    const scoringMatches = allToolResults.filter(r => {
-      const name = r.payload?.toolName || r.toolName || '';
-      return name.includes('score_jd') || name.includes('score_role');
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ type: 'text', text }], navigate: false }),
     });
-    const toolResult = scoringMatches.slice().reverse().find(r => {
-      const res = r.payload?.result ?? r.result;
-      return res && !res.error && typeof res.score === 'number' && res.score >= 10 && res.score <= 100;
-    }) || scoringMatches[scoringMatches.length - 1];
-    console.log('[Ada] tool matches:', scoringMatches.length, '| using:', toolResult?.payload?.toolName || 'none');
+    console.log('[ada-score] status:', res.status, 'channel:', url.split('channel=')[1]);
+    if (!res.ok) { console.error('[ada-score] non-OK', res.status, await res.text()); return null; }
+    const data = await res.json();
+    console.log('[ada-score] raw response (first 500):', JSON.stringify(data).slice(0, 500));
+    const result = extractScoreFromAdaResponse(data);
+    console.log('[ada-score] extracted score:', result?.score, 'verdict:', result?.verdict);
+    return result;
+  } catch (e) {
+    console.error('[ada-score] fetch error:', e);
+    return null;
+  }
+}
 
-    if (toolResult) {
-      const raw = toolResult.payload?.result ?? toolResult.result;
-      const parsed = typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : raw;
-      console.log('[Ada] score:', parsed?.score, 'verdict:', parsed?.verdict, 'error:', parsed?.error);
-      if (parsed && !parsed.error && typeof parsed.score === 'number' && parsed.score >= 10 && parsed.score <= 100 && parsed.verdict) {
-        state.result = parsed;
-        return;
-      }
+// Walk Ada's chat response shape and pull out the score_jd tool result.
+function extractScoreFromAdaResponse(data) {
+  const allToolResults = (data?.steps || []).flatMap(s => s.toolResults || s.tool_results || []);
+  const candidates = allToolResults.filter(r => {
+    const name = r.payload?.toolName || r.toolName || r.name || '';
+    return name === 'score_jd' || name === 'score_role' || name.includes('score_jd');
+  });
+  for (const c of candidates.slice().reverse()) {
+    const raw = c.payload?.result ?? c.result ?? c.output;
+    const parsed = typeof raw === 'string' ? safeParseJson(raw) : raw;
+    if (parsed && typeof parsed.score === 'number' && Array.isArray(parsed.dimensions) && parsed.dimensions.length === 7) {
+      return parsed;
     }
+  }
+  return null;
+}
+function safeParseJson(s) { try { return JSON.parse(s); } catch { return null; } }
 
-    // Fallback: parse JSON from text — only accept if it has dimensions + verdict
-    const text = data?.text || '';
-    const match = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*"score"[\s\S]*\})/);
-    if (match) {
-      try {
-        const fb = JSON.parse(match[1].trim());
-        if (fb && Array.isArray(fb.dimensions) && fb.dimensions.length === 7 && fb.verdict
-            && typeof fb.score === 'number' && fb.score >= 10 && fb.score <= 100) {
-          state.result = fb;
-        }
-      } catch {}
-    }
-  } catch(e) { console.error('[Ada] error:', e); }
+async function callScoreApi() {
+  try {
+    state.result = await scoreViaAda(state.jdText.trim());
+  } catch(e) {
+    console.error('[ada-score] unexpected error:', e);
+    state.result = null;
+  }
 }
 
 // ─── enrichment chat ──────────────────────────────────────────────────────────
 const enrichHistory = [];  // [{role,content}]
+const ENRICH_DONE = '[[ENRICH_DONE]]';   // completion token Ada emits when ready
+const ENRICH_MAX_ANSWERS = 4;            // hard cap — advance after this many user replies
+
+// Ada opens the hero chat with this — invites paste-or-describe. The four
+// high-leverage dimension questions only appear later, on the thin-JD branch.
+const HERO_GREETING = `Hi, I'm Ada. Paste a job description below, or describe the role in a sentence or two, and I'll tell you whether it's a human or an agent hire.`;
+let heroStage = 'awaiting_jd';   // 'awaiting_jd' | 'enriching'
+const COMPOSER_MAX_H = 120;      // px — the pill grows with the text up to here, then scrolls
+
+// Grow the composer textarea to fit its content (line by line) up to a cap;
+// beyond the cap it scrolls. Pass null/no-content to reset to one line.
+function autoGrowComposer(el) {
+  el = el || document.getElementById('enrichInput');
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, COMPOSER_MAX_H) + 'px';
+}
+
+// Reset the hero chat to Ada's greeting (on first load and on Back/restart).
+function initHeroChat() {
+  heroStage = 'awaiting_jd';
+  enrichHistory.length = 0;
+  const msgs = document.getElementById('enrichMsgs');
+  if (msgs) msgs.innerHTML = '';
+  const input = document.getElementById('enrichInput');
+  if (input) { input.value = ''; input.disabled = false; autoGrowComposer(input); }
+  const btn = document.getElementById('enrichSendBtn');
+  if (btn) btn.disabled = false;
+  appendEnrichMsg('ada', HERO_GREETING);
+  if (msgs) msgs.scrollTop = 0;
+}
+
+// The hero composer's Send. First message = the role description; later
+// messages (once enriching) are answers handed to the existing enrichment loop.
+function sendHeroMessage() {
+  const input = document.getElementById('enrichInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  autoGrowComposer(input);   // collapse the pill back to one line
+
+  // Subsequent turns are enrichment answers — defer to the existing loop.
+  if (heroStage === 'enriching') {
+    appendEnrichMsg('user', text);
+    enrichHistory.push({ role: 'user', content: text });
+    callEnrichApi(false);
+    return;
+  }
+
+  // First message = the role description. Populate both stores before branching.
+  appendEnrichMsg('user', text);
+  state.jdText = text;
+  document.getElementById('jd').value = text;
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+  const btn = document.getElementById('enrichSendBtn');
+
+  if (wordCount >= 20) {
+    // Enough detail — quick ack, then hand off to the calibration questions.
+    btn.disabled = true;
+    const typing = appendEnrichMsg('ada', 'Ada is reading the role…', true);
+    setTimeout(() => {
+      typing.remove();
+      appendEnrichMsg('ada', "Got it, that's plenty to work with. Three quick calibrations and I'll score it.");
+      setTimeout(() => { btn.disabled = false; go('s-questions'); }, 1200);
+    }, 700);
+  } else {
+    // Thin description — hand to the 4-dimension intake brain (single seed source).
+    heroStage = 'enriching';
+    startEnrichChat();
+  }
+}
 
 function startEnrichChat() {
   enrichHistory.length = 0;
+  state.enrichUrl = adaSessionUrl('enrich');
   document.getElementById('enrichMsgs').innerHTML = '';
   document.getElementById('enrichInput').value = '';
 
   const jdPreview = state.jdText ? `"${state.jdText.slice(0, 200).trim()}${state.jdText.length > 200 ? '…' : ''}"` : '(no description provided)';
-  const seed = `The user wants to evaluate a role for automation fit but only gave a very vague description: ${jdPreview}. Ask them at most 2 short questions — combine what you need into as few questions as possible (e.g. "What are the main day-to-day tasks, and roughly how many does the role handle per day?"). Use any information already given without asking for it again. After at most 2 exchanges, synthesize everything into a role description and call score_jd to score it. Do your best with limited information rather than asking more questions. Start with your first (and ideally only) question now — keep it brief.`;
+  const seed = `The user wants to evaluate a role for automation fit but only gave a brief description: ${jdPreview}. Your job is to gather the context that the description does not make clear, by asking the questions below in one warm numbered list, with one short sentence of intro. Do NOT ask about how structured the work is, daily volume, or who they interact with; a separate step covers those.
+
+FIRST decide whether the description already makes the job title clear (for example nurse, software engineer, support rep, account manager). If the job title is NOT clear, your question 1 MUST be: "What is the job title you are looking to hire for (for example nurse or software engineer)?" and then the four dimension questions follow as 2 to 5, for FIVE questions total. If the title IS already clear, skip that and ask only the four dimension questions. Number whatever you ask sequentially in a single list.
+
+The four dimension questions (always ask these, lightly reworded in your own voice):
+- When something unexpected or ambiguous comes up, does this role decide independently using deep expertise, or follow set policies and escalate to a senior person?
+- Does the work legally require a licensed or certified human to sign off (for example compliance, legal, medical, or financial advice)?
+- Does this person own long-term relationships (a named book of clients over months), or handle one-off, transactional interactions?
+- How much of the day is spent in software tools, APIs, and data, versus coordinating with people across teams and meetings?
+
+After the user replies, decide whether each question you asked (including the job title, if you asked it) is now sufficiently answered. Re-ask ONLY the ones still vague or unanswered, briefly. Once they are reasonably covered, reply with one short sentence confirming you have enough, ending with the exact token ${ENRICH_DONE} on its own line. IMPORTANT: do NOT call any tools, do NOT score the role, and do NOT send any email or message; a separate step handles scoring. Use any detail already given without re-asking. Start now with the numbered list of questions, and do NOT include the token in this first message.`;
 
   enrichHistory.push({ role: 'user', content: seed });
   callEnrichApi(true);
 }
 
-function enrichEnterSend(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendEnrichMessage(); }
+// Assemble an enriched JD from the original short description + the user's
+// answers in the enrichment chat, so the scoring step has full context.
+function buildEnrichedJd() {
+  const base = (state.jdText || '').trim();
+  // Skip the seed prompt (first entry) and Ada's questions; keep user answers.
+  const answers = enrichHistory
+    .slice(1)
+    .filter(m => m.role === 'user')
+    .map(m => m.content.trim())
+    .filter(Boolean);
+  if (!answers.length) return base;
+  return `${base}\n\nClarifying answers (judgment, regulation, relationships, systems):\n${answers.map(a => `- ${a}`).join('\n')}`.trim();
 }
 
-function sendEnrichMessage() {
-  const input = document.getElementById('enrichInput');
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  appendEnrichMsg('user', text);
-  enrichHistory.push({ role: 'user', content: text });
-  callEnrichApi(false);
+// Complete the enrichment chat: fold the gathered answers into the JD and
+// continue the normal funnel at Step 2 (the clarifying questions).
+function finishEnrich(messageText) {
+  appendEnrichMsg('ada', messageText || 'Great — a few quick calibration questions next.');
+  const enrichedJd = buildEnrichedJd();
+  state.jdText = enrichedJd;
+  document.getElementById('jd').value = enrichedJd;
+  setTimeout(() => go('s-questions'), 1500);
+}
+
+function enrichEnterSend(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendHeroMessage(); }
 }
 
 function appendEnrichMsg(role, text, isTyping) {
   const msgs = document.getElementById('enrichMsgs');
   const div = document.createElement('div');
   div.className = `emsg ${role}${isTyping ? ' typing' : ''}`;
-  div.textContent = text;
+  if (isTyping) {
+    div.textContent = text;
+  } else {
+    // Minimal safe markdown: escape HTML first, then render **bold**. Newlines
+    // (e.g. the numbered question list) are preserved via white-space:pre-wrap.
+    const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    div.innerHTML = esc.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  }
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
   return div;
@@ -1147,14 +1350,11 @@ async function callEnrichApi(isFirst) {
   const typing = appendEnrichMsg('ada', 'Ada is thinking…', true);
 
   try {
-    const res = await fetch(
-      `https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LUA_API_KEY}` },
-        body: JSON.stringify({ messages: enrichHistory.map(m => ({ type: 'text', text: `${m.role === 'user' ? '' : 'Ada: '}${m.content}` })), navigate: false }),
-      }
-    );
+    const res = await fetch(state.enrichUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: enrichHistory.map(m => ({ type: 'text', text: `${m.role === 'user' ? '' : 'Ada: '}${m.content}` })), navigate: false }),
+    });
 
     typing.remove();
 
@@ -1162,36 +1362,30 @@ async function callEnrichApi(isFirst) {
 
     const data = await res.json();
 
-    // Check if Ada called score_jd — if so, capture result and navigate
-    const allToolResults = data?.steps?.flatMap(s => s.toolResults || []) || [];
-    const scoringMatch = allToolResults.filter(r => {
-      const name = r.payload?.toolName || r.toolName || '';
-      return name.includes('score_jd') || name.includes('score_role');
-    }).slice().reverse().find(r => {
-      const res = r.payload?.result ?? r.result;
-      return res && !res.error && typeof res.score === 'number' && res.score >= 10 && res.score <= 100;
-    });
+    // Enrichment only gathers context — no scoring here. Detect completion via
+    // the token Ada emits, with a hard cap on answers so we can never get stuck.
+    let replyText = (data?.text || '').trim();
+    const done = replyText.includes(ENRICH_DONE);
+    replyText = replyText.replace(ENRICH_DONE, '').trim();
+    const userAnswers = enrichHistory.filter(m => m.role === 'user').length - 1; // exclude seed
 
-    if (scoringMatch) {
-      const raw = scoringMatch.payload?.result ?? scoringMatch.result;
-      const parsed = typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : raw;
-      if (parsed && parsed.verdict) {
-        appendEnrichMsg('ada', 'Perfect — I have everything I need. Taking you to your results now…');
-        state.result = parsed;
-        // Brief delay so user reads the message
-        setTimeout(() => {
-          drawn = false;
-          go('s-result');
-        }, 1800);
-        return;
-      }
+    if (!isFirst && done) {
+      finishEnrich(replyText || 'Perfect — I have enough to go on.');
+      return;
+    }
+    if (!isFirst && userAnswers >= ENRICH_MAX_ANSWERS) {
+      finishEnrich('Great — a few quick calibration questions next.');
+      return;
     }
 
-    // Ada's text reply — show it and continue conversation
-    const replyText = (data?.text || '').trim();
+    // Otherwise show Ada's next question and continue the conversation.
     if (replyText) {
       appendEnrichMsg('ada', replyText);
       enrichHistory.push({ role: 'assistant', content: replyText });
+    } else if (!isFirst) {
+      // No usable reply but not flagged done — advance rather than dead-end.
+      finishEnrich('Thanks — a few quick calibration questions next.');
+      return;
     }
   } catch(e) {
     typing.remove();
@@ -1204,30 +1398,26 @@ async function callEnrichApi(isFirst) {
 
 // ─── lead capture ─────────────────────────────────────────────────────────────
 async function submitLead() {
-  const name    = document.getElementById('leadName').value.trim();
-  const title   = document.getElementById('leadTitle').value.trim();
-  const company = document.getElementById('leadCompany').value.trim();
-  const email   = document.getElementById('leadEmail').value.trim();
-  if (!name || !title || !company || !email) {
-    document.getElementById('leadFormErr').style.display = 'block'; return;
-  }
-  document.getElementById('leadFormErr').style.display = 'none';
-  state.leadName = name; state.leadTitle = title;
-  state.leadCompany = company; state.leadEmail = email;
-  state.leadSubmitted = true;
+  const { leadName: name, leadTitle: title, leadCompany: company, leadEmail: email } = state;
+  if (!name || !title || !company || !email) return;
 
-  // Fire capture_lead — pass full scoringResult + JD text
   try {
     const scoringJson = JSON.stringify(state.result || {});
     const jdJson = JSON.stringify((state.jdText || '').slice(0, 3000));
-    await fetch(`https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${LUA_API_KEY}`},
+    const res = await fetch(adaSessionUrl('lead'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages:[{type:'text',text:`Call the capture_lead tool now with these exact values:\nemail: "${email}"\nname: "${name}"\ntitle: "${title}"\ncompany: "${company}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}`}],
-        navigate:false
+        messages: [{ type: 'text', text: `Call the capture_lead tool now with these exact values:\nemail: "${email}"\nname: "${name}"\ntitle: "${title}"\ncompany: "${company}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}` }],
+        navigate: false,
       }),
     });
+    if (!res.ok) {
+      console.error('[Ada] capture_lead HTTP error:', res.status, await res.text());
+      return;
+    }
+    const data = await res.json();
+    console.log('[Ada] capture_lead result:', JSON.stringify(data).slice(0, 300));
   } catch(e) { console.error('[Ada] capture_lead error:', e); }
 }
 
@@ -1249,13 +1439,23 @@ function submitCta(path) {
   if (formEl) formEl.style.display = 'none';
   if (successEl) successEl.style.display = 'block';
 
+  // Bottom-of-funnel conversion — which partner the lead chose (human vs agent).
+  fbTrackCustom(isTs ? 'BriefTalentSafari' : 'ConnectLua', {
+    content_name: (state.result && state.result.verdict) || 'role_evaluation',
+  });
+  fbTrack('Contact', { content_category: isTs ? 'talent_safari' : 'lua' });
+
   // Fire API in background (fire-and-forget)
   const { leadName: name, leadEmail: email, leadCompany: company, leadTitle: title } = state;
   const scoringJson = JSON.stringify(state.result || {});
   const jdJson = JSON.stringify((state.jdText || '').slice(0, 3000));
-  fetch(`https://api.heylua.ai/chat/generate/${LUA_AGENT_ID}?channel=production`, {
-    method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${LUA_API_KEY}`},
-    body: JSON.stringify({ messages:[{type:'text',text:`Call the submit_cta tool now with these exact values:\npath: "${path}"\nname: "${name}"\ntitle: "${title}"\nemail: "${email}"\ncompany: "${company}"\nextraField: "${extraField}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}`}], navigate:false }),
+  fetch(adaSessionUrl('cta'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: [{ type: 'text', text: `Call the submit_cta tool now with these exact values:\npath: "${path}"\nname: "${name}"\ntitle: "${title}"\nemail: "${email}"\ncompany: "${company}"\nextraField: "${extraField}"\njdText: ${jdJson}\nscoringResult: ${scoringJson}` }],
+      navigate: false,
+    }),
   }).catch(() => {});
 }
 
@@ -1277,6 +1477,34 @@ function prefillCtaForms() {
       if (id.includes('Company')) el.value = state.leadCompany;
     }
   });
+}
+
+// ─── CTA email deep-link ──────────────────────────────────────────────────────
+// Query-param CONTRACT with the report email (capture-lead.skill.ts ctaUrl):
+//   cta=lua|tech_safari   (required)  → which screen to land on
+//   name, email, company  (optional)  → prefill the lead
+//   role, score           (optional)  → submit_cta Slack-ping context
+//   rec                   (emitted, intentionally UNUSED here — Option A)
+// On load we read `cta`, prefill the lead, and land directly on the matching CTA
+// screen — Lua → s-connect, Talent Safari → s-brief — skipping the hero/funnel.
+// Returns true when a deep-link was handled so boot can skip the hero greeting.
+function initCtaDeepLink() {
+  const q = new URLSearchParams(location.search);
+  const cta = q.get('cta');
+  const screen = cta === 'lua' ? 's-connect' : cta === 'tech_safari' ? 's-brief' : null;
+  if (!screen) return false;
+
+  // Hydrate the lead from the URL — leave blank if a param is missing.
+  state.leadName    = q.get('name')    || '';
+  state.leadEmail   = q.get('email')   || '';
+  state.leadCompany = q.get('company') || '';
+  // role/score give submit_cta's Slack ping context; rec is intentionally unused.
+  const role = q.get('role'), score = q.get('score');
+  if (role || score) state.result = { role_title: role || '', score: Number(score) || null };
+
+  history.replaceState({ screen }, '', location.pathname + location.search);
+  renderScreen(screen);
+  return true;
 }
 
 // ─── DEMO data ────────────────────────────────────────────────────────────────
@@ -1335,7 +1563,27 @@ function drawResult() {
   const raw = state.result;
   const valid = raw && Array.isArray(raw.dimensions) && raw.dimensions.length === 7
     && raw.verdict && typeof raw.score === 'number' && raw.score >= 10 && raw.score <= 100;
+
+  // If result invalid, don't silently show demo — send back with retry prompt
+  if (!valid) {
+    drawn = false;
+    const note = document.getElementById('waitingNote');
+    if (note) {
+      note.style.display = 'block';
+      note.textContent = '⚠️ Something went wrong loading your result. Please try again.';
+      note.style.color = '#c0392b';
+    }
+    go('s-analysis');
+    return;
+  }
+
   const d = valid ? raw : DEMO;
+
+  // Fire capture_lead once — deferred until result is available
+  if (state.leadSubmitted && !state.leadCaptured) {
+    state.leadCaptured = true;
+    submitLead();
+  }
 
   // Score gauge
   document.getElementById('resultEyebrow').textContent = 'Your verdict · ' + d.role_title;
@@ -1425,14 +1673,27 @@ function drawResult() {
   // Adjacent agents
   const adjEl = document.getElementById('adjacentAgents');
   const adjAgents = (d.adjacent_agents && d.adjacent_agents.length >= 2) ? d.adjacent_agents : DEMO.adjacent_agents;
-  adjEl.innerHTML = adjAgents.map(a => `
-    <div class="agent-sug">
-      <div class="agent-sug-icon">${a.icon}</div>
-      <div class="agent-sug-body">
-        <h4>${a.name}</h4>
-        <p>${a.value_prop}</p>
+  const agentAccents = [
+    { gradient: 'linear-gradient(90deg,#F97316,#FBBF24)', bg: 'rgba(249,115,22,.10)', text: '#C2410C' },
+    { gradient: 'linear-gradient(90deg,#6366F1,#A855F7)', bg: 'rgba(99,102,241,.10)',  text: '#4F46E5' },
+    { gradient: 'linear-gradient(90deg,#14B8A6,#38BDF8)', bg: 'rgba(20,184,166,.10)',  text: '#0F766E' },
+    { gradient: 'linear-gradient(90deg,#EC4899,#F43F5E)', bg: 'rgba(236,72,153,.10)',  text: '#BE185D' },
+  ];
+  adjEl.innerHTML = `<div class="agent-cards">${adjAgents.map((a, i) => {
+    const ac = agentAccents[i % agentAccents.length];
+    return `
+    <div class="agent-card" style="--accent-gradient:${ac.gradient};--accent-bg:${ac.bg};--accent-text:${ac.text}">
+      <div class="agent-card-accent"></div>
+      <div class="agent-card-body">
+        <div class="agent-card-icon-row">
+          <div class="agent-card-icon">${a.icon}</div>
+          <div class="agent-card-name">${a.name}</div>
+        </div>
+        <div class="agent-card-prop">${a.value_prop}</div>
+        <div class="agent-card-tag">⚡ Lua agent</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('')}</div>`;
 
   // Pre-fill CTA forms
   prefillCtaForms();
@@ -1456,11 +1717,12 @@ const WZ_ACKS = ['Got it.','Thanks — helpful context.','Noted — that shapes 
 let wizardState = { initialized:false, msgs:[], answers:[], qIndex:0, phase:'wizard', brief:null };
 
 function initConnectScreen() {
-  const d = state.result || DEMO;
-  const showWizard = d.score >= 65;
-  document.getElementById('wizardSection').style.display = showWizard ? '' : 'none';
-  document.getElementById('staticLuaForm').style.display = showWizard ? 'none' : '';
-  if (showWizard && !wizardState.initialized) initWizard(d);
+  // Wizard ("Let's build your agent brief") is disabled — it was hardcoded
+  // theater (no agent invocation, DEMO_BRIEF for everyone) and Lorcan wants
+  // it hidden until a real implementation lands. All Connect-with-Lua leads
+  // now go through the static form. Wizard code is kept for re-enable later.
+  document.getElementById('wizardSection').style.display = 'none';
+  document.getElementById('staticLuaForm').style.display = '';
 }
 
 function initWizard(d) {
@@ -1588,20 +1850,19 @@ function renderBrief(brief, seed) {
 function restart() {
   drawn = false;
   wizardState = { initialized:false, msgs:[], answers:[], qIndex:0, phase:'wizard', brief:null };
-  state.result = null; state.urlMode = false;
+  state.result = null;
   state.leadName = ''; state.leadTitle = ''; state.leadCompany = ''; state.leadEmail = '';
   state.leadSubmitted = false;
-  navHistory.length = 0; navHistory.push('s-hero');
+  state.leadCaptured = false;
   document.getElementById('jd').value = '';
-  document.getElementById('textWrap').style.display = '';
-  document.getElementById('urlWrap').style.display = 'none';
-  document.getElementById('dzSep').style.display = '';
-  document.getElementById('urlChip').classList.remove('active');
-  document.getElementById('heroBtn').textContent = 'Score this role →';
-  document.getElementById('otherRoles').style.display = 'none';
-  document.getElementById('overlay').classList.remove('show');
+  const _ov = document.getElementById('overlay'); if (_ov) _ov.classList.remove('show');
   go('s-hero');
 }
+
+// A report-email CTA link (?cta=…) lands directly on the matching CTA screen;
+// otherwise s-hero is statically active and the initial history entry doesn't
+// route through renderScreen, so paint Ada's greeting once on first load.
+if (!initCtaDeepLink()) initHeroChat();
 </script>
 </body>
 </html>

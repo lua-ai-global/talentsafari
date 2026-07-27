@@ -1,4 +1,4 @@
-import { LuaSkill, LuaTool, env } from 'lua-cli';
+import { LuaSkill, LuaTool, Data, env } from 'lua-cli';
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
@@ -40,6 +40,19 @@ type SubmitCtaInput = z.infer<typeof submitCtaInputSchema>;
 // Helpers
 // ---------------------------------------------------------------------------
 
+async function updateSheetsRow(webhookUrl: string, email: string, path: string): Promise<void> {
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'updateCta',
+      email,
+      ctaClicked: path === 'lua' ? 'Lua' : 'Talent Safari',
+    }),
+  });
+  if (!response.ok) throw new Error(`Sheets webhook error ${response.status}`);
+}
+
 async function postCtaToSlack(webhookUrl: string, input: SubmitCtaInput): Promise<void> {
   const { path, name, email, company, extraField, jdText, scoringResult } = input;
   const { role_title, score, verdict_line, agent_candidate, human_candidate } = scoringResult;
@@ -52,7 +65,7 @@ async function postCtaToSlack(webhookUrl: string, input: SubmitCtaInput): Promis
       : '';
 
   const jdSnippet = jdText
-    ? jdText.length > 600 ? jdText.slice(0, 600) + '…' : jdText
+    ? jdText.length > 2800 ? jdText.slice(0, 2800) + '…' : jdText
     : null;
 
   const text = [
@@ -61,7 +74,7 @@ async function postCtaToSlack(webhookUrl: string, input: SubmitCtaInput): Promis
     `Contact: ${name} · ${email} · ${company}`,
     extraField ? `${extraLabel}: ${extraField}` : '',
     financialLine,
-    jdSnippet ? `\n*Job description:*\n${jdSnippet}` : '',
+    path === 'tech_safari' && jdSnippet ? `\n*Job description:*\n${jdSnippet}` : '',
   ]
     .filter(Boolean)
     .join('\n');
@@ -128,15 +141,65 @@ async function sendConfirmationEmail(
 export class submitCtaTool implements LuaTool<typeof submitCtaInputSchema> {
   name = 'submit_cta';
   description =
-    'Handle a CTA form submission for either the Talent Safari (human recruiting) or Lua (AI agent) path. Posts to Slack and sends a confirmation email to the contact.';
+    'Handle a CTA form submission for either the Talent Safari (human recruiting) or Lua (AI agent) path. Posts to Slack and sends a confirmation email to the contact. ONLY call this after a real score_jd evaluation has been produced in the conversation — never fabricate scoringResult fields. If no evaluation has run, ask the user to paste a JD first instead of calling this tool.';
   inputSchema = submitCtaInputSchema;
 
   async execute(input: SubmitCtaInput): Promise<unknown> {
+    const { path, name, email, company, extraField, jdText, scoringResult } = input;
+
+    // Real-evaluation gate — short-circuit if the agent invoked submit_cta without
+    // a genuine score_jd result in context (LLM fabrication sentinel pattern:
+    // role_title='Unknown' + score=0). Prevents garbage Slack posts, Sheets
+    // updates, and confirmation emails for non-existent evaluations.
+    if (
+      !scoringResult?.role_title ||
+      scoringResult.role_title.trim().toLowerCase() === 'unknown' ||
+      !scoringResult.score
+    ) {
+      return {
+        posted: false,
+        confirmationSent: false,
+        skipped: true,
+        reason: 'no_evaluation_context',
+      };
+    }
+
     const slackUrl = env('SLACK_LEADS_WEBHOOK_URL') ?? '';
     const resendKey = env('RESEND_API_KEY') ?? '';
     const fromEmail = env('FROM_EMAIL') ?? '';
 
+    // Store CTA submission to Data
+    try {
+      await Data.create(
+        'cta-submissions',
+        {
+          path,
+          name,
+          email,
+          company,
+          extra_field: extraField ?? '',
+          role_title: scoringResult.role_title,
+          score: scoringResult.score,
+          verdict_line: scoringResult.verdict_line,
+          recommended_cta: scoringResult.recommended_cta,
+          cta_clicked: path === 'lua' ? 'Lua' : 'Talent Safari',
+          jd_text: jdText ?? '',
+          timestamp: new Date().toISOString(),
+        },
+        `${scoringResult.role_title} ${path} ${company} ${jdText ?? ''}`.slice(0, 2000),
+      );
+    } catch { /* non-fatal */ }
+
     await postCtaToSlack(slackUrl, input);
+
+    // Sheets — update CTA Clicked + Path for this email, non-fatal
+    const sheetsUrl = env('SHEETS_WEBHOOK_URL') ?? '';
+    if (sheetsUrl) {
+      try {
+        await updateSheetsRow(sheetsUrl, input.email, input.path);
+      } catch { /* non-fatal */ }
+    }
+
     await sendConfirmationEmail(resendKey, fromEmail, input);
 
     return {
@@ -154,14 +217,16 @@ export const submitCtaSkill = new LuaSkill({
   name: 'submit-cta',
   description:
     'Handles CTA form submissions — routes the contact to Talent Safari (human recruiting) or Lua (AI agent build), posts to Slack, and sends a confirmation email.',
-  context: `Use the submit_cta tool when a user completes a CTA form after reviewing their evaluation results.
+  context: `Use the submit_cta tool when a user completes a CTA form AFTER reviewing their evaluation results.
+
+PRECONDITION: A score_jd call must have produced a real scoringResult earlier in this conversation. If no evaluation has run yet, do NOT call submit_cta — instead tell the user to paste a job description so Ada can evaluate it first. Never fabricate scoringResult fields (no placeholder role_title='Unknown', score=0, verdict_line='No evaluation completed yet'). If the tool is called without a real evaluation, it returns { skipped: true, reason: 'no_evaluation_context' }.
 
 Two paths are supported:
 - tech_safari: The user wants a human hire sourced by Talent Safari. Collect name, email, company, and optionally "When do you need this seat filled?".
 - lua: The user wants an AI agent built by Lua. Collect name, email, company, and optionally "What should this agent own first?".
 
-Always pass the scoringResult from the earlier score_jd call so Slack gets the full role context.
+Always pass the actual scoringResult from the earlier score_jd call so Slack gets the full role context.
 
-The tool posts a plain-text Slack notification and sends a path-appropriate confirmation email. Returns { posted: true, confirmationSent: true } on success.`,
+The tool posts a plain-text Slack notification and sends a path-appropriate confirmation email. Returns { posted: true, confirmationSent: true } on success, or { skipped: true, reason } when the real-evaluation gate trips.`,
   tools: [new submitCtaTool()],
 });

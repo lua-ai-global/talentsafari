@@ -1,10 +1,66 @@
 {
-  "lastHash": "e47bdc60bc8cef6a77170bcaa08d07ce2bfd430242df2b8b69fc8f194418ffcc",
-  "lastPushedAt": "2026-05-25T13:28:49.508Z",
+  "lastHash": "3593183c55e79306bbd8b16cdc95c92f38b8c24e1e828788525fccb0abe986f8",
+  "lastPushedAt": "2026-06-05T14:45:32.947Z",
   "files": [
     {
+      "relativePath": "api/_lib/origin.js",
+      "hash": "abc2037d9a2ad20e"
+    },
+    {
+      "relativePath": "api/_lib/rate-limit.js",
+      "hash": "086e410e25685975"
+    },
+    {
+      "relativePath": "api/_lib/stream-aggregate.js",
+      "hash": "252e08e4d10c2705"
+    },
+    {
+      "relativePath": "api/fetch-jd.js",
+      "hash": "1c548362212ba216"
+    },
+    {
+      "relativePath": "api/lua-chat.js",
+      "hash": "169fcb41a92086b0"
+    },
+    {
+      "relativePath": "api/slack-notify.js",
+      "hash": "77352a502849a493"
+    },
+    {
       "relativePath": "build.md",
-      "hash": "4b80192c6471a386"
+      "hash": "4722e1e36284660f"
+    },
+    {
+      "relativePath": "changes.md",
+      "hash": "001ebaabc0f049c9"
+    },
+    {
+      "relativePath": "dev-server.mjs",
+      "hash": "7ae969c564777cae"
+    },
+    {
+      "relativePath": "docs/fixes/ada_persona.md",
+      "hash": "68c8cab666ced769"
+    },
+    {
+      "relativePath": "docs/fixes/bug_fix.md",
+      "hash": "07df360e65a9a31a"
+    },
+    {
+      "relativePath": "docs/fixes/fix_ada_flow.md",
+      "hash": "c6f46dc6c54420db"
+    },
+    {
+      "relativePath": "docs/fixes/UI_change.md",
+      "hash": "1511b4efa823e5cf"
+    },
+    {
+      "relativePath": "docs/llm.md/llm.md",
+      "hash": "fcd49fb3510ebb68"
+    },
+    {
+      "relativePath": "email-preview.html",
+      "hash": "3d541bd6f57a64fa"
     },
     {
       "relativePath": "env.example",
@@ -12,19 +68,75 @@
     },
     {
       "relativePath": "index.html",
-      "hash": "c6e24e63fa8aa6d2"
+      "hash": "c27047560bef8dbb"
     },
     {
       "relativePath": "lua.skill.yaml",
-      "hash": "cd09d861d731c2f3"
+      "hash": "603f990682f37e06"
     },
     {
       "relativePath": "netlify.toml",
-      "hash": "2bc5bc6e341c5e81"
+      "hash": "7bcd116156bdee81"
+    },
+    {
+      "relativePath": "netlify/functions/fetch-jd.js",
+      "hash": "99372ecf4067d76b"
+    },
+    {
+      "relativePath": "netlify/functions/lua-chat.js",
+      "hash": "b8a3883e4b99c1a9"
+    },
+    {
+      "relativePath": "netlify/functions/score-jd.js",
+      "hash": "83da42d230e001ba"
+    },
+    {
+      "relativePath": "netlify/functions/slack-notify.js",
+      "hash": "eb8d2040c636852a"
     },
     {
       "relativePath": "package.json",
-      "hash": "110536777933a2d1"
+      "hash": "d56bbe348b9f62fd"
+    },
+    {
+      "relativePath": "plan.md",
+      "hash": "e2ed46d402b4ed4b"
+    },
+    {
+      "relativePath": "public/lua-logo-full.png",
+      "hash": "eed9c85376590bff"
+    },
+    {
+      "relativePath": "public/lua-logo.png",
+      "hash": "0af27ad79ca12ed3"
+    },
+    {
+      "relativePath": "public/lua-logo.svg",
+      "hash": "74f974fe0c331daf"
+    },
+    {
+      "relativePath": "public/social-facebook.png",
+      "hash": "9070f98432588ddd"
+    },
+    {
+      "relativePath": "public/social-instagram.png",
+      "hash": "d83c19d486196643"
+    },
+    {
+      "relativePath": "public/social-linkedin.png",
+      "hash": "c3c32e06e79f35ac"
+    },
+    {
+      "relativePath": "public/talent-safari-logo.jpg",
+      "hash": "1802a5db225825a5"
+    },
+    {
+      "relativePath": "public/talent-safari-logo.png",
+      "hash": "bd44edad815d44bf"
+    },
+    {
+      "relativePath": "public/talent-safari-logo1.jpg",
+      "hash": "b2f21158b02085a1"
     },
     {
       "relativePath": "public/talentsafari_logo.jpg",
@@ -39,8 +151,12 @@
       "hash": "2ca2d2b3168e75e5"
     },
     {
+      "relativePath": "sheets-apps-script.gs",
+      "hash": "634b71f65a75a8e5"
+    },
+    {
       "relativePath": "src/index.ts",
-      "hash": "2444f8afe5be524f"
+      "hash": "e96c585c90fbeb4d"
     },
     {
       "relativePath": "src/skills/ada-chat.skill.ts",
@@ -52,19 +168,23 @@
     },
     {
       "relativePath": "src/skills/capture-lead.skill.ts",
-      "hash": "07abb33d708827c9"
+      "hash": "fea1652d9b341d83"
+    },
+    {
+      "relativePath": "src/skills/email-assets.ts",
+      "hash": "fe0b285247485488"
     },
     {
       "relativePath": "src/skills/score-role.skill.ts",
-      "hash": "6c1eeb871d522684"
+      "hash": "336d837f8454e942"
     },
     {
       "relativePath": "src/skills/scrape-jd.skill.ts",
-      "hash": "ae4336460784add0"
+      "hash": "35d0e547fcbce515"
     },
     {
       "relativePath": "src/skills/submit-cta.skill.ts",
-      "hash": "959e71e2d4166df1"
+      "hash": "dc40341bc7b3999e"
     },
     {
       "relativePath": "src/skills/tools/CaptureLead.ts",
@@ -85,6 +205,10 @@
     {
       "relativePath": "tsconfig.json",
       "hash": "748d6fffca1cc9ce"
+    },
+    {
+      "relativePath": "vercel.json",
+      "hash": "74835210ba9078b4"
     }
   ]
 }

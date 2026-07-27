@@ -1,3 +1,12 @@
 dist-v2/
 
-node_modules
+node_modules/
+
+.env
+
+# Claude Code local settings — contains approved bash commands with secrets
+.claude/settings.local.json
+
+# Local mock server (confirm frontend render without the slow upstream) — not for commit
+mock-server.mjs
+mock-check.mjs
