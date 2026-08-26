@@ -18,7 +18,7 @@
     "@vercel/kv": "^3.0.0",
     "@types/inquirer": "^9.0.9",
     "@types/js-yaml": "^4.0.9",
-    "axios": "^1.6.0",
+    "axios": "^1.18.0",
     "inquirer": "^12.9.6",
     "stripe": "^17.5.0",
     "js-yaml": "^4.3.1",
@@ -39,6 +39,13 @@
     "js-yaml@4": "^4.3.1",
     "undici@6": "^6.28.0",
     "postcss": "^8.5.23",
-    "@opentelemetry/core": "^2.8.0"
+    "@opentelemetry/core": "^2.8.0",
+    "sharp": "^0.35.0",
+    "axios@1": "^1.18.0",
+    "protobufjs@7": "^7.6.5",
+    "@opentelemetry/propagator-jaeger@2": "^2.9.0",
+    "form-data@4": "^4.0.6",
+    "ws@8": "^8.21.0",
+    "esbuild": "^0.28.1"
   }
 }
