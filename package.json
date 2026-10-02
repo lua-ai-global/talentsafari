@@ -11,7 +11,7 @@
     "dev": "node dev-server.mjs",
     "dev:agent": "tsx watch src/index.ts",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "@pinecone-database/pinecone": "^6.1.2",
@@ -21,7 +21,7 @@
     "axios": "^1.18.0",
     "inquirer": "^12.9.6",
     "stripe": "^17.5.0",
-    "js-yaml": "^4.3.1",
+    "js-yaml": "^4.3.2",
     "lua-cli": "^3.15.2",
     "openai": "^5.23.0",
     "uuid": "^13.0.0",
@@ -38,8 +38,8 @@
     "browserslist@4": "^4.28.7",
     "brace-expansion": "^5.0.9",
     "nanoid@3": "^3.3.18",
-    "js-yaml@4": "^4.3.1",
-    "undici@6": "^6.28.0",
+    "js-yaml@4": "^4.3.2",
+    "undici@6": "^6.28.1",
     "postcss": "^8.5.23",
     "@opentelemetry/core": "^2.8.0",
     "sharp": "^0.35.0",
@@ -48,6 +48,7 @@
     "@opentelemetry/propagator-jaeger": "^2.9.0",
     "form-data@4": "^4.0.6",
     "ws@8": "^8.21.0",
-    "esbuild": "^0.28.1"
+    "esbuild": "^0.28.1",
+    "@ai-sdk/provider-utils@3": "3.0.30"
   }
 }
