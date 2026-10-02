@@ -1,0 +1,194 @@
+import { LuaSkill, Data, env } from 'lua-cli';
+import { z } from 'zod';
+// ---------------------------------------------------------------------------
+// Input schema
+// ---------------------------------------------------------------------------
+const submitCtaInputSchema = z.object({
+    path: z.enum(['tech_safari', 'lua']).describe('Which CTA path the user chose'),
+    name: z.string().min(1).describe("Contact's full name"),
+    email: z.string().email().describe("Contact's work email"),
+    company: z.string().min(1).describe("Contact's company"),
+    extraField: z
+        .string()
+        .optional()
+        .describe("'When do you need this seat filled?' for tech_safari, or 'What should this agent own first?' for lua"),
+    jdText: z.string().optional().describe('The original job description text'),
+    scoringResult: z
+        .object({
+        role_title: z.string(),
+        score: z.number(),
+        verdict_line: z.string(),
+        recommended_cta: z.enum(['lua', 'tech_safari']),
+        agent_candidate: z.object({
+            monthly_cost: z.string(),
+            start_date: z.string(),
+        }),
+        human_candidate: z.object({
+            salary_range: z.string(),
+        }),
+    })
+        .describe('The scoring result for context in the Slack post'),
+});
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+async function updateSheetsRow(webhookUrl, email, path) {
+    const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'updateCta',
+            email,
+            ctaClicked: path === 'lua' ? 'Lua' : 'Talent Safari',
+        }),
+    });
+    if (!response.ok)
+        throw new Error(`Sheets webhook error ${response.status}`);
+}
+async function postCtaToSlack(webhookUrl, input) {
+    const { path, name, email, company, extraField, jdText, scoringResult } = input;
+    const { role_title, score, verdict_line, agent_candidate, human_candidate } = scoringResult;
+    const pathLabel = path === 'tech_safari' ? '🧭 Talent Safari' : '⚡ Lua';
+    const extraLabel = path === 'tech_safari' ? 'Timeline' : 'Scope';
+    const financialLine = path === 'tech_safari' && human_candidate.salary_range
+        ? `Human option: ${human_candidate.salary_range}`
+        : '';
+    const jdSnippet = jdText
+        ? jdText.length > 2800 ? jdText.slice(0, 2800) + '…' : jdText
+        : null;
+    const text = [
+        `*CTA submitted — ${pathLabel} path*`,
+        `Role: ${role_title} · Score ${score} · ${verdict_line}`,
+        `Contact: ${name} · ${email} · ${company}`,
+        extraField ? `${extraLabel}: ${extraField}` : '',
+        financialLine,
+        path === 'tech_safari' && jdSnippet ? `\n*Job description:*\n${jdSnippet}` : '',
+    ]
+        .filter(Boolean)
+        .join('\n');
+    const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+    });
+    if (!response.ok) {
+        throw new Error(`Slack webhook error ${response.status}`);
+    }
+}
+async function sendConfirmationEmail(resendApiKey, fromEmail, input) {
+    const { path, name, email, scoringResult } = input;
+    let subject;
+    let html;
+    if (path === 'tech_safari') {
+        subject = 'Your Talent Safari brief has been sent';
+        html = `<p>Hi ${name},</p>
+<p>Your brief for the <strong>${scoringResult.role_title}</strong> evaluation has been sent to Talent Safari.</p>
+<p>A recruiter will review the role scorecard and reply within one business day.</p>
+<p>— Ada · Built by Lua</p>`;
+    }
+    else {
+        subject = 'Your Lua intro is booked';
+        html = `<p>Hi ${name},</p>
+<p>Thanks for choosing Lua for your <strong>${scoringResult.role_title}</strong> evaluation.</p>
+<p>The team will be in touch shortly to book your 15-minute intro call and walk through what Ada can own from day one.</p>
+<p>— Ada · Built by Lua</p>`;
+    }
+    const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${resendApiKey}`,
+        },
+        body: JSON.stringify({
+            from: fromEmail,
+            to: [email],
+            subject,
+            html,
+        }),
+    });
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Resend API error ${response.status}: ${errorText}`);
+    }
+}
+// ---------------------------------------------------------------------------
+// Tool — class-based pattern (required for lua-cli AST scanner detection)
+// ---------------------------------------------------------------------------
+export class submitCtaTool {
+    constructor() {
+        this.name = 'submit_cta';
+        this.description = 'Handle a CTA form submission for either the Talent Safari (human recruiting) or Lua (AI agent) path. Posts to Slack and sends a confirmation email to the contact. ONLY call this after a real score_jd evaluation has been produced in the conversation — never fabricate scoringResult fields. If no evaluation has run, ask the user to paste a JD first instead of calling this tool.';
+        this.inputSchema = submitCtaInputSchema;
+    }
+    async execute(input) {
+        const { path, name, email, company, extraField, jdText, scoringResult } = input;
+        // Real-evaluation gate — short-circuit if the agent invoked submit_cta without
+        // a genuine score_jd result in context (LLM fabrication sentinel pattern:
+        // role_title='Unknown' + score=0). Prevents garbage Slack posts, Sheets
+        // updates, and confirmation emails for non-existent evaluations.
+        if (!scoringResult?.role_title ||
+            scoringResult.role_title.trim().toLowerCase() === 'unknown' ||
+            !scoringResult.score) {
+            return {
+                posted: false,
+                confirmationSent: false,
+                skipped: true,
+                reason: 'no_evaluation_context',
+            };
+        }
+        const slackUrl = env('SLACK_LEADS_WEBHOOK_URL') ?? '';
+        const resendKey = env('RESEND_API_KEY') ?? '';
+        const fromEmail = env('FROM_EMAIL') ?? '';
+        // Store CTA submission to Data
+        try {
+            await Data.create('cta-submissions', {
+                path,
+                name,
+                email,
+                company,
+                extra_field: extraField ?? '',
+                role_title: scoringResult.role_title,
+                score: scoringResult.score,
+                verdict_line: scoringResult.verdict_line,
+                recommended_cta: scoringResult.recommended_cta,
+                cta_clicked: path === 'lua' ? 'Lua' : 'Talent Safari',
+                jd_text: jdText ?? '',
+                timestamp: new Date().toISOString(),
+            }, `${scoringResult.role_title} ${path} ${company} ${jdText ?? ''}`.slice(0, 2000));
+        }
+        catch { /* non-fatal */ }
+        await postCtaToSlack(slackUrl, input);
+        // Sheets — update CTA Clicked + Path for this email, non-fatal
+        const sheetsUrl = env('SHEETS_WEBHOOK_URL') ?? '';
+        if (sheetsUrl) {
+            try {
+                await updateSheetsRow(sheetsUrl, input.email, input.path);
+            }
+            catch { /* non-fatal */ }
+        }
+        await sendConfirmationEmail(resendKey, fromEmail, input);
+        return {
+            posted: true,
+            confirmationSent: true,
+        };
+    }
+}
+// ---------------------------------------------------------------------------
+// Skill
+// ---------------------------------------------------------------------------
+export const submitCtaSkill = new LuaSkill({
+    name: 'submit-cta',
+    description: 'Handles CTA form submissions — routes the contact to Talent Safari (human recruiting) or Lua (AI agent build), posts to Slack, and sends a confirmation email.',
+    context: `Use the submit_cta tool when a user completes a CTA form AFTER reviewing their evaluation results.
+
+PRECONDITION: A score_jd call must have produced a real scoringResult earlier in this conversation. If no evaluation has run yet, do NOT call submit_cta — instead tell the user to paste a job description so Ada can evaluate it first. Never fabricate scoringResult fields (no placeholder role_title='Unknown', score=0, verdict_line='No evaluation completed yet'). If the tool is called without a real evaluation, it returns { skipped: true, reason: 'no_evaluation_context' }.
+
+Two paths are supported:
+- tech_safari: The user wants a human hire sourced by Talent Safari. Collect name, email, company, and optionally "When do you need this seat filled?".
+- lua: The user wants an AI agent built by Lua. Collect name, email, company, and optionally "What should this agent own first?".
+
+Always pass the actual scoringResult from the earlier score_jd call so Slack gets the full role context.
+
+The tool posts a plain-text Slack notification and sends a path-appropriate confirmation email. Returns { posted: true, confirmationSent: true } on success, or { skipped: true, reason } when the real-evaluation gate trips.`,
+    tools: [new submitCtaTool()],
+});

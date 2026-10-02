@@ -1,0 +1,204 @@
+import { LuaSkill, env } from 'lua-cli';
+import { z } from 'zod';
+// ---------------------------------------------------------------------------
+// Input schema
+// ---------------------------------------------------------------------------
+const briefWizardInputSchema = z.object({
+    mode: z.enum(['chat', 'generate']).describe('chat = wizard conversation, generate = produce final brief'),
+    messages: z
+        .array(z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string(),
+    }))
+        .optional()
+        .describe('Used in chat mode'),
+    evaluation: z.object({
+        role_title: z.string(),
+        score: z.number(),
+        verdict_line: z.string(),
+        rationale: z.string(),
+        agent_candidate: z.object({
+            name: z.string(),
+            role_title: z.string(),
+            avatar_seed: z.string(),
+            monthly_cost: z.string(),
+            throughput: z.string(),
+            coverage: z.string(),
+            great_at: z.array(z.string()),
+            cant_do: z.array(z.string()),
+        }),
+    }),
+    answers: z
+        .array(z.string())
+        .optional()
+        .describe('Q1-Q5 answers, used in generate mode'),
+});
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+const WIZARD_QUESTIONS = [
+    'What tools do you currently use for this work today? (List any apps, platforms, or systems.)',
+    'Walk me through the process from start to finish — what triggers it, what happens step by step, and how it ends.',
+    'Where do things go wrong? What takes the most time or causes the most frustration?',
+    'Describe your perfect week for this role — what would be handled automatically versus escalated to a human?',
+    'Which systems would the agent need read or write access to? (E.g. CRM, email, database, API.)',
+];
+const GENERATE_BRIEF_TOOL = {
+    name: 'generate_brief',
+    description: 'Generate a structured Lua agent build brief',
+    input_schema: {
+        type: 'object',
+        required: [
+            'agent_name',
+            'role_summary',
+            'core_capabilities',
+            'explicit_limits',
+            'integrations',
+            'escalation_rules',
+            'success_metrics',
+            'monthly_budget',
+            'coverage_requirement',
+            'first_milestone',
+        ],
+        properties: {
+            agent_name: { type: 'string' },
+            role_summary: { type: 'string', maxLength: 200 },
+            core_capabilities: { type: 'array', items: { type: 'string' }, maxItems: 5 },
+            explicit_limits: { type: 'array', items: { type: 'string' }, maxItems: 3 },
+            integrations: { type: 'array', items: { type: 'string' } },
+            escalation_rules: { type: 'string', maxLength: 200 },
+            success_metrics: { type: 'array', items: { type: 'string' }, maxItems: 4 },
+            monthly_budget: { type: 'string' },
+            coverage_requirement: { type: 'string' },
+            first_milestone: { type: 'string', maxLength: 150 },
+        },
+    },
+};
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+// Chat mode: Ada handles the conversation; tool just returns next question index
+function runChatMode(messages) {
+    const userMsgs = messages.filter((m) => m.role === 'user').length;
+    const done = userMsgs >= 5;
+    return { nextQuestionIndex: Math.min(userMsgs, 4), done };
+}
+// Generate mode: accepts the brief JSON that Ada has already composed
+function runGenerateMode(brief) {
+    return brief;
+}
+async function postBriefToSlack(webhookUrl, brief, roleTitle) {
+    const payload = {
+        blocks: [
+            {
+                type: 'header',
+                text: {
+                    type: 'plain_text',
+                    text: `Agent Brief — ${roleTitle}`,
+                },
+            },
+            {
+                type: 'section',
+                text: {
+                    type: 'mrkdwn',
+                    text: `*${brief.agent_name}* — ${brief.role_summary}`,
+                },
+            },
+            {
+                type: 'section',
+                fields: [
+                    {
+                        type: 'mrkdwn',
+                        text: `*Core Capabilities*\n${brief.core_capabilities.map((c) => `• ${c}`).join('\n')}`,
+                    },
+                    {
+                        type: 'mrkdwn',
+                        text: `*Integrations*\n${brief.integrations.map((i) => `• ${i}`).join('\n')}`,
+                    },
+                ],
+            },
+            {
+                type: 'section',
+                fields: [
+                    {
+                        type: 'mrkdwn',
+                        text: `*Monthly Budget*\n${brief.monthly_budget}`,
+                    },
+                    {
+                        type: 'mrkdwn',
+                        text: `*First Milestone*\n${brief.first_milestone}`,
+                    },
+                ],
+            },
+            {
+                type: 'actions',
+                elements: [
+                    {
+                        type: 'button',
+                        text: { type: 'plain_text', text: 'Lua takes this' },
+                        style: 'primary',
+                        value: `brief_${brief.agent_name.toLowerCase().replace(/\s+/g, '_')}`,
+                    },
+                ],
+            },
+        ],
+    };
+    const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+        throw new Error(`Slack webhook error ${response.status}`);
+    }
+}
+// ---------------------------------------------------------------------------
+// Tool — class-based pattern (required for lua-cli AST scanner detection)
+// ---------------------------------------------------------------------------
+export class briefWizardTool {
+    constructor() {
+        this.name = 'brief_wizard';
+        this.description = 'Two-mode tool: chat mode runs a 5-question wizard interview to gather build brief inputs; generate mode produces a structured Lua agent build brief and posts it to Slack.';
+        this.inputSchema = briefWizardInputSchema;
+    }
+    async execute(input) {
+        const { mode, messages, evaluation, answers } = input;
+        if (mode === 'chat') {
+            const safeMessages = messages ?? [];
+            const { nextQuestionIndex, done } = runChatMode(safeMessages);
+            return {
+                nextQuestion: done ? null : WIZARD_QUESTIONS[nextQuestionIndex],
+                questionIndex: nextQuestionIndex,
+                done,
+            };
+        }
+        // generate mode — Ada passes the completed brief she composed
+        const briefInput = answers;
+        const brief = runGenerateMode(briefInput);
+        const slackUrl = env('SLACK_LEADS_WEBHOOK_URL') ?? '';
+        if (slackUrl) {
+            try {
+                await postBriefToSlack(slackUrl, brief, evaluation.role_title);
+            }
+            catch { }
+        }
+        return { brief };
+    }
+}
+// ---------------------------------------------------------------------------
+// Skill
+// ---------------------------------------------------------------------------
+export const briefWizardSkill = new LuaSkill({
+    name: 'brief-wizard',
+    description: 'Guides a user through a 5-question interview to build a structured Lua agent build brief, then generates the brief using Sonnet and posts it to Slack.',
+    context: `Use the brief_wizard tool when a user wants to generate a Lua agent build brief after reviewing their evaluation.
+
+Two modes:
+
+chat — Ask ONE question at a time from the 5-wizard questions. Pass the full conversation history as messages. Returns { response: string }. Continue calling in chat mode until Ada says "Perfect — I have everything I need. Generating your Lua build brief now."
+
+generate — Pass the 5 collected answers as the answers array. Ada calls Sonnet with structured tool_choice to produce a LuaBrief JSON, posts it to Slack #leads via Block Kit, and returns { brief: <LuaBrief> }.
+
+Always pass the full evaluation object in both modes for context.`,
+    tools: [new briefWizardTool()],
+});
