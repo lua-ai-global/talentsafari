@@ -11,9 +11,15 @@ const VULNERABLE = {
   'js-yaml': [['3.0.0', '3.15.2'], ['4.0.0', '4.3.2']],
   undici: [['6.25.0', '6.28.1'], ['7.28.0', '7.29.1'], ['8.1.0', '8.10.2']],
   '@ai-sdk/provider-utils': [[null, '3.0.28'], ['4.0.0-beta.10', '4.0.33'], ['5.0.0', '5.0.1']],
+  'brace-expansion': [['1.0.0', '1.1.21'], ['2.0.0', '2.1.7'], ['3.0.0', '3.0.9'], ['4.0.0', '5.0.12']],
 };
 
-const ALLOWED_MAJORS = { 'js-yaml': [4], undici: [6], '@ai-sdk/provider-utils': [3] };
+const ALLOWED_MAJORS = {
+  'js-yaml': [4],
+  undici: [6],
+  '@ai-sdk/provider-utils': [3],
+  'brace-expansion': [5],
+};
 
 function parse(v) {
   const m = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?/.exec(v);
@@ -79,7 +85,24 @@ test('comparator flags boundary versions', () => {
   assert.equal(isVulnerable('@ai-sdk/provider-utils', '3.0.27'), true);
   assert.equal(isVulnerable('@ai-sdk/provider-utils', '3.0.28'), false);
   assert.equal(isVulnerable('@ai-sdk/provider-utils', '4.0.0-beta.10'), true);
+  assert.equal(isVulnerable('brace-expansion', '5.0.11'), true);
+  assert.equal(isVulnerable('brace-expansion', '5.0.12'), false);
+  assert.equal(isVulnerable('brace-expansion', '3.0.8'), true);
+  assert.equal(isVulnerable('brace-expansion', '3.0.9'), false);
   assert.equal(compare('4.0.0-beta.10', '4.0.0'), -1);
+});
+
+test('brace-expansion bounds cover every major line of GHSA-q2hr-2g5m-vwhr', () => {
+  for (const [v, vuln] of [
+    ['1.1.20', true],
+    ['1.1.21', false],
+    ['2.1.6', true],
+    ['2.1.7', false],
+    ['5.0.9', true],
+    ['5.0.12', false],
+  ]) {
+    assert.equal(isVulnerable('brace-expansion', v), vuln, `brace-expansion@${v}`);
+  }
 });
 
 for (const name of Object.keys(VULNERABLE)) {
